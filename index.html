@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Goguen-Style Institution Simulator (Workplace-Stress)</title>
+  <style>
+    :root{
+      --bg:#0f172a; /* slate-900 */
+      --panel:#111827; /* gray-900 */
+      --muted:#94a3b8; /* slate-400 */
+      --text:#e5e7eb; /* gray-200 */
+      --accent:#38bdf8; /* sky-400 */
+      --accent2:#a78bfa; /* violet-400 */
+      --good:#22c55e; /* green-500 */
+      --bad:#ef4444; /* red-500 */
+      --warn:#f59e0b; /* amber-500 */
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1200px 800px at 70% -10%, #1f2937 0%, var(--bg) 60%);
+      color:var(--text);
+    }
+    header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #1f2937;background:rgba(17,24,39,.7);backdrop-filter: blur(6px);position:sticky;top:0;z-index:10}
+    header h1{font-size:18px;margin:0;font-weight:700;letter-spacing:.2px}
+    header .sub{font-size:12px;color:var(--muted)}
+    .wrap{display:grid;grid-template-columns: 320px 1fr 420px;gap:14px;padding:14px}
+
+    .card{background:linear-gradient(160deg, rgba(255,255,255,.04), rgba(255,255,255,.02));border:1px solid rgba(148,163,184,.15);border-radius:14px;padding:14px;box-shadow:0 10px 20px rgba(0,0,0,.12)}
+    .card h2{margin:0 0 8px 0;font-size:14px;letter-spacing:.3px;color:#f1f5f9}
+    .section{margin-top:10px;padding-top:10px;border-top:1px dashed rgba(148,163,184,.2)}
+    label{font-size:12px;color:var(--muted)}
+    input[type=text], select, input[type=number]{width:100%;padding:8px 10px;border-radius:10px;background:#0b1220;border:1px solid rgba(148,163,184,.25);color:var(--text)}
+    input[type=range]{width:100%}
+    .row{display:flex;gap:8px}
+    .row > *{flex:1}
+    .badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#0b1220;border:1px solid rgba(148,163,184,.25);font-size:11px;color:var(--muted)}
+    .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;background:#0b1220;border:1px solid rgba(148,163,184,.25);font-size:11px}
+    .btn{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(180deg, #1f2937, #0b1220);border:1px solid rgba(148,163,184,.3);color:#e2e8f0;padding:8px 12px;border-radius:12px;cursor:pointer}
+    .btn:hover{filter:brightness(1.1)}
+    .btn.primary{background:linear-gradient(180deg, #2563eb, #1e40af);border-color:#1e3a8a}
+    .btn.ghost{background:transparent;border-color: rgba(148,163,184,.25)}
+    .list{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+    .item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px;border:1px solid rgba(148,163,184,.2);border-radius:12px;background:#0b1220}
+    .tiny{font-size:11px;color:var(--muted)}
+    .switch{position:relative;display:inline-flex;width:38px;height:20px;background:#1f2937;border-radius:999px;border:1px solid rgba(148,163,184,.3);cursor:pointer}
+    .knob{position:absolute;top:1px;left:1px;width:16px;height:16px;border-radius:50%;background:#9ca3af;transition:all .2s}
+    .switch.on{background:#065f46}
+    .switch.on .knob{left:19px;background:#a7f3d0}
+    canvas{width:100%;height:220px;background:#0a0f1c;border:1px solid rgba(148,163,184,.2);border-radius:12px}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .muted{color:var(--muted)}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Institution Simulator <span class="sub">— manipulate signature; watch emergent time series</span></h1>
+    </div>
+    <div class="pill"><span class="badge">No React</span><span>HTML + Vanilla JS</span></div>
+  </header>
+
+  <div class="wrap">
+    <!-- LEFT: Signature editor -->
+    <div class="card" id="signatureCard">
+      <h2>Σ — Signature Editor</h2>
+
+      <div class="section">
+        <div class="row">
+          <div>
+            <label>Org Unit</label>
+            <input id="orgUnitName" type="text" value="HighlandTownNHSUnit" />
+          </div>
+          <div>
+            <label>HighComplaints(u)</label>
+            <div class="switch" data-bind="HighComplaints"><div class="knob"></div></div>
+          </div>
+          <div>
+            <label>LocalSupportAbsent(u)</label>
+            <div class="switch" data-bind="LocalSupportAbsent"><div class="knob"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="row" style="align-items:flex-end">
+          <div>
+            <label>New Agent name</label>
+            <input id="agentName" type="text" placeholder="e.g., Alice" />
+          </div>
+          <div>
+            <label>Role</label>
+            <select id="agentRole">
+              <option>Cashier</option>
+              <option>Colleague</option>
+              <option>Management</option>
+            </select>
+          </div>
+          <div>
+            <button class="btn" id="addAgentBtn">+ Add Agent</button>
+          </div>
+        </div>
+
+        <div class="list" id="agentsList"></div>
+      </div>
+
+      <div class="section">
+        <h2 style="display:flex;align-items:center;gap:8px;margin:0 0 8px 0">Predicates (editable)</h2>
+        <div class="tiny">Click toggles to assert <span class="mono">Predicate(args)</span> in the current Σ-model.</div>
+        <div class="grid2" style="margin-top:8px">
+          <div>
+            <label>TalkedTo(c, a*) probability each step</label>
+            <input type="range" id="talkProb" min="0" max="1" step="0.05" value="0.4" />
+            <div class="tiny"><span id="talkProbVal">0.40</span></div>
+          </div>
+          <div>
+            <label>Complaints intensity</label>
+            <input type="range" id="complaintsIntensity" min="0" max="5" step="0.1" value="3.0" />
+            <div class="tiny">HighComplaints scales this. <span id="complaintsVal">3.0</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2 style="margin:0 0 8px 0">Dynamics (axioms → update rules)</h2>
+        <div class="grid2">
+          <div>
+            <label>Stress increase per complaint (α)</label>
+            <input type="range" id="alpha" min="0" max="1" step="0.02" value="0.20" />
+            <div class="tiny"><span id="alphaVal">0.20</span></div>
+          </div>
+          <div>
+            <label>Stress relief per supportive talk (β)</label>
+            <input type="range" id="beta" min="0" max="1" step="0.02" value="0.28" />
+            <div class="tiny"><span id="betaVal">0.28</span></div>
+          </div>
+          <div>
+            <label>Stress hit per dismissive contact (γ)</label>
+            <input type="range" id="gamma" min="0" max="1" step="0.02" value="0.18" />
+            <div class="tiny"><span id="gammaVal">0.18</span></div>
+          </div>
+          <div>
+            <label>Mgmt supportive relief (δ)</label>
+            <input type="range" id="delta" min="0" max="1" step="0.02" value="0.22" />
+            <div class="tiny"><span id="deltaVal">0.22</span></div>
+          </div>
+          <div>
+            <label>Retention risk threshold</label>
+            <input type="range" id="riskThresh" min="0" max="10" step="0.1" value="5.0" />
+            <div class="tiny">If stress+anxiety ≥ <span id="riskThreshVal">5.0</span> ⇒ BelievesRetentionRisk(m)→Supportive(m)</div>
+          </div>
+          <div>
+            <label>Baseline productivity</label>
+            <input type="range" id="prodBase" min="0" max="10" step="0.1" value="7.5" />
+            <div class="tiny"><span id="prodBaseVal">7.5</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section" style="display:flex;gap:8px;align-items:center">
+        <button class="btn primary" id="runBtn">▶ Run</button>
+        <button class="btn" id="stepBtn">Step</button>
+        <button class="btn ghost" id="resetBtn">Reset</button>
+        <span class="tiny">Time: <span id="tNow">0</span></span>
+      </div>
+    </div>
+
+    <!-- CENTER: State & explanation -->
+    <div class="card">
+      <h2>Σ-Model State & Axioms → Effects</h2>
+      <div id="stateText" class="tiny"></div>
+      <div class="section">
+        <div class="grid2">
+          <div>
+            <h2>Institution condition (informal)</h2>
+            <div class="tiny">Sentence translation via <span class="mono">Sen(σ)</span> and model reduct via <span class="mono">Mod(σ)</span> keep truth invariant. Here we focus on a single Σ and evolve a Σ-model over time.</div>
+          </div>
+          <div>
+            <h2>Emergent variables</h2>
+            <ul class="tiny">
+              <li><b>Stress</b>(c), <b>Anxiety</b>(c)</li>
+              <li><b>RetentionRisk</b> ≈ σ(stress+anxiety-support)</li>
+              <li><b>Productivity</b> = baseline − p₁·stress − p₂·anxiety</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Charts -->
+    <div class="card">
+      <h2>Time Series</h2>
+      <canvas id="chart1"></canvas>
+      <div class="grid2 section">
+        <div>
+          <canvas id="chart2"></canvas>
+        </div>
+        <div>
+          <canvas id="chart3"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* --------------------------- Data structures --------------------------- */
+    const rnd = (a,b)=>a+Math.random()*(b-a);
+
+    const Σ = {
+      sorts: ["Agent","Role","Feeling","Issue","Utterance","OrgUnit"],
+      constants: {
+        Agents: [],
+        OrgUnits: ["HighlandTownNHSUnit"],
+        Feelings: ["feelStress","feelAnxiety","feelUnsupported"],
+        Issues: ["issComplaints","issSupport","issWorkload","issRetention"]
+      },
+      predicates: {
+        Cashier: new Set(),
+        Colleague: new Set(),
+        Management: new Set(),
+        InUnit: new Set(), // tuples: "agent|unit"
+        Feels: new Set(),  // "agent|feeling"
+        Reports: new Set(),
+        TalkedTo: new Set(), // last step contacts "a|b"
+        SharedStress: new Set(),
+        Dismissive: new Set(),
+        Supportive: new Set(),
+        HighComplaints: false,
+        LocalSupportAbsent: false,
+        BelievesRetentionRisk: new Set(),
+        Leaves: new Set(),
+        GoesOffSick: new Set(),
+        AffectsProductivity: new Set()
+      }
+    };
+
+    // Initial conversation instance
+    function seedConversation(){
+      addAgent("c","Cashier", {supportive:false, dismissive:false});
+      addAgent("k","Colleague", {supportive:false, dismissive:true});
+      addAgent("m","Management", {supportive:false, dismissive:false});
+      Σ.predicates.InUnit.add("c|HighlandTownNHSUnit");
+      Σ.predicates.InUnit.add("k|HighlandTownNHSUnit");
+      Σ.predicates.InUnit.add("m|HighlandTownNHSUnit");
+      Σ.predicates.Feels.add("c|feelStress");
+      Σ.predicates.Feels.add("c|feelAnxiety");
+      Σ.predicates.Feels.add("c|feelUnsupported");
+      Σ.predicates.Reports.add("c|issComplaints");
+      Σ.predicates.Reports.add("c|issSupport");
+      Σ.predicates.HighComplaints = true;
+      Σ.predicates.LocalSupportAbsent = true;
+    }
+
+    function addAgent(name, role, flags={}){
+      if(!name) return;
+      if(Σ.constants.Agents.includes(name)) return;
+      Σ.constants.Agents.push(name);
+      if(role==="Cashier") Σ.predicates.Cashier.add(name);
+      if(role==="Colleague") Σ.predicates.Colleague.add(name);
+      if(role==="Management") Σ.predicates.Management.add(name);
+      if(flags.supportive) Σ.predicates.Supportive.add(name);
+      if(flags.dismissive) Σ.predicates.Dismissive.add(name);
+      renderAgents();
+    }
+
+    function removeAgent(name){
+      Σ.constants.Agents = Σ.constants.Agents.filter(a=>a!==name);
+      for(const P of ["Cashier","Colleague","Management","Supportive","Dismissive"]) Σ.predicates[P].delete(name);
+      for(const set of ["InUnit","Feels","Reports","TalkedTo"]) Σ.predicates[set] = new Set([...Σ.predicates[set]].filter(t=>!t.startsWith(name+"|")) && [...Σ.predicates[set]].filter(t=>!t.endsWith("|"+name)));
+      renderAgents();
+    }
+
+    /* --------------------------- UI Rendering ----------------------------- */
+    const agentsList = document.getElementById('agentsList');
+    const orgUnitName = document.getElementById('orgUnitName');
+
+    function renderAgents(){
+      agentsList.innerHTML = '';
+      const mkSwitch = (on, handler)=>{
+        const el = document.createElement('div');
+        el.className = 'switch'+(on?' on':'');
+        el.innerHTML = '<div class="knob"></div>';
+        el.addEventListener('click', ()=>{el.classList.toggle('on'); handler(el.classList.contains('on'));});
+        return el;
+      };
+
+      Σ.constants.Agents.forEach(a=>{
+        const role = Σ.predicates.Cashier.has(a) ? 'Cashier' : Σ.predicates.Colleague.has(a) ? 'Colleague' : 'Management';
+        const row = document.createElement('div');
+        row.className='item';
+        row.innerHTML = `<div>
+            <div><b>${a}</b> <span class="badge">${role}</span></div>
+            <div class="tiny">InUnit(${a}, ${orgUnitName.value})</div>
+          </div>`;
+
+        const right = document.createElement('div');
+        right.style.display='flex'; right.style.gap='10px'; right.style.alignItems='center';
+        // Supportive toggle
+        right.append("Supportive:");
+        right.append(mkSwitch(Σ.predicates.Supportive.has(a), on=>{
+          if(on) Σ.predicates.Supportive.add(a); else Σ.predicates.Supportive.delete(a);
+          updateStateText();
+        }));
+        // Dismissive toggle
+        right.append("Dismissive:");
+        right.append(mkSwitch(Σ.predicates.Dismissive.has(a), on=>{
+          if(on) Σ.predicates.Dismissive.add(a); else Σ.predicates.Dismissive.delete(a);
+          updateStateText();
+        }));
+        // Remove button (not for core trio)
+        if(!['c','k','m'].includes(a)){
+          const del = document.createElement('button'); del.className='btn ghost'; del.textContent='×';
+          del.title='Remove agent'; del.onclick=()=>removeAgent(a);
+          right.append(del);
+        }
+        row.append(right);
+        agentsList.append(row);
+      });
+      updateStateText();
+    }
+
+    // Global predicate switches (HighComplaints, LocalSupportAbsent)
+    document.querySelectorAll('.switch[data-bind]').forEach(sw=>{
+      const key = sw.getAttribute('data-bind');
+      const getter = ()=>Σ.predicates[key];
+      const setter = v=>Σ.predicates[key]=v;
+      const sync = ()=>{ sw.classList.toggle('on', !!getter()); };
+      sync();
+      sw.addEventListener('click', ()=>{ setter(!getter()); sync(); updateStateText(); });
+    });
+
+    // Add agent handler
+    document.getElementById('addAgentBtn').addEventListener('click',()=>{
+      const name = document.getElementById('agentName').value.trim();
+      const role = document.getElementById('agentRole').value;
+      if(!name) return;
+      addAgent(name, role);
+      document.getElementById('agentName').value='';
+    });
+
+    // Sliders display
+    const bindRange = (id, out)=>{
+      const el=document.getElementById(id), o=document.getElementById(out);
+      const fmt = v => (id==="riskThresh"||id==="prodBase"||id==="complaintsIntensity"?Number(v).toFixed(1):Number(v).toFixed(2));
+      o.textContent=fmt(el.value);
+      el.addEventListener('input',()=>o.textContent=fmt(el.value));
+      return ()=>Number(el.value);
+    };
+    const getTalkProb = bindRange('talkProb','talkProbVal');
+    const getComplaints = bindRange('complaintsIntensity','complaintsVal');
+    const getAlpha = bindRange('alpha','alphaVal');
+    const getBeta  = bindRange('beta','betaVal');
+    const getGamma = bindRange('gamma','gammaVal');
+    const getDelta = bindRange('delta','deltaVal');
+    const getRiskT = bindRange('riskThresh','riskThreshVal');
+    const getProdB = bindRange('prodBase','prodBaseVal');
+
+    /* ----------------------------- Simulation ----------------------------- */
+    const state = {
+      t: 0,
+      stress: 2.2, // starting feeling levels
+      anxiety: 2.0,
+      productivity: 6.5,
+      retentionRisk: 0.0,
+      running: false,
+      loop: null
+    };
+
+    function sigmoid(x){ return 1/(1+Math.exp(-x)); }
+
+    function step(){
+      // Contact network: c talks to subset of colleagues each step
+      Σ.predicates.TalkedTo.clear();
+      const colleagues = Σ.constants.Agents.filter(a=>Σ.predicates.Colleague.has(a));
+      const c = 'c';
+      const talkP = getTalkProb();
+      colleagues.forEach(a=>{ if(Math.random()<talkP){ Σ.predicates.TalkedTo.add(`${c}|${a}`);} });
+
+      // Complaint pressure
+      const baseC = getComplaints();
+      const complaintScale = Σ.predicates.HighComplaints ? 1.0 : 0.5;
+      const complaints = baseC*complaintScale + rnd(-0.2,0.2);
+
+      // Support & dismissive effects from contacts
+      let supportiveHits = 0, dismissiveHits = 0;
+      Σ.predicates.TalkedTo.forEach(t=>{
+        const [,a] = t.split('|');
+        if(Σ.predicates.Supportive.has(a)) supportiveHits += 1;
+        if(Σ.predicates.Dismissive.has(a)) dismissiveHits += 1;
+      });
+
+      // Management support if retention risk believed
+      const mSupport = Σ.predicates.Supportive.has('m') ? 1 : 0;
+
+      // Update rules (discrete, bounded >=0)
+      const α=getAlpha(), β=getBeta(), γ=getGamma(), δ=getDelta();
+      state.stress = Math.max(0, state.stress + α*complaints - β*supportiveHits + γ*dismissiveHits - δ*mSupport);
+
+      // Anxiety depends on stress and local support availability
+      const lack = Σ.predicates.LocalSupportAbsent ? 0.4 : -0.2;
+      state.anxiety = Math.max(0, 0.7*state.anxiety + 0.3*state.stress/2 + lack);
+
+      // RetentionRisk via logistic
+      const supportCount = supportiveHits + mSupport;
+      const rr = sigmoid(0.7*(state.stress + state.anxiety) - 0.6*supportCount - 2.3);
+      state.retentionRisk = rr;
+
+      // Productivity
+      const base = getProdB();
+      state.productivity = Math.max(0, base - 0.6*state.stress - 0.5*state.anxiety + 0.2*supportCount);
+
+      // Management may flip to believing risk, then supportive
+      const riskScore = state.stress + state.anxiety;
+      if(riskScore >= getRiskT()){
+        Σ.predicates.BelievesRetentionRisk.add('m');
+        Σ.predicates.Supportive.add('m');
+      }
+
+      state.t++;
+      updateStateText();
+      pushSamples();
+      drawCharts();
+    }
+
+    function reset(){
+      samples = {t:[], stress:[], anxiety:[], risk:[], prod:[]};
+      state.t=0; state.stress=2.2; state.anxiety=2.0; state.productivity=6.5; state.retentionRisk=0;
+      Σ.predicates.BelievesRetentionRisk.clear();
+      Σ.predicates.Supportive.delete('m');
+      Σ.predicates.TalkedTo.clear();
+      updateStateText();
+      drawCharts(true);
+      document.getElementById('tNow').textContent = '0';
+    }
+
+    function updateStateText(){
+      const txt = [];
+      const fmtSet = s=>[...s].join(', ')||'∅';
+      txt.push(`<b>Agents</b>: ${Σ.constants.Agents.join(', ')}`);
+      txt.push(`<b>Supportive</b> {${fmtSet(Σ.predicates.Supportive)}}`);
+      txt.push(`<b>Dismissive</b> {${fmtSet(Σ.predicates.Dismissive)}}`);
+      txt.push(`<b>HighComplaints</b>: ${Σ.predicates.HighComplaints}`);
+      txt.push(`<b>LocalSupportAbsent</b>: ${Σ.predicates.LocalSupportAbsent}`);
+      txt.push(`<b>BelievesRetentionRisk(m)</b>: ${Σ.predicates.BelievesRetentionRisk.has('m')}`);
+      txt.push(`<b>TalkedTo</b> {${fmtSet(Σ.predicates.TalkedTo)}}`);
+      txt.push(`<b>State</b> t=${state.t} | Stress=${state.stress.toFixed(2)} | Anxiety=${state.anxiety.toFixed(2)} | Risk=${state.retentionRisk.toFixed(2)} | Productivity=${state.productivity.toFixed(2)}`);
+      document.getElementById('stateText').innerHTML = txt.map(s=>`<div>${s}</div>`).join('');
+      document.getElementById('tNow').textContent = String(state.t);
+    }
+
+    /* ----------------------------- Charts -------------------------------- */
+    let samples = {t:[], stress:[], anxiety:[], risk:[], prod:[]};
+    function pushSamples(){
+      samples.t.push(state.t);
+      samples.stress.push(state.stress);
+      samples.anxiety.push(state.anxiety);
+      samples.risk.push(state.retentionRisk);
+      samples.prod.push(state.productivity);
+    }
+
+    // Minimal canvas line plotting (no external libs)
+    function plotLine(canvas, xs, ys, label){
+      const ctx = canvas.getContext('2d');
+      const W = canvas.width = canvas.clientWidth*2; // hi-dpi
+      const H = canvas.height = canvas.clientHeight*2;
+      // Clear
+      ctx.fillStyle = '#0a0f1c'; ctx.fillRect(0,0,W,H);
+      // Grid
+      ctx.strokeStyle = 'rgba(148,163,184,0.2)'; ctx.lineWidth = 1;
+      for(let i=0;i<6;i++){ const y = (i/(6-1))*H; ctx.beginPath(); ctx.moveTo(40,y); ctx.lineTo(W-10,y); ctx.stroke(); }
+      // Axes labels
+      ctx.fillStyle = '#94a3b8'; ctx.font = '24px ui-sans-serif'; ctx.fillText(label, 48, 34);
+      // Bounds
+      const minX = xs.length? Math.min(...xs):0; const maxX = xs.length? Math.max(...xs):1;
+      const minY = ys.length? Math.min(...ys):0; const maxY = ys.length? Math.max(...ys):1;
+      const padL=40, padR=10, padT=40, padB=24;
+      function X(v){ return padL + (W-padL-padR) * ( (v-minX)/(maxX-minX || 1) ); }
+      function Y(v){ const a=minY, b=maxY===minY?minY+1:maxY; return (H-padB) - (H-padT-padB) * ((v-a)/(b-a)); }
+      // Line
+      ctx.strokeStyle = '#a78bfa'; ctx.lineWidth = 3; ctx.beginPath();
+      xs.forEach((x,i)=>{ const px=X(x), py=Y(ys[i]); if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py); });
+      ctx.stroke();
+    }
+
+    function drawCharts(init=false){
+      plotLine(document.getElementById('chart1'), samples.t, samples.stress, 'Stress(c)');
+      plotLine(document.getElementById('chart2'), samples.t, samples.anxiety, 'Anxiety(c)');
+      plotLine(document.getElementById('chart3'), samples.t, samples.prod, 'Productivity(c)');
+    }
+
+    /* ------------------------------- Run ---------------------------------- */
+    document.getElementById('stepBtn').addEventListener('click', step);
+    document.getElementById('resetBtn').addEventListener('click', reset);
+
+    document.getElementById('runBtn').addEventListener('click', (e)=>{
+      state.running = !state.running;
+      e.target.textContent = state.running ? '⏸ Pause' : '▶ Run';
+      if(state.running){
+        state.loop = setInterval(step, 600);
+      } else {
+        clearInterval(state.loop);
+      }
+    });
+
+    seedConversation();
+    renderAgents();
+    reset();
+  </script>
+</body>
+</html>
