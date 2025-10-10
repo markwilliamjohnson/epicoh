@@ -1,0 +1,279 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Interactive CHD Dynamics Simulator (Vanilla JS)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root { --bg:#f8fafc; --card:#fff; --ink:#0f172a; --muted:#475569; --ring:#e5e7eb; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, Noto Sans; color:var(--ink); background:var(--bg); }
+    .container { max-width:1120px; margin:0 auto; padding:20px; }
+    h1 { font-size:1.4rem; margin:0 0 6px; }
+    p.lead { color:var(--muted); margin:0 0 14px; }
+
+    .layout { display:grid; grid-template-columns:1fr; gap:16px; }
+    @media (min-width:960px){ .layout { grid-template-columns:380px 1fr; } }
+
+    .card { background:var(--card); border:1px solid var(--ring); border-radius:14px; padding:14px; box-shadow:0 1px 2px rgba(15,23,42,.04); }
+    .card h2 { margin:0 0 6px; font-size:1.05rem; }
+    .small { font-size:.9rem; color:var(--muted); }
+
+    .controls { display:grid; gap:12px; }
+    .row { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .label { font-size:.92rem; font-weight:600; color:#334155; }
+    .value { font-variant-numeric:tabular-nums; color:#0f172a; }
+    input[type="range"] { width:100%; }
+    .minmax { display:flex; justify-content:space-between; font-size:.8rem; color:var(--muted); }
+    .scaleHint { display:flex; justify-content:space-between; font-size:.75rem; color:#64748b; margin-top:2px; }
+    .actions { display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; }
+    button.reset { background:transparent; border:1px solid var(--ring); border-radius:10px; padding:6px 9px; font-size:.85rem; cursor:pointer; }
+
+    .kpiGrid { display:grid; grid-template-columns:1fr; gap:12px; }
+    @media (min-width:720px){ .kpiGrid { grid-template-columns:repeat(3,1fr); } }
+
+    .kpi { display:grid; grid-template-rows:auto auto 1fr; gap:6px; }
+    .kpiHeader { display:flex; justify-content:space-between; align-items:baseline; }
+    .kpiTitle { font-weight:600; }
+    .kpiNumber { font-variant-numeric:tabular-nums; font-weight:600; }
+    .kpiSub { color:var(--muted); font-size:.8rem; }
+    .miniWrap { width:100%; height:120px; overflow:hidden; }
+    canvas.mini { width:100% !important; height:120px !important; }
+
+    .badge { display:inline-flex; padding:2px 8px; border-radius:999px; font-size:.75rem; font-weight:600; }
+    .blue { background:#dbeafe; color:#1e40af; }
+    .green { background:#d1fae5; color:#065f46; }
+    .amber { background:#fef3c7; color:#92400e; }
+
+    footer { color:var(--muted); font-size:.8rem; margin-top:12px; }
+    .tip { font-size:.8rem; color:#334155; background:#f1f5f9; border:1px solid var(--ring); border-radius:10px; padding:8px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Interactive CHD Dynamics Simulator</h1>
+      <p class="lead">Explore how <strong>lifestyle</strong>, <strong>primary prevention</strong> (e.g., statins), and <strong>treatment quality</strong> for CHD affect <strong>incidence</strong>, <strong>mortality</strong>, and thus <strong>prevalence</strong> over time.</p>
+    </header>
+
+    <main class="layout">
+      <!-- Controls column -->
+      <section class="card">
+        <div class="actions">
+          <h2>Controls</h2>
+          <button class="reset" id="resetBtn">Reset</button>
+        </div>
+        <div class="controls" id="controls"></div>
+        <div class="tip" style="margin-top:8px;">
+          <div><strong>Scale directions</strong></div>
+          <ul style="margin:6px 0 0 18px; padding:0;">
+            <li><strong>Lifestyle factor</strong>: 0.5 = very healthy (low risk) → 1.0 = baseline → 1.5 = unhealthy (high risk).</li>
+            <li><strong>Primary prevention</strong>: 0% = none → higher % means stronger incidence reduction (e.g., widespread statin use).</li>
+            <li><strong>Treatment quality</strong>: 0% = no improvement → higher % reduces mortality among people with CHD (post‑MI care, modern drugs).</li>
+          </ul>
+        </div>
+        <div class="card" style="background:#f8fafc; border-color: var(--ring); margin-top: 10px;">
+          <div class="row" style="align-items:flex-start; gap: 8px;">
+            <div id="verdictBadge" class="badge blue">Stable prevalence</div>
+            <div class="small" id="deltaText">Over 20 years, prevalence changes by 0.00 pp.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- KPI mini charts column -->
+      <section class="kpiGrid">
+        <!-- Prevalence -->
+        <div class="card kpi">
+          <div class="kpiHeader">
+            <div class="kpiTitle">Prevalence</div>
+            <div class="kpiNumber" id="prevNow">0.00%</div>
+          </div>
+          <div class="kpiSub" id="prevSub">Start 0.00% • Δ 0.00 pp</div>
+          <div class="miniWrap"><canvas id="prevMini" class="mini"></canvas></div>
+        </div>
+        <!-- Incidence -->
+        <div class="card kpi">
+          <div class="kpiHeader">
+            <div class="kpiTitle">Incidence rate</div>
+            <div class="kpiNumber" id="incNow">0.00%</div>
+          </div>
+          <div class="kpiSub" id="incSub">Baseline × lifestyle × (1 − primary prevention)</div>
+          <div class="miniWrap"><canvas id="incMini" class="mini"></canvas></div>
+        </div>
+        <!-- Mortality -->
+        <div class="card kpi">
+          <div class="kpiHeader">
+            <div class="kpiTitle">Mortality rate</div>
+            <div class="kpiNumber" id="mortNow">0.00%</div>
+          </div>
+          <div class="kpiSub" id="mortSub">Per‑year among CHD cases × (1 − treatment quality)</div>
+          <div class="miniWrap"><canvas id="mortMini" class="mini"></canvas></div>
+        </div>
+
+        <!-- Notes -->
+        <div class="card" style="grid-column:1 / -1;">
+          <h2>How to Interpret</h2>
+          <ul class="small">
+            <li><strong>Incidence</strong> (I) adds new CHD cases from the disease‑free population. Lower with healthier lifestyle and primary prevention.</li>
+            <li><strong>Mortality</strong> (M) removes people from the CHD pool. Better treatment quality reduces M among those with CHD.</li>
+            <li><strong>Prevalence</strong> (P) changes as: <em>P<sub>t+1</sub> = P<sub>t</sub> + I·(1 − P<sub>t</sub>) − M·P<sub>t</sub></em>.</li>
+            <li>Paradox: mortality can drop (treatment ↑) while prevalence stays flat if incidence also drops (lifestyle & primary prevention ↑).</li>
+          </ul>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      Model: <code>I = incidenceBase × lifestyleFactor × (1 − primaryPrevention)</code>, 
+      <code>M = mortalityRate × (1 − treatmentQuality)</code>.
+    </footer>
+  </div>
+
+  <script>
+    // ----------------------------
+    // State & defaults
+    // ----------------------------
+    const state = {
+      years: 20,
+      incidenceBase: 0.03,      // 3%/yr among disease‑free at baseline
+      lifestyleFactor: 1.0,     // 0.5 (very healthy) → 1.0 baseline → 1.5 (unhealthy)
+      primaryPrevention: 0.20,  // 0–0.5 (0–50% cut in incidence via statins, risk factor control)
+      mortalityRate: 0.10,      // baseline 10%/yr among CHD cases
+      treatmentQuality: 0.40,   // 0–0.7 (0–70% reduction in mortality with better care)
+      initialPrevalence: 0.06   // 6% at t=0
+    };
+
+    // ----------------------------
+    // Utilities
+    // ----------------------------
+    const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+    const pct = (x, d=2) => (x * 100).toFixed(d) + '%';
+    const pp  = (x, d=2) => (x * 100).toFixed(d) + ' pp';
+
+    function simulate({ years, incidenceBase, lifestyleFactor, primaryPrevention, mortalityRate, treatmentQuality, initialPrevalence }){
+      const rows = [];
+      let P = clamp(initialPrevalence, 0, 0.999);
+      const Ieff = clamp(incidenceBase * lifestyleFactor * (1 - primaryPrevention), 0, 1);
+      const Meff = clamp(mortalityRate * (1 - treatmentQuality), 0, 1);
+      for (let y = 0; y <= years; y++){
+        rows.push({ year: y, P, I: Ieff, M: Meff });
+        const newCases = Ieff * (1 - P);
+        const deathsInCHD = Meff * P;
+        P = clamp(P + newCases - deathsInCHD, 0, 0.999);
+      }
+      return rows;
+    }
+
+    // ----------------------------
+    // Controls
+    // ----------------------------
+    const controlSpec = [
+      { key:'years', label:'Years', min:5, max:40, step:1, fmt:(x)=> x + ' years' },
+      { key:'incidenceBase', label:'Baseline incidence (per‑year among disease‑free)', min:0, max:0.10, step:0.001, fmt:(x)=> (x*100).toFixed(1)+'%' },
+      { key:'lifestyleFactor', label:'Lifestyle factor (higher = unhealthier)', min:0.5, max:1.5, step:0.01, fmt:(x)=> x.toFixed(2)+'×', scale:['Healthier','Unhealthier'] },
+      { key:'primaryPrevention', label:'Primary prevention effectiveness', min:0, max:0.5, step:0.01, fmt:(x)=> (x*100).toFixed(0)+'%', scale:['None','Stronger'] },
+      { key:'mortalityRate', label:'Baseline mortality among CHD (per‑year)', min:0, max:0.30, step:0.001, fmt:(x)=> (x*100).toFixed(1)+'%' },
+      { key:'treatmentQuality', label:'Treatment quality (mortality reduction)', min:0, max:0.7, step:0.01, fmt:(x)=> (x*100).toFixed(0)+'%', scale:['Worse care','Better care'] },
+      { key:'initialPrevalence', label:'Initial prevalence (at year 0)', min:0, max:0.20, step:0.001, fmt:(x)=> (x*100).toFixed(1)+'%' },
+    ];
+
+    const controlsRoot = document.getElementById('controls');
+    function buildControls(){
+      controlsRoot.innerHTML = '';
+      controlSpec.forEach(spec => {
+        const wrap = document.createElement('div');
+        const row = document.createElement('div'); row.className = 'row';
+        const label = document.createElement('div'); label.className = 'label'; label.textContent = spec.label;
+        const value = document.createElement('div'); value.className = 'value'; value.id = spec.key + 'Value'; value.textContent = spec.fmt(state[spec.key]);
+        row.appendChild(label); row.appendChild(value);
+
+        const input = document.createElement('input');
+        input.type = 'range'; input.min = spec.min; input.max = spec.max; input.step = spec.step; input.value = state[spec.key];
+        input.addEventListener('input', () => { state[spec.key] = parseFloat(input.value); value.textContent = spec.fmt(state[spec.key]); update(); });
+
+        wrap.appendChild(row); wrap.appendChild(input);
+
+        const mm = document.createElement('div'); mm.className = 'minmax';
+        mm.innerHTML = `<span>${spec.fmt(spec.min)}</span><span>${spec.fmt(spec.max)}</span>`;
+        wrap.appendChild(mm);
+
+        if (spec.scale){
+          const s = document.createElement('div'); s.className = 'scaleHint'; s.innerHTML = `<span>${spec.scale[0]}</span><span>${spec.scale[1]}</span>`; wrap.appendChild(s);
+        }
+
+        controlsRoot.appendChild(wrap);
+      });
+    }
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      Object.assign(state, { years:20, incidenceBase:0.03, lifestyleFactor:1.0, primaryPrevention:0.20, mortalityRate:0.10, treatmentQuality:0.40, initialPrevalence:0.06 });
+      buildControls(); update();
+    });
+
+    // ----------------------------
+    // Mini charts (sparklines)
+    // ----------------------------
+    let prevMini, incMini, mortMini;
+
+    function sparkOptions(){
+      return {
+        responsive:true, maintainAspectRatio:false, animation:false,
+        plugins:{ legend:{ display:false }, tooltip:{ enabled:true, callbacks:{ label: ctx => ctx.parsed.y + '%' } } },
+        scales:{ x:{ display:false }, y:{ display:false, suggestedMin:0, suggestedMax:100 } },
+        elements:{ point:{ radius:0 } }
+      };
+    }
+
+    function initCharts(){
+      prevMini = new Chart(document.getElementById('prevMini'), { type:'line', data:{ labels:[], datasets:[{ data:[], borderWidth:2 }] }, options:sparkOptions() });
+      incMini  = new Chart(document.getElementById('incMini'),  { type:'line', data:{ labels:[], datasets:[{ data:[], borderWidth:2 }] }, options:sparkOptions() });
+      mortMini = new Chart(document.getElementById('mortMini'), { type:'line', data:{ labels:[], datasets:[{ data:[], borderWidth:2 }] }, options:sparkOptions() });
+    }
+
+    // ----------------------------
+    // Update pipeline
+    // ----------------------------
+    function update(){
+      const rows = simulate(state);
+      const labels = rows.map(r => r.year);
+      const prevPct = rows.map(r => +(r.P * 100).toFixed(2));
+      const incPct  = rows.map(r => +(r.I * 100).toFixed(2));
+      const mortPct = rows.map(r => +(r.M * 100).toFixed(2));
+
+      // KPI numbers & subs
+      const startP = prevPct[0];
+      const endP = prevPct[prevPct.length - 1];
+      const deltaP = (endP - startP);
+      document.getElementById('prevNow').textContent = endP.toFixed(2) + '%';
+      document.getElementById('prevSub').textContent = `Start ${startP.toFixed(2)}% • Δ ${deltaP.toFixed(2)} pp`;
+      document.getElementById('incNow').textContent = incPct[0].toFixed(2) + '%';
+      document.getElementById('mortNow').textContent = mortPct[0].toFixed(2) + '%';
+
+      // Mini charts data
+      prevMini.data.labels = labels; prevMini.data.datasets[0].data = prevPct; prevMini.update();
+      incMini.data.labels  = labels; incMini.data.datasets[0].data  = incPct;  incMini.update();
+      mortMini.data.labels = labels; mortMini.data.datasets[0].data = mortPct; mortMini.update();
+
+      // Verdict badge
+      const badge = document.getElementById('verdictBadge');
+      const deltaText = document.getElementById('deltaText');
+      deltaText.textContent = `Over ${state.years} years, prevalence changes by ${pp((deltaP/100))}.`;
+      badge.classList.remove('blue','green','amber');
+      const abs = Math.abs(deltaP/100);
+      if (abs < 0.002) { badge.textContent = 'Stable prevalence'; badge.classList.add('blue'); }
+      else if (deltaP > 0) { badge.textContent = 'Prevalence increases'; badge.classList.add('amber'); }
+      else { badge.textContent = 'Prevalence decreases'; badge.classList.add('green'); }
+    }
+
+    // Boot
+    buildControls();
+    initCharts();
+    update();
+  </script>
+</body>
+</html>
