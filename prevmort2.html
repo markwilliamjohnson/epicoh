@@ -1,0 +1,383 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Interactive CHD Dynamics Simulator (Vanilla JS) — AMI as Subset</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root { --bg:#f8fafc; --card:#fff; --ink:#0f172a; --muted:#475569; --ring:#e5e7eb; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, Noto Sans; color:var(--ink); background:var(--bg); }
+    .container { max-width:1180px; margin:0 auto; padding:20px; }
+    h1 { font-size:1.35rem; margin:0 0 6px; }
+    p.lead { color:var(--muted); margin:0 0 14px; }
+
+    .layout { display:grid; grid-template-columns:1fr; gap:16px; }
+    @media (min-width:980px){ .layout { grid-template-columns:400px 1fr; } }
+
+    .card { background:var(--card); border:1px solid var(--ring); border-radius:14px; padding:14px; box-shadow:0 1px 2px rgba(15,23,42,.04); }
+    .card h2 { margin:0 0 8px; font-size:1.05rem; }
+    .small { font-size:.9rem; color:var(--muted); }
+
+    .controls { display:grid; gap:12px; }
+    .row { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .label { font-size:.92rem; font-weight:600; color:#334155; }
+    .value { font-variant-numeric:tabular-nums; color:#0f172a; }
+    input[type="range"] { width:100%; }
+    .minmax { display:flex; justify-content:space-between; font-size:.8rem; color:var(--muted); }
+    .scaleHint { display:flex; justify-content:space-between; font-size:.75rem; color:#64748b; margin-top:2px; }
+    .actions { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:8px; flex-wrap:wrap; }
+    button.reset { background:transparent; border:1px solid var(--ring); border-radius:10px; padding:6px 9px; font-size:.85rem; cursor:pointer; }
+
+    .scope { display:flex; gap:8px; flex-wrap:wrap; }
+    .pill { border:1px solid var(--ring); padding:6px 10px; border-radius:999px; font-size:.8rem; cursor:pointer; background:#fff; }
+    .pill.active { background:#e0f2fe; border-color:#7dd3fc; }
+
+    .kpiGrid { display:grid; grid-template-columns:1fr; gap:12px; }
+    @media (min-width:720px){ .kpiGrid { grid-template-columns:repeat(3,1fr); } }
+
+    .kpi { display:grid; grid-template-rows:auto auto 1fr; gap:6px; }
+    .kpiHeader { display:flex; justify-content:space-between; align-items:baseline; }
+    .kpiTitle { font-weight:600; }
+    .kpiNumber { font-variant-numeric:tabular-nums; font-weight:600; }
+    .kpiSub { color:var(--muted); font-size:.8rem; }
+    .miniWrap { width:100%; height:120px; overflow:hidden; }
+    canvas.mini { width:100% !important; height:120px !important; }
+
+    .badge { display:inline-flex; padding:2px 8px; border-radius:999px; font-size:.75rem; font-weight:600; }
+    .blue { background:#dbeafe; color:#1e40af; }
+    .green { background:#d1fae5; color:#065f46; }
+    .amber { background:#fef3c7; color:#92400e; }
+
+    footer { color:var(--muted); font-size:.8rem; margin-top:12px; }
+    .tip { font-size:.85rem; color:#334155; background:#f1f5f9; border:1px solid var(--ring); border-radius:10px; padding:8px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Interactive CHD Dynamics Simulator — with AMI as a Subset of CHD</h1>
+      <p class="lead">This version separates <strong>AMI</strong> (acute MI) from <strong>other CHD</strong> and distinguishes <strong>true</strong> vs <strong>observed</strong> prevalence using diagnostic coverage (including a female under‑diagnosis gap). It clarifies numerators/denominators and lets you focus on AMI‑only or all‑CHD views.</p>
+    </header>
+
+    <main class="layout">
+      <!-- Controls column -->
+      <section class="card">
+        <div class="actions">
+          <h2>Controls</h2>
+          <button class="reset" id="resetBtn">Reset</button>
+        </div>
+        <div class="tip" style="margin-bottom:10px;">
+          <div><strong>Scope</strong> (decides numerators/denominators for the charts):</div>
+          <div class="scope" id="scopePills" style="margin-top:6px;"></div>
+        </div>
+        <div class="controls" id="controls"></div>
+        <div class="tip" style="margin-top:8px;">
+          <div><strong>Scale directions</strong></div>
+          <ul style="margin:6px 0 0 18px; padding:0;">
+            <li><strong>Lifestyle factor</strong>: 0.5 = healthier (lower risk) → 1.0 baseline → 1.5 unhealthier (higher risk).</li>
+            <li><strong>Primary prevention</strong>: 0% = none → higher % = stronger incidence reduction (risk factor control, statins, diabetes management).</li>
+            <li><strong>Treatment quality (AMI / Other CHD)</strong>: higher % reduces mortality among existing cases (post‑MI care vs HF/angina care).</li>
+            <li><strong>Diagnostic coverage</strong>: fraction of true cases that are diagnosed/recorded; female gap reduces coverage for women (assume 50/50 split).</li>
+          </ul>
+        </div>
+        <div class="card" style="background:#f8fafc; border-color: var(--ring); margin-top: 10px;">
+          <div class="row" style="align-items:flex-start; gap: 8px;">
+            <div id="verdictBadge" class="badge blue">Stable prevalence (scope)</div>
+            <div class="small" id="deltaText">Over 20 years, prevalence changes by 0.00 pp (in selected scope).</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- KPI mini charts column -->
+      <section class="kpiGrid">
+        <!-- Prevalence -->
+        <div class="card kpi">
+          <div class="kpiHeader">
+            <div class="kpiTitle">Prevalence (by scope)</div>
+            <div class="kpiNumber" id="prevNow">0.00%</div>
+          </div>
+          <div class="kpiSub" id="prevSub">Start 0.00% • Δ 0.00 pp</div>
+          <div class="miniWrap"><canvas id="prevMini" class="mini"></canvas></div>
+        </div>
+        <!-- Incidence -->
+        <div class="card kpi">
+          <div class="kpiHeader">
+            <div class="kpiTitle">Incidence rate (by scope)</div>
+            <div class="kpiNumber" id="incNow">0.00%</div>
+          </div>
+          <div class="kpiSub" id="incSub">See scope pills for what is counted</div>
+          <div class="miniWrap"><canvas id="incMini" class="mini"></canvas></div>
+        </div>
+        <!-- Mortality -->
+        <div class="card kpi">
+          <div class="kpiHeader">
+            <div class="kpiTitle">Mortality rate (by scope)</div>
+            <div class="kpiNumber" id="mortNow">0.00%</div>
+          </div>
+          <div class="kpiSub" id="mortSub">Weighted if scope = all CHD</div>
+          <div class="miniWrap"><canvas id="mortMini" class="mini"></canvas></div>
+        </div>
+
+        <!-- Notes -->
+        <div class="card" style="grid-column:1 / -1;">
+          <h2>Interpretation & Specificity</h2>
+          <ul class="small">
+            <li><strong>Two stocks</strong>: <em>P<sub>AMI</sub></em> (AMI survivors) and <em>P<sub>OTH</sub></em> (other CHD). Total true CHD prevalence is <em>P = P<sub>AMI</sub> + P<sub>OTH</sub></em>.</li>
+            <li><strong>Flows</strong>: new AMI cases <em>I<sub>AMI</sub>·(1−P)</em>, new other‑CHD cases <em>I<sub>OTH</sub>·(1−P)</em>, deaths <em>M<sub>AMI</sub>·P<sub>AMI</sub></em> and <em>M<sub>OTH</sub>·P<sub>OTH</sub></em>.</li>
+            <li><strong>Observed prevalence</strong> = <em>(c − g/2) · P</em> where <em>c</em> = diagnostic coverage and <em>g</em> = female coverage gap (assuming 50/50 sex split and equal prevalence).</li>
+            <li><strong>Scope</strong> toggles what counts in numerators/denominators for prevalence, incidence, and mortality displays: AMI‑only vs all‑CHD, true vs observed.</li>
+          </ul>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      Model: 
+      <code>I<sub>AMI</sub> = I<sub>AMI,base</sub> × lifestyle × (1 − prevention)</code>, 
+      <code>I<sub>OTH</sub> = I<sub>OTH,base</sub> × lifestyle × (1 − prevention)</code>, 
+      <code>M<sub>AMI</sub> = M<sub>AMI,base</sub> × (1 − treat<sub>AMI</sub>)</code>,
+      <code>M<sub>OTH</sub> = M<sub>OTH,base</sub> × (1 − treat<sub>OTH</sub>)</code>,
+      <code>P<sub>t+1</sub> = P<sub>t</sub> + I<sub>AMI</sub>(1−P<sub>t</sub>) + I<sub>OTH</sub>(1−P<sub>t</sub>) − M<sub>AMI</sub>P<sub>AMI</sub> − M<sub>OTH</sub>P<sub>OTH</sub></code>.
+    </footer>
+  </div>
+
+  <script>
+    // ----------------------------
+    // State & defaults
+    // ----------------------------
+    const state = {
+      years: 20,
+      // Incidence drivers
+      incidenceAMIBase: 0.012,    // 1.2%/yr
+      acuteFatalityAMI: 0.2, // fraction of new AMI cases that die acutely
+      incidenceOtherBase: 0.020,  // 2.0%/yr
+      lifestyleFactor: 1.0,       // 0.5 healthier → 1.5 unhealthier
+      primaryPrevention: 0.25,    // 0–0.6 reduction in incidence
+      // Mortality drivers
+      mortAMIBase: 0.12,          // 12%/yr among AMI survivors
+      mortOtherBase: 0.08,        // 8%/yr among other CHD
+      treatAMI: 0.50,             // 0–0.8 reduction
+      treatOther: 0.30,           // 0–0.8 reduction
+      // Prevalence split
+      initialPrevalence: 0.06,    // 6% total CHD at t=0
+      initialAMIShare: 0.35,      // share of initial CHD that is AMI survivors
+      // Diagnosis/ascertainment
+      diagnosticCoverage: 0.85,   // overall fraction diagnosed
+      femaleDiagGap: 0.10,        // subtract from female coverage (50% pop)
+      // View scope
+      scope: 'CHD_true'           // 'CHD_true' | 'CHD_observed' | 'AMI_true' | 'AMI_observed'
+    };
+
+    // ----------------------------
+    // Utilities
+    // ----------------------------
+    const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+    const pct = (x, d=2) => (x * 100).toFixed(d) + '%';
+    const pp  = (x, d=2) => (x * 100).toFixed(d) + ' pp';
+
+    function simulate(s){
+      const rows = [];
+      let P_AMI = clamp(s.initialPrevalence * s.initialAMIShare, 0, 0.999);
+      let P_OTH = clamp(s.initialPrevalence * (1 - s.initialAMIShare), 0, 0.999);
+
+      const I_AMI = clamp(s.incidenceAMIBase * s.lifestyleFactor * (1 - s.primaryPrevention), 0, 1);
+      const I_OTH = clamp(s.incidenceOtherBase * s.lifestyleFactor * (1 - s.primaryPrevention), 0, 1);
+      const M_AMI = clamp(s.mortAMIBase * (1 - s.treatAMI), 0, 1);
+      const M_OTH = clamp(s.mortOtherBase * (1 - s.treatOther), 0, 1);
+
+      const cov = clamp(s.diagnosticCoverage - s.femaleDiagGap/2, 0, 1); // observed fraction
+
+      for (let y = 0; y <= s.years; y++){
+        const P_total = clamp(P_AMI + P_OTH, 0, 0.999);
+        const S = clamp(1 - P_total, 0, 1);
+
+        // record
+        rows.push({ year:y, P_AMI, P_OTH, P_total, P_obs: cov * P_total, I_AMI, I_OTH, M_AMI, M_OTH });
+
+        // update
+      const caseFatality = s.acuteFatalityAMI;
+      const newAMI = I_AMI * S;
+      const acuteDeaths = caseFatality * newAMI;
+      const chronicDeaths = M_AMI * P_AMI;
+      const deathsAMI = acuteDeaths + chronicDeaths;
+      P_AMI = clamp(P_AMI + newAMI - deathsAMI, 0, 0.999);
+      }
+      return rows;
+    }
+
+    // ----------------------------
+    // Controls
+    // ----------------------------
+    const controlSpec = [
+      { key:'years', label:'Years', min:5, max:40, step:1, fmt:(x)=> x + ' years' },
+      { key:'incidenceAMIBase', label:'Baseline AMI incidence (per‑year, disease‑free)', min:0, max:0.05, step:0.001, fmt:(x)=> (x*100).toFixed(2)+'%' },
+      { key:'incidenceOtherBase', label:'Baseline OTHER‑CHD incidence (per‑year, disease‑free)', min:0, max:0.08, step:0.001, fmt:(x)=> (x*100).toFixed(2)+'%' },
+      { key:'lifestyleFactor', label:'Lifestyle factor (higher = unhealthier)', min:0.5, max:1.5, step:0.01, fmt:(x)=> x.toFixed(2)+'×', scale:['Healthier','Unhealthier'] },
+      { key:'primaryPrevention', label:'Primary prevention effectiveness', min:0, max:0.6, step:0.01, fmt:(x)=> (x*100).toFixed(0)+'%', scale:['None','Stronger'] },
+      { key:'mortAMIBase', label:'Baseline AMI mortality (per‑year)', min:0, max:0.40, step:0.001, fmt:(x)=> (x*100).toFixed(1)+'%' },
+      { key:'treatAMI', label:'Treatment quality – AMI (mortality reduction)', min:0, max:0.8, step:0.01, fmt:(x)=> (x*100).toFixed(0)+'%', scale:['Worse','Better'] },
+      { key:'mortOtherBase', label:'Baseline OTHER‑CHD mortality (per‑year)', min:0, max:0.30, step:0.001, fmt:(x)=> (x*100).toFixed(1)+'%' },
+      { key:'treatOther', label:'Treatment quality – OTHER CHD (mortality reduction)', min:0, max:0.8, step:0.01, fmt:(x)=> (x*100).toFixed(0)+'%', scale:['Worse','Better'] },
+      { key:'initialPrevalence', label:'Initial total CHD prevalence (year 0)', min:0, max:0.20, step:0.001, fmt:(x)=> (x*100).toFixed(1)+'%' },
+      { key:'initialAMIShare', label:'Initial AMI share of CHD prevalence', min:0, max:0.9, step:0.01, fmt:(x)=> (x*100).toFixed(0)+'%', scale:['More other‑CHD','More AMI'] },
+      { key:'diagnosticCoverage', label:'Diagnostic coverage (overall)', min:0.5, max:1.0, step:0.01, fmt:(x)=> (x*100).toFixed(0)+'%' },
+      { key:'femaleDiagGap', label:'Female diagnostic gap (subtract from female coverage)', min:0, max:0.3, step:0.01, fmt:(x)=> (x*100).toFixed(0)+'%', scale:['Parity','Bigger gap'] },
+    ];
+
+    const scopes = [
+      { key:'CHD_true', label:'All CHD — TRUE' },
+      { key:'CHD_observed', label:'All CHD — OBSERVED' },
+      { key:'AMI_true', label:'AMI only — TRUE' },
+      { key:'AMI_observed', label:'AMI only — OBSERVED' },
+    ];
+
+    const controlsRoot = document.getElementById('controls');
+    const scopeRoot = document.getElementById('scopePills');
+
+    function buildScope(){
+      scopeRoot.innerHTML = '';
+      scopes.forEach(sc => {
+        const b = document.createElement('button');
+        b.className = 'pill' + (state.scope === sc.key ? ' active' : '');
+        b.textContent = sc.label;
+        b.addEventListener('click', () => { state.scope = sc.key; buildScope(); update(); });
+        scopeRoot.appendChild(b);
+      });
+    }
+
+    function buildControls(){
+      controlsRoot.innerHTML = '';
+      controlSpec.forEach(spec => {
+        const wrap = document.createElement('div');
+        const row = document.createElement('div'); row.className = 'row';
+        const label = document.createElement('div'); label.className = 'label'; label.textContent = spec.label;
+        const value = document.createElement('div'); value.className = 'value'; value.id = spec.key + 'Value'; value.textContent = spec.fmt(state[spec.key]);
+        row.appendChild(label); row.appendChild(value);
+
+        const input = document.createElement('input');
+        input.type = 'range'; input.min = spec.min; input.max = spec.max; input.step = spec.step; input.value = state[spec.key];
+        input.addEventListener('input', () => { state[spec.key] = parseFloat(input.value); value.textContent = spec.fmt(state[spec.key]); update(); });
+
+        wrap.appendChild(row); wrap.appendChild(input);
+        const mm = document.createElement('div'); mm.className = 'minmax'; mm.innerHTML = `<span>${spec.fmt(spec.min)}</span><span>${spec.fmt(spec.max)}</span>`; wrap.appendChild(mm);
+        if (spec.scale){ const s = document.createElement('div'); s.className = 'scaleHint'; s.innerHTML = `<span>${spec.scale[0]}</span><span>${spec.scale[1]}</span>`; wrap.appendChild(s); }
+        controlsRoot.appendChild(wrap);
+      });
+    }
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      Object.assign(state, {
+        years:20,
+        incidenceAMIBase:0.012,
+        incidenceOtherBase:0.020,
+        lifestyleFactor:1.0,
+        primaryPrevention:0.25,
+        mortAMIBase:0.12,
+        mortOtherBase:0.08,
+        treatAMI:0.50,
+        treatOther:0.30,
+        initialPrevalence:0.06,
+        initialAMIShare:0.35,
+        diagnosticCoverage:0.85,
+        femaleDiagGap:0.10,
+        scope:'CHD_true'
+      });
+      buildScope(); buildControls(); update();
+    });
+
+    // ----------------------------
+    // Mini charts (sparklines)
+    // ----------------------------
+    let prevMini, incMini, mortMini;
+    function sparkOptions(){
+      return { responsive:true, maintainAspectRatio:false, animation:false,
+        plugins:{ legend:{ display:false }, tooltip:{ enabled:true, callbacks:{ label: ctx => ctx.parsed.y + '%' } } },
+        scales:{ x:{ display:false }, y:{ display:false, suggestedMin:0, suggestedMax:100 } },
+        elements:{ point:{ radius:0 } } };
+    }
+    function initCharts(){
+      prevMini = new Chart(document.getElementById('prevMini'), { type:'line', data:{ labels:[], datasets:[{ data:[], borderWidth:2 }] }, options:sparkOptions() });
+      incMini  = new Chart(document.getElementById('incMini'),  { type:'line', data:{ labels:[], datasets:[{ data:[], borderWidth:2 }] }, options:sparkOptions() });
+      mortMini = new Chart(document.getElementById('mortMini'), { type:'line', data:{ labels:[], datasets:[{ data:[], borderWidth:2 }] }, options:sparkOptions() });
+    }
+
+    // ----------------------------
+    // Helper to extract scope-specific series
+    // ----------------------------
+    function scopeSeries(rows){
+      const cov = clamp(state.diagnosticCoverage - state.femaleDiagGap/2, 0, 1);
+      const labels = rows.map(r => r.year);
+
+      let prev, inc, mort;
+      if (state.scope === 'CHD_true'){
+        prev = rows.map(r => +(r.P_total * 100).toFixed(2));
+        inc  = rows.map(r => +(((r.I_AMI + r.I_OTH)) * 100).toFixed(2));
+        mort = rows.map(r => {
+          const P = Math.max(r.P_total, 1e-9);
+          const w = (r.M_AMI * r.P_AMI + r.M_OTH * r.P_OTH) / P; // prevalence-weighted mortality among CHD
+          return +(w * 100).toFixed(2);
+        });
+      } else if (state.scope === 'CHD_observed'){
+        prev = rows.map(r => +((cov * r.P_total) * 100).toFixed(2));
+        inc  = rows.map(r => +(((r.I_AMI + r.I_OTH)) * 100).toFixed(2)); // incidence is about true new cases
+        mort = rows.map(r => {
+          const P = Math.max(r.P_total, 1e-9);
+          const w = (r.M_AMI * r.P_AMI + r.M_OTH * r.P_OTH) / P;
+          return +(w * 100).toFixed(2);
+        });
+      } else if (state.scope === 'AMI_true'){
+        prev = rows.map(r => +(r.P_AMI * 100).toFixed(2));
+        inc  = rows.map(r => +(r.I_AMI * 100).toFixed(2));
+        mort = rows.map(r => +(r.M_AMI * 100).toFixed(2));
+      } else { // AMI_observed
+        prev = rows.map(r => +((cov * r.P_AMI) * 100).toFixed(2));
+        inc  = rows.map(r => +(r.I_AMI * 100).toFixed(2));
+        mort = rows.map(r => +(r.M_AMI * 100).toFixed(2));
+      }
+      return { labels, prev, inc, mort };
+    }
+
+    // ----------------------------
+    // Update pipeline
+    // ----------------------------
+    function update(){
+      const rows = simulate(state);
+      const { labels, prev, inc, mort } = scopeSeries(rows);
+
+      // KPI numbers & subs
+      const startP = prev[0];
+      const endP = prev[prev.length - 1];
+      const deltaP = (endP - startP);
+      document.getElementById('prevNow').textContent = endP.toFixed(2) + '%';
+      document.getElementById('prevSub').textContent = `Start ${startP.toFixed(2)}% • Δ ${deltaP.toFixed(2)} pp`;
+      document.getElementById('incNow').textContent = inc[0].toFixed(2) + '%';
+      document.getElementById('mortNow').textContent = mort[0].toFixed(2) + '%';
+
+      // Update charts
+      prevMini.data.labels = labels; prevMini.data.datasets[0].data = prev; prevMini.update();
+      incMini.data.labels  = labels; incMini.data.datasets[0].data  = inc;  incMini.update();
+      mortMini.data.labels = labels; mortMini.data.datasets[0].data = mort; mortMini.update();
+
+      // Verdict badge for prevalence change in scope
+      const badge = document.getElementById('verdictBadge');
+      const deltaText = document.getElementById('deltaText');
+      deltaText.textContent = `Over ${state.years} years, prevalence changes by ${pp((deltaP/100))} (in selected scope).`;
+      badge.classList.remove('blue','green','amber');
+      const abs = Math.abs(deltaP/100);
+      if (abs < 0.002) { badge.textContent = 'Stable prevalence (scope)'; badge.classList.add('blue'); }
+      else if (deltaP > 0) { badge.textContent = 'Prevalence increases (scope)'; badge.classList.add('amber'); }
+      else { badge.textContent = 'Prevalence decreases (scope)'; badge.classList.add('green'); }
+    }
+
+    // Build UI and boot
+    function init(){ buildScope(); buildControls(); initCharts(); update(); }
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
