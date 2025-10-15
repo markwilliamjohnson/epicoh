@@ -1,0 +1,582 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Descriptive Studies Lab — V2</title>
+  <style>
+    :root{
+      --bg:#0b1020; --panel:#0f172a; --ink:#e5e7eb; --muted:#94a3b8; --line:#1f2937;
+      --blue:#38bdf8; --green:#22c55e; --amber:#f59e0b; --red:#ef4444; --violet:#a78bfa;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial}
+    a{color:var(--blue)}
+    header{padding:14px 16px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,rgba(56,189,248,.12),transparent)}
+    h1{font-size:20px;margin:0}
+    .sub{color:var(--muted);font-size:12px}
+    .app{display:grid;grid-template-columns:320px 1fr;min-height:100vh}
+    aside{background:var(--panel);border-right:1px solid var(--line);padding:12px;overflow:auto}
+    main{padding:12px;overflow:auto}
+    fieldset{border:1px solid var(--line);border-radius:12px;margin:12px 0;padding:10px}
+    legend{color:var(--muted);padding:0 6px}
+    label{display:block;margin:8px 0 2px;color:var(--muted)}
+    input,select{width:100%;padding:8px;border-radius:10px;border:1px solid #23314a;background:#0a1222;color:var(--ink)}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .btn{display:inline-flex;gap:8px;align-items:center;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:#0a1222;color:var(--ink);cursor:pointer}
+    .btn.primary{background:linear-gradient(135deg,var(--blue),var(--green));border:none;color:#062014;font-weight:700}
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+    .card{border:1px solid var(--line);background:#0a1222;border-radius:12px;padding:12px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+    .muted{color:var(--muted)}
+    .kpi{font-size:22px;font-weight:800}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right}
+    th:first-child,td:first-child{text-align:left}
+    .pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:3px 8px;margin:2px}
+    .warn{color:var(--amber)} .bad{color:var(--red)} .good{color:var(--green)} .vio{color:var(--violet)}
+    .tabs{display:flex;gap:6px;border-bottom:1px solid var(--line);margin-bottom:10px}
+    .tab{padding:8px 10px;border:1px solid var(--line);border-bottom:none;border-top-left-radius:10px;border-top-right-radius:10px;background:#0a1222;cursor:pointer}
+    .tab.active{background:#0f1a33}
+    .note{font-size:12px;color:var(--muted)}
+    canvas{width:100%;height:240px;border:1px solid var(--line);border-radius:12px;background:#0a1222}
+    .code{font-family:ui-monospace,Menlo,Consolas,monospace}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Descriptive Studies Lab — V2</h1>
+    <div class="sub">Focus on <b>Populations</b>, <b>Outcomes</b>, and <b>Inference</b>: see how inclusion rules and outcome definitions change what you can conclude — and where mistakes arise.</div>
+  </header>
+  <div class="app">
+    <aside>
+      <fieldset>
+        <legend>Study Design</legend>
+        <label>Design</label>
+        <select id="design">
+          <option value="cross">Cross-sectional</option>
+          <option value="ecological">Ecological</option>
+          <option value="natural">Natural experiment (pre/post)</option>
+        </select>
+      </fieldset>
+
+      <fieldset>
+        <legend>Population</legend>
+        <label>Population size (N)</label>
+        <input type="number" id="N" value="6000" min="200" step="100" />
+        <div class="row">
+          <div>
+            <label>Include age ≥ (years)</label>
+            <input type="number" id="ageMin" value="18" min="0" max="120" />
+          </div>
+          <div>
+            <label>Include age ≤ (years)</label>
+            <input type="number" id="ageMax" value="80" min="0" max="120" />
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>Exclude if already diseased</label>
+            <select id="excludePrevalent">
+              <option value="no">No</option>
+              <option value="yes">Yes</option>
+            </select>
+          </div>
+          <div>
+            <label>Healthy worker filter (exclude unemployed)</label>
+            <select id="healthyWorker">
+              <option value="no">No</option>
+              <option value="yes">Yes</option>
+            </select>
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>Missing data (% randomly removed)</label>
+            <input type="number" id="missingPct" value="0" min="0" max="80" />
+          </div>
+          <div>
+            <label>Selection bias: drop % of outcome+</label>
+            <input type="number" id="selBiasPct" value="0" min="0" max="80" />
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Exposure & Confounding</legend>
+        <div class="row">
+          <div>
+            <label>Exposure prevalence (%)</label>
+            <input type="number" id="pE" value="40" min="0" max="100" />
+          </div>
+          <div>
+            <label>True exposure effect (RR)</label>
+            <input type="number" id="RR" value="1.6" step="0.1" />
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>Confounder prevalence (%)</label>
+            <input type="number" id="pC" value="30" min="0" max="100" />
+          </div>
+          <div>
+            <label>C→Exposure (OR)</label>
+            <input type="number" id="OR_CE" value="2.0" step="0.1" />
+          </div>
+        </div>
+        <label>C→Outcome (RR)</label>
+        <input type="number" id="RR_CO" value="2.0" step="0.1" />
+      </fieldset>
+
+      <fieldset>
+        <legend>Outcome Definition</legend>
+        <div class="row">
+          <div>
+            <label>Baseline outcome risk (%)</label>
+            <input type="number" id="pO" value="10" min="0" max="100" />
+          </div>
+          <div>
+            <label>Strict vs Broad definition</label>
+            <select id="outcomeDef">
+              <option value="strict">Strict (specific)</option>
+              <option value="broad">Broad (sensitive)</option>
+            </select>
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>Misclassification of outcome (%)</label>
+            <input type="number" id="misO" value="0" min="0" max="40" />
+          </div>
+          <div>
+            <label>Recall bias: cases over-report exposure (%)</label>
+            <input type="number" id="recallBiasPct" value="0" min="0" max="60" />
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset id="ecoBlock" style="display:none">
+        <legend>Ecological Options</legend>
+        <label>Groups/regions</label>
+        <input type="number" id="G" value="20" min="3" max="200" />
+        <label>Aggregation variance (%)</label>
+        <input type="number" id="aggVarPct" value="25" min="0" max="200" />
+      </fieldset>
+
+      <fieldset id="natBlock" style="display:none">
+        <legend>Natural Experiment Options</legend>
+        <label>Policy effect (ΔRR on exposed)</label>
+        <input type="number" id="policyDeltaRR" value="0.9" step="0.05" />
+      </fieldset>
+
+      <fieldset>
+        <legend>Presets</legend>
+        <select id="preset">
+          <option value="">— choose —</option>
+          <option value="healthyWorker">Healthy worker effect</option>
+          <option value="broadVsStrict">Broad vs Strict outcome</option>
+          <option value="orVsRr">OR vs RR with common outcome</option>
+          <option value="missingBias">Missing data bias</option>
+          <option value="simpson">Simpson’s paradox across age strata</option>
+          <option value="ecologicalFallacy">Ecological fallacy</option>
+          <option value="smallPolicy">Natural experiment: small effect</option>
+        </select>
+        <div class="toolbar">
+          <button class="btn" id="applyPreset">Apply</button>
+          <button class="btn primary" id="run">Run</button>
+        </div>
+      </fieldset>
+    </aside>
+
+    <main>
+      <div class="tabs">
+        <div class="tab active" data-tab="results">Results</div>
+        <div class="tab" data-tab="explain">Explain</div>
+        <div class="tab" data-tab="mistakes">Mistake Detector</div>
+      </div>
+
+      <section id="results" class="tabpane">
+        <div class="grid">
+          <div class="card">
+            <div class="muted">Population in analysis</div>
+            <div id="popKpi" class="kpi">—</div>
+            <div id="popNotes" class="note"></div>
+          </div>
+          <div class="card">
+            <div class="muted">Outcome prevalence</div>
+            <div id="prevKpi" class="kpi">—</div>
+            <div class="note">Observed in included sample</div>
+          </div>
+          <div class="card">
+            <div class="muted">Association</div>
+            <div id="assocKpi" class="kpi">—</div>
+            <div id="assocSub" class="note"></div>
+          </div>
+          <div class="card">
+            <div class="muted">Uncertainty</div>
+            <div id="uncert" class="note">—</div>
+          </div>
+        </div>
+
+        <div class="grid" style="margin-top:12px;">
+          <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+              <div class="muted">Counts/Groups</div>
+              <div id="chips"></div>
+            </div>
+            <div id="tableWrap" style="margin-top:8px;overflow:auto"></div>
+          </div>
+          <div class="card">
+            <div class="muted">Visualization</div>
+            <canvas id="plot" width="900" height="260"></canvas>
+            <div class="note">Visual changes with design: 2×2 with OR & RR (cross), scatter of group means (ecological), pre/post bars (natural).</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="explain" class="tabpane" style="display:none">
+        <div class="grid">
+          <div class="card">
+            <div class="muted">Population definitions matter</div>
+            <ul class="note">
+              <li><b>Inclusion/Exclusion</b> rules change who is studied → different risks.</li>
+              <li><b>Healthy worker effect:</b> removing the unemployed often lowers observed disease rates.</li>
+              <li><b>Missing or selective non-response</b> can bias results if related to exposure/outcome.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <div class="muted">Outcome definitions matter</div>
+            <ul class="note">
+              <li><b>Strict</b> outcomes are specific but miss mild cases → lower prevalence.</li>
+              <li><b>Broad</b> outcomes capture more cases but include false positives → higher prevalence.</li>
+              <li><b>Misclassification</b> (wrongly labeled outcomes) usually pulls effects toward the null.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <div class="muted">Inference: what we can and cannot say</div>
+            <ul class="note">
+              <li><b>Cross-sectional:</b> association at one time → no clear time order.</li>
+              <li><b>Ecological:</b> group patterns can differ from individual patterns (ecological fallacy).</li>
+              <li><b>Natural experiments:</b> pre/post differences may be due to other changes over time.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="mistakes" class="tabpane" style="display:none">
+        <div class="card">
+          <div class="muted">Automatic checks</div>
+          <ul id="mistakeList" class="note"></ul>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+  (function(){
+    const $ = (id)=>document.getElementById(id);
+    const rnd = Math.random;
+    const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+    const logit=(p)=>Math.log(p/(1-p));
+    const invlogit=(z)=>1/(1+Math.exp(-z));
+
+    function rb(p){ return rnd()<p?1:0 }
+    function rnorm(){ let u=0,v=0; while(!u)u=rnd(); while(!v)v=rnd(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v) }
+
+    function binomCI(k,n,z=1.96){ const p=n?k/n:0; const se=Math.sqrt(p*(1-p)/Math.max(n,1)); return {p,low:clamp(p-z*se,0,1),high:clamp(p+z*se,0,1)} }
+    function OR_CI(a,b,c,d,z=1.96){ const or=(a*d)/Math.max(b*c,1e-9); const se=Math.sqrt(1/Math.max(a,1)+1/Math.max(b,1)+1/Math.max(c,1)+1/Math.max(d,1)); const ln=Math.log(or); return {or,low:Math.exp(ln-z*se),high:Math.exp(ln+z*se)} }
+    function RR_CI(a,b,c,d,z=1.96){ const r1=a/Math.max(a+b,1); const r0=c/Math.max(c+d,1); const rr=Math.max(r1/Math.max(r0,1e-9),1e-12); const se=Math.sqrt((1-a/Math.max(a+b,1))/Math.max(a,1) + (1-c/Math.max(c+d,1))/Math.max(c,1)); const ln=Math.log(rr); return {rr,low:Math.exp(ln-z*se),high:Math.exp(ln+z*se)} }
+    function corr(x,y){ const n=x.length; const mx=x.reduce((s,v)=>s+v,0)/n; const my=y.reduce((s,v)=>s+v,0)/n; let num=0,dx=0,dy=0; for(let i=0;i<n;i++){ const X=x[i]-mx,Y=y[i]-my; num+=X*Y; dx+=X*X; dy+=Y*Y } return num/Math.sqrt(Math.max(dx*dy,1e-12)) }
+
+    function simulate(N, pE, pO, RR, pC, OR_CE, RR_CO){
+      const baseO=pO/100, baseE=pE/100, baseC=pC/100;
+      const betaCE=Math.log(OR_CE);
+      const data=[];
+      for(let i=0;i<N;i++){
+        const age = Math.floor(18 + Math.abs(rnorm())*15); // skew to adult
+        const employed = rb(0.7);
+        const C = rb(baseC);
+        const pEi = invlogit(logit(baseE)+betaCE*C);
+        const E = rb(pEi);
+        let risk = baseO*(E?RR:1)*(C?RR_CO:1);
+        risk = clamp(risk,1e-6,0.999999);
+        const O = rb(risk);
+        data.push({E,O,C,age,employed});
+      }
+      return data;
+    }
+
+    function applyPopulationFilters(rows){
+      const ageMin=parseInt($("ageMin").value,10); const ageMax=parseInt($("ageMax").value,10);
+      const healthyWorker=$("healthyWorker").value==='yes';
+      const excludePrev=$("excludePrevalent").value==='yes'; // in cross-sec, approximate by dropping some O=1 as prevalent
+      const missingPct=parseFloat($("missingPct").value)/100;
+      const selBiasPct=parseFloat($("selBiasPct").value)/100;
+      let out = rows.filter(r=> r.age>=ageMin && r.age<=ageMax );
+      if (healthyWorker) out = out.filter(r=> r.employed===1);
+      if (excludePrev) out = out.filter(r=> r.O===0 || rnd()<0.2);
+      if (selBiasPct>0) out = out.filter(r=> !(r.O===1 && rnd()<selBiasPct));
+      if (missingPct>0) out = out.filter(_=> rnd()>missingPct);
+      return out;
+    }
+
+    function applyOutcomeDefinition(rows){
+      const def=$("outcomeDef").value; const misO=parseFloat($("misO").value)/100;
+      return rows.map(r=>{
+        let O=r.O;
+        // strict/broad: model by shifting probability thresholds via random flips
+        if (def==='strict' && O===1 && rnd()<0.15) O=0; // some mild cases not counted
+        if (def==='broad'  && O===0 && rnd()<0.10) O=1; // some marginal symptoms counted
+        // misclassification (symmetric)
+        if (misO>0 && rnd()<misO) O = 1-O;
+        return {...r, O};
+      });
+    }
+
+    function applyRecallBias(rows){
+      const q=parseFloat($("recallBiasPct").value)/100;
+      if (!q) return rows;
+      return rows.map(r=>{ let E=r.E; if (r.O===1 && rnd()<q) E=1; return {...r, E} });
+    }
+
+    function to2x2(rows){ let a=0,b=0,c=0,d=0; rows.forEach(r=>{ if(r.E&&r.O)a++; else if(r.E&&!r.O)b++; else if(!r.E&&r.O)c++; else d++; }); return {a,b,c,d} }
+
+    function ecologicalAggregate(rows,G,aggVarPct){
+      const groups=Array.from({length:G},(_,i)=>({id:i+1,rows:[]}));
+      rows.forEach((r,i)=>groups[i%G].rows.push(r));
+      const av=aggVarPct/100;
+      groups.forEach(g=>{
+        const Ebar=g.rows.reduce((s,x)=>s+x.E,0)/g.rows.length; const Obar=g.rows.reduce((s,x)=>s+x.O,0)/g.rows.length;
+        const tE=clamp(Ebar + (rnd()-0.5)*2*av*0.5, 0.02, 0.98);
+        const tO=clamp(Obar + (rnd()-0.5)*2*av*0.5, 0.02, 0.98);
+        g.rows.forEach(r=>{ if (rnd()<Math.abs(tE-Ebar)) r.E = rb(tE); if (rnd()<Math.abs(tO-Obar)) r.O = rb(tO); });
+      });
+      return groups.map(g=>({id:g.id, n:g.rows.length, pE:g.rows.reduce((s,x)=>s+x.E,0)/g.rows.length, pO:g.rows.reduce((s,x)=>s+x.O,0)/g.rows.length}));
+    }
+
+    function naturalApply(rows, deltaRR){
+      const half=Math.floor(rows.length/2); const pre=rows.slice(0,half); const post=rows.slice(half);
+      const outPost=post.map(r=>{ if(r.E===1 && r.O===1 && rnd()<(1-deltaRR)) return {...r,O:0}; return r; });
+      return {pre, post:outPost};
+    }
+
+    function renderTable2x2(t, mount){
+      const {a,b,c,d}=t; const n=a+b+c+d; const prev=(a+c)/n;
+      const oc=OR_CI(a,b,c,d); const rc=RR_CI(a,b,c,d);
+      mount.innerHTML = `
+        <table>
+          <thead><tr><th></th><th>Outcome +</th><th>Outcome −</th><th>Total</th></tr></thead>
+          <tbody>
+            <tr><th>Exposure +</th><td>${a}</td><td>${b}</td><td>${a+b}</td></tr>
+            <tr><th>Exposure −</th><td>${c}</td><td>${d}</td><td>${c+d}</td></tr>
+          </tbody>
+          <tfoot><tr><th>Total</th><td>${a+c}</td><td>${b+d}</td><td>${n}</td></tr></tfoot>
+        </table>
+        <div class="note">Prev = ${(prev*100).toFixed(1)}%. OR ${oc.or.toFixed(2)} (95% ${oc.low.toFixed(2)}–${oc.high.toFixed(2)}); RR ${rc.rr.toFixed(2)} (95% ${rc.low.toFixed(2)}–${rc.high.toFixed(2)}).</div>`;
+      return {prev, oc, rc};
+    }
+
+    function renderTableEco(groups, mount){
+      mount.innerHTML = `<table><thead><tr><th>Group</th><th>n</th><th>mean(E)</th><th>mean(O)</th></tr></thead><tbody>`+
+        groups.map(g=>`<tr><td>${g.id}</td><td>${g.n}</td><td>${(g.pE*100).toFixed(1)}%</td><td>${(g.pO*100).toFixed(1)}%</td></tr>`).join('')+
+        `</tbody></table>`;
+    }
+
+    function renderTableNat(pPre, pPost, nPre, nPost, mount){
+      const ciPre=binomCI(Math.round(pPre*nPre), nPre), ciPost=binomCI(Math.round(pPost*nPost), nPost);
+      mount.innerHTML = `<table><thead><tr><th>Phase</th><th>n</th><th>Prev</th><th>95% CI</th></tr></thead>
+        <tbody>
+         <tr><td>Pre</td><td>${nPre}</td><td>${(pPre*100).toFixed(2)}%</td><td>${(ciPre.low*100).toFixed(2)}–${(ciPre.high*100).toFixed(2)}%</td></tr>
+         <tr><td>Post</td><td>${nPost}</td><td>${(pPost*100).toFixed(2)}%</td><td>${(ciPost.low*100).toFixed(2)}–${(ciPost.high*100).toFixed(2)}%</td></tr>
+        </tbody></table>`
+    }
+
+    function plot(design, payload){
+      const ctx=$("plot").getContext('2d'); const W=ctx.canvas.width, H=ctx.canvas.height;
+      ctx.clearRect(0,0,W,H); ctx.fillStyle="#0a1222"; ctx.fillRect(0,0,W,H);
+      ctx.strokeStyle="#1f2937"; for(let x=60;x<W-20;x+=60){ ctx.beginPath(); ctx.moveTo(x,12); ctx.lineTo(x,H-24); ctx.stroke(); }
+      for(let y=24;y<H-24;y+=40){ ctx.beginPath(); ctx.moveTo(40,y); ctx.lineTo(W-16,y); ctx.stroke(); }
+      ctx.fillStyle="#e5e7eb"; ctx.font="12px system-ui";
+
+      if (design==='cross'){
+        const {or,low,high, rr} = payload;
+        const x0=60,x1=W-40,y=H/2;
+        const L=-2,U=2; // for log scale
+        const map=(v)=> x0 + (x1-x0)*( (v-L)/(U-L) );
+        // OR line
+        const ln=Math.log(or), lnl=Math.log(low), lnh=Math.log(high);
+        ctx.strokeStyle="#38bdf8"; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(map(lnl),y-30); ctx.lineTo(map(lnh),y-30); ctx.stroke();
+        ctx.fillStyle="#38bdf8"; ctx.beginPath(); ctx.arc(map(ln), y-30, 5, 0, Math.PI*2); ctx.fill();
+        // RR line
+        const rn=Math.log(rr.val), rL=Math.log(rr.low), rH=Math.log(rr.high);
+        ctx.strokeStyle="#22c55e"; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(map(rL),y+30); ctx.lineTo(map(rH),y+30); ctx.stroke();
+        ctx.fillStyle="#22c55e"; ctx.beginPath(); ctx.arc(map(rn), y+30, 5, 0, Math.PI*2); ctx.fill();
+        // null line
+        ctx.setLineDash([6,6]); ctx.strokeStyle="#ef4444"; ctx.beginPath(); ctx.moveTo(map(0), y-60); ctx.lineTo(map(0), y+60); ctx.stroke(); ctx.setLineDash([]);
+        ctx.fillStyle="#e5e7eb"; ctx.fillText("Log scale", x0, 22);
+      }
+
+      if (design==='ecological'){
+        const {groups,r} = payload; const pad=40; const x0=pad, y0=H-28, x1=W-20, y1=20;
+        ctx.strokeStyle="#334155"; ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y0); ctx.moveTo(x0,y0); ctx.lineTo(x0,y1); ctx.stroke();
+        ctx.fillText('mean(E)', (x0+x1)/2-20, H-8); ctx.save(); ctx.translate(12,(y0+y1)/2+20); ctx.rotate(-Math.PI/2); ctx.fillText('mean(O)',0,0); ctx.restore();
+        groups.forEach(g=>{ const x=x0+(x1-x0)*g.pE; const y=y0-(y0-y1)*g.pO; ctx.beginPath(); ctx.arc(x,y,4,0,Math.PI*2); ctx.fillStyle="#38bdf8"; ctx.fill(); });
+        ctx.fillStyle="#e5e7eb"; ctx.fillText(`r = ${r.toFixed(2)}`, x1-80, y1+10);
+      }
+
+      if (design==='natural'){
+        const {pPre,pPost}=payload; const Wb=80,g=50,x=W/2-Wb-g/2;
+        function bar(x,p,label){ const y=(H-40)*(1-p); ctx.fillStyle="#38bdf8"; ctx.fillRect(x,y,Wb,(H-40)-y); ctx.fillStyle="#e5e7eb"; ctx.fillText(`${(p*100).toFixed(1)}%`, x+10, y-8); ctx.fillText(label, x+10, H-12); }
+        bar(x,pPre,'Pre'); bar(x+Wb+g,pPost,'Post');
+      }
+    }
+
+    function run(){
+      const N=parseInt($("N").value,10);
+      const design=$("design").value;
+      const pE=parseFloat($("pE").value), pO=parseFloat($("pO").value), RR=parseFloat($("RR").value);
+      const pC=parseFloat($("pC").value), OR_CE=parseFloat($("OR_CE").value), RR_CO=parseFloat($("RR_CO").value);
+      const G=parseInt($("G").value,10); const aggVarPct=parseFloat($("aggVarPct").value);
+      const deltaRR=parseFloat($("policyDeltaRR").value);
+
+      let rows = simulate(N,pE,pO,RR,pC,OR_CE,RR_CO);
+      const truth2x2 = to2x2(rows); // for reference
+
+      rows = applyPopulationFilters(rows);
+      const popN = rows.length;
+      rows = applyOutcomeDefinition(rows);
+      rows = applyRecallBias(rows);
+
+      // chips
+      const chips=$("chips"); chips.innerHTML='';
+      function addChip(txt,cls=''){ const span=document.createElement('span'); span.className='pill '+cls; span.textContent=txt; chips.appendChild(span); }
+
+      // Results per design
+      const tableWrap=$("tableWrap");
+      if (design==='cross'){
+        const t=to2x2(rows); const {prev,oc,rc}=renderTable2x2(t,tableWrap);
+        $("prevKpi").textContent=(prev*100).toFixed(1)+'%';
+        $("assocKpi").textContent=`OR ${oc.or.toFixed(2)} / RR ${rc.rr.toFixed(2)}`;
+        $("assocSub").textContent='Both shown: OR (logistic) vs RR (risk-based) — differ when outcome is common.';
+        $("uncert").textContent=`OR 95% ${oc.low.toFixed(2)}–${oc.high.toFixed(2)} | RR 95% ${rc.low.toFixed(2)}–${rc.high.toFixed(2)}`;
+        plot('cross', {or:oc.or,low:oc.low,high:oc.high, rr:{val:rc.rr,low:rc.low,high:rc.high}});
+      }
+
+      if (design==='ecological'){
+        const groups=ecologicalAggregate(rows,G,aggVarPct);
+        renderTableEco(groups, tableWrap);
+        const r=corr(groups.map(g=>g.pE), groups.map(g=>g.pO));
+        const prev=rows.reduce((s,x)=>s+x.O,0)/Math.max(rows.length,1);
+        $("prevKpi").textContent=(prev*100).toFixed(1)+'%';
+        $("assocKpi").textContent=`r = ${r.toFixed(2)}`;
+        $("assocSub").textContent='Correlation of group means (may differ from individual-level effect).';
+        $("uncert").textContent=`Groups: ${G}. Aggregation variance ${aggVarPct}%`;
+        plot('ecological',{groups,r});
+      }
+
+      if (design==='natural'){
+        const {pre,post}=naturalApply(rows, deltaRR);
+        const pPre=pre.reduce((s,x)=>s+x.O,0)/Math.max(pre.length,1);
+        const pPost=post.reduce((s,x)=>s+x.O,0)/Math.max(post.length,1);
+        renderTableNat(pPre,pPost,pre.length,post.length,tableWrap);
+        $("prevKpi").textContent=(pPost*100).toFixed(1)+'%';
+        $("assocKpi").textContent=`Δ ${( (pPost-pPre)*100 ).toFixed(1)} pp`;
+        $("assocSub").textContent='Difference in prevalence pre vs post in the same population.';
+        $("uncert").textContent=`95% CIs shown for each phase (binomial).`;
+        plot('natural',{pPre,pPost});
+      }
+
+      // population badge + notes
+      $("popKpi").textContent = popN.toLocaleString();
+      const notes=[];
+      const ageMin=parseInt($("ageMin").value,10), ageMax=parseInt($("ageMax").value,10);
+      if ($("healthyWorker").value==='yes') notes.push('Healthy worker filter applied (unemployed excluded).');
+      if ($("excludePrevalent").value==='yes') notes.push('Prevalent cases largely excluded.');
+      const miss=parseFloat($("missingPct").value); if (miss>0) notes.push(`Random missing data ${miss}%`);
+      const sel=parseFloat($("selBiasPct").value); if (sel>0) notes.push(`Selection: dropped ${sel}% of outcome+`);
+      const misO=parseFloat($("misO").value); if (misO>0) notes.push(`Outcome misclassification ${misO}%`);
+      const rb=parseFloat($("recallBiasPct").value); if (rb>0) notes.push(`Recall bias: cases over-report exposure ${rb}%`);
+      notes.push(`Age window ${ageMin}–${ageMax}.`);
+      $("popNotes").textContent = notes.join(' ');
+
+      // mistake detector
+      const mistakes=$("mistakeList"); mistakes.innerHTML='';
+      function addMist(txt,cls=''){ const li=document.createElement('li'); li.innerHTML = `<span class="${cls}">●</span> ${txt}`; mistakes.appendChild(li); }
+
+      // Heuristics
+      const prevAll=(truth2x2.a+truth2x2.c)/(truth2x2.a+truth2x2.b+truth2x2.c+truth2x2.d);
+      const prevObs = rows.reduce((s,x)=>s+x.O,0)/Math.max(rows.length,1);
+      if (Math.abs(prevObs-prevAll) > 0.05) addMist('Observed prevalence diverges >5% from base population → possible selection or definition shift.', 'warn');
+      if (design==='cross'){
+        const t=to2x2(rows); const oc=OR_CI(t.a,t.b,t.c,t.d), rc=RR_CI(t.a,t.b,t.c,t.d);
+        if (prevObs>0.15 && Math.abs(Math.log(oc.or)-Math.log(rc.rr))>0.2) addMist('Outcome is common; OR and RR differ notably — avoid reading OR as “times as likely”.','bad');
+      }
+      if (design==='ecological') addMist('Ecological design: group correlation may not reflect individual effects (ecological fallacy).','bad');
+      if (design==='natural') addMist('Natural experiment without control: changes over time may confound effects.','warn');
+      if ($("healthyWorker").value==='yes') addMist('Healthy worker effect: excluding non-workers lowers observed risk and can hide harms.','warn');
+      if (parseFloat($("misO").value)>0) addMist('Outcome misclassification tends to attenuate associations toward null.','warn');
+      if (parseFloat($("recallBiasPct").value)>0) addMist('Recall bias: cases over-report exposure — may inflate association.','warn');
+    }
+
+    function toggleBlocks(){
+      const d=$("design").value; $("ecoBlock").style.display = d==='ecological'? 'block':'none'; $("natBlock").style.display = d==='natural'? 'block':'none';
+    }
+
+    function applyPreset(){
+      const v=$("preset").value; const set=(id,val)=>($(id).value=String(val));
+      if (!v) return;
+      // Reset some
+      set('design','cross'); set('N',6000); set('ageMin',18); set('ageMax',80); set('excludePrevalent','no'); set('healthyWorker','no'); set('missingPct',0); set('selBiasPct',0);
+      set('pE',40); set('pO',10); set('RR',1.6); set('pC',30); set('OR_CE',2.0); set('RR_CO',2.0); set('outcomeDef','strict'); set('misO',0); set('recallBiasPct',0);
+      set('G',20); set('aggVarPct',25); set('policyDeltaRR',0.9);
+
+      if (v==='healthyWorker'){
+        set('healthyWorker','yes'); set('pO',12); set('RR',1.2); set('outcomeDef','strict');
+      }
+      if (v==='broadVsStrict'){
+        set('outcomeDef','broad'); set('misO',8); set('pO',8); set('RR',1.0);
+      }
+      if (v==='orVsRr'){
+        set('pO',30); set('RR',1.8); set('outcomeDef','strict');
+      }
+      if (v==='missingBias'){
+        set('missingPct',30); set('selBiasPct',0); set('RR',1.0); set('pO',12);
+      }
+      if (v==='simpson'){
+        // Simulate by age-windowing extremes
+        set('ageMin',18); set('ageMax',55); set('pE',60); set('RR',0.9); set('pC',20); set('OR_CE',1.4); set('RR_CO',1.3);
+      }
+      if (v==='ecologicalFallacy'){
+        set('design','ecological'); set('G',22); set('aggVarPct',40); set('RR',0.95); set('pE',50); set('pO',12); set('pC',35); set('OR_CE',2.2); set('RR_CO',1.6);
+      }
+      if (v==='smallPolicy'){
+        set('design','natural'); set('N',10000); set('policyDeltaRR',0.95); set('pE',70); set('pO',10); set('RR',1.0);
+      }
+      toggleBlocks();
+    }
+
+    // Tabs
+    document.querySelectorAll('.tab').forEach(t=>{
+      t.addEventListener('click',()=>{
+        document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+        t.classList.add('active');
+        const tab=t.dataset.tab; document.querySelectorAll('.tabpane').forEach(p=>p.style.display='none');
+        if (tab==='results') $('results').style.display='block';
+        if (tab==='explain') $('explain').style.display='block';
+        if (tab==='mistakes') $('mistakes').style.display='block';
+      })
+    })
+
+    // Wire up
+    $('design').addEventListener('change', ()=>{ toggleBlocks(); });
+    $('applyPreset').addEventListener('click', ()=>{ applyPreset(); });
+    $('run').addEventListener('click', run);
+
+    // initial
+    toggleBlocks();
+    const ctx=$('plot').getContext('2d'); ctx.fillStyle='#e5e7eb'; ctx.font='14px system-ui'; ctx.fillText('Choose a preset, then Run.', 20, 28);
+  })();
+  </script>
+</body>
+</html>
