@@ -1,0 +1,437 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Weird Physics Sandbox</title>
+  <style>
+    :root{
+      --bg:#0e1014;--panel:#141822;--ink:#e7ecf3;--muted:#9aa6b2;--accent:#6ee7ff;--accent2:#ffd166;--danger:#ff6b6b;--ok:#24d39a;
+    }
+    html,body{height:100%;margin:0;background:linear-gradient(180deg,#0c0f14,#131722);color:var(--ink);font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Inter,Ubuntu,Arial,sans-serif}
+    .app{display:grid;grid-template-columns:320px 1fr;grid-template-rows:auto 1fr auto;gap:10px;height:100%;padding:12px;box-sizing:border-box}
+    header{grid-column:1/3;background:transparent;display:flex;align-items:center;gap:12px}
+    header h1{font-size:18px;margin:0 4px 0 0;font-weight:700}
+    header .sub{color:var(--muted)}
+    .panel{background:var(--panel);border:1px solid #222836;border-radius:14px;padding:12px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+    .controls{display:flex;flex-direction:column;gap:12px;overflow:auto}
+    .controls h2{font-size:13px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin:6px 0}
+    label{display:flex;align-items:center;justify-content:space-between;gap:8px}
+    input[type="range"]{width:55%;accent-color:var(--accent)}
+    input[type="number"],select{width:90px;background:#0f121a;border:1px solid #2a3243;border-radius:8px;color:var(--ink);padding:6px}
+    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    button{background:#182033;border:1px solid #243047;color:var(--ink);padding:8px 10px;border-radius:10px;cursor:pointer}
+    button.primary{background:#0e2431;border-color:#164a5a;box-shadow:inset 0 0 0 1px #164a5a}
+    button.primary:hover{background:#123141}
+    button.danger{background:#2a1318;border-color:#4c1a23}
+    .stat{display:grid;grid-template-columns:1fr auto;gap:6px;padding:6px;border-radius:10px;background:#0f141d;border:1px solid #20293a}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    canvas#view{width:100%;height:100%;display:block;background:radial-gradient(1200px 700px at 70% 10%,rgba(255,255,255,.05),transparent 60%),linear-gradient(#0d1118,#0b0e14)}
+    .scene{grid-column:2/3;grid-row:2/4;position:relative;border-radius:14px;overflow:hidden;border:1px solid #1f2633}
+    .ground{position:absolute;left:0;right:0;bottom:0;height:14px;background:linear-gradient(180deg,#1e2a3a,#111722);border-top:1px solid #2c364b}
+    .legend{position:absolute;left:10px;top:10px;background:#0c1018bf;border:1px solid #1c2333;border-radius:10px;padding:6px 8px;font-size:12px}
+    .legend b{color:var(--accent)}
+    .footer{grid-column:1/3;display:flex;align-items:center;justify-content:space-between;color:var(--muted)}
+    .chart{height:140px;background:#0f141d;border:1px solid #1f2740;border-radius:10px;position:relative}
+    .chart canvas{position:absolute;inset:0}
+    .pill{font-size:12px;border:1px solid #2b3750;background:#121722;padding:4px 8px;border-radius:999px;color:var(--ink)}
+    details{border:1px dashed #2a3345;border-radius:10px;padding:8px}
+    summary{cursor:pointer;color:var(--accent)}
+    .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:#0b0f16;border:1px solid #1f2633;color:#e4f1ff;border-radius:6px;padding:1px 6px}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>Weird Physics Sandbox</h1>
+      <span class="sub">An imaginary world where Newton is usually right… but not always.</span>
+      <span class="pill">No libraries · Single HTML</span>
+    </header>
+
+    <section class="panel controls">
+      <div>
+        <h2>Experiment</h2>
+        <div class="row">
+          <button id="dropApple" class="primary">Drop Apple</button>
+          <button id="spawnCharge">Spawn Charge</button>
+          <button id="clear">Clear</button>
+        </div>
+        <div class="row">
+          <label>Height (m)
+            <input type="number" id="dropHeight" value="20" min="1" max="1000" step="1"/>
+          </label>
+          <label>Apples per trial
+            <input type="number" id="applesPerTrial" value="1" min="1" max="20"/>
+          </label>
+        </div>
+        <div class="row">
+          <button id="runTrials">Run 200 Trials</button>
+          <button id="exportCSV">Export CSV</button>
+        </div>
+      </div>
+
+      <div>
+        <h2>Regular Physics (baseline)</h2>
+        <div class="row">
+          <label>Gravity g (m/s²)
+            <input type="number" id="g" value="9.81" step="0.01"/>
+          </label>
+          <label>Air drag (Cd)
+            <input type="number" id="drag" value="0.02" step="0.005"/>
+          </label>
+        </div>
+      </div>
+
+      <div>
+        <h2>Weirdness Controls</h2>
+        <label><span>Gravity anomaly chance</span><input type="range" id="pGrav" min="0" max="1" step="0.001" value="0.03"><span id="pGravV">0.03</span></label>
+        <label><span>Impulse glitches chance</span><input type="range" id="pImpulse" min="0" max="1" step="0.001" value="0.02"><span id="pImpulseV">0.02</span></label>
+        <label><span>Time stutter chance</span><input type="range" id="pStutter" min="0" max="1" step="0.001" value="0.01"><span id="pStutterV">0.01</span></label>
+        <label><span>Coulomb misbehave chance</span><input type="range" id="pCoul" min="0" max="1" step="0.001" value="0.02"><span id="pCoulV">0.02</span></label>
+        <label><span>Weirdness intensity</span><input type="range" id="intensity" min="0" max="1" step="0.001" value="0.5"><span id="intensityV">0.50</span></label>
+        <div class="row">
+          <label>Seed <input type="number" id="seed" value="42"/></label>
+          <button id="reseat">Reseed</button>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="stat"><div>Mean fall time</div><div id="meanT">—</div></div>
+        <div class="stat"><div>Newtonian t*</div><div id="predT">—</div></div>
+        <div class="stat"><div>Mean final speed</div><div id="meanV">—</div></div>
+        <div class="stat"><div>Newtonian v*</div><div id="predV">—</div></div>
+        <div class="stat"><div>Trials</div><div id="nTrials">0</div></div>
+        <div class="stat"><div>Glitch rate (obs)</div><div id="obsGlitch">—</div></div>
+      </div>
+
+      <details>
+        <summary>What makes this world weird?</summary>
+        <p>
+          Each frame we apply <em>baseline</em> Newtonian forces, then roll the dice for rule-breaking events.
+        </p>
+        <ul>
+          <li><b>Gravity anomaly:</b> g temporarily flips, fades, or points sideways.</li>
+          <li><b>Impulse glitch:</b> random impulse is applied (mean zero, finite variance).</li>
+          <li><b>Time stutter:</b> the integrator randomly reuses the last state (as if time hiccuped).</li>
+          <li><b>Coulomb wobble:</b> inverse-square law becomes inverse-cube or sign-flips briefly.</li>
+        </ul>
+        <p>Despite local chaos, the randomizers are mean-zero or mean-reverting, so long-run averages trend toward Newton’s laws ("population studies"). Adjust probabilities and intensity to explore departures.</p>
+        <p>Keyboard: <span class="kbd">Space</span> pause/step, <span class="kbd">A</span> drop apple, <span class="kbd">C</span> spawn charge.</p>
+      </details>
+    </section>
+
+    <section class="scene">
+      <canvas id="view"></canvas>
+      <div class="ground"></div>
+      <div class="legend">g≈<b id="legendG">9.81</b> m/s² • weirdness <b id="legendW">0.50</b></div>
+    </section>
+
+    <footer class="footer">
+      <div>Tip: run many trials to see that the <i>mean</i> fall time approaches t* = √(2h/g), even if individual drops go haywire.</div>
+      <div>© Imaginary Lab</div>
+    </footer>
+  </div>
+
+<script>
+// ---- Utilities -------------------------------------------------------------
+function mulberry32(a){return function(){var t=a+=0x6D2B79F5;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return ((t^t>>>14)>>>0)/4294967296;}}
+function seededNoise(n){let r=0;for(let i=0;i<n.length;i++) r=(r*31 + n.charCodeAt(i))>>>0;return mulberry32(r);
+}
+
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const lerp=(a,b,t)=>a+(b-a)*t;
+
+// Simple RNG holder that supports reseeding
+const RNG={fn:mulberry32(42),seed(ival){this.fn=mulberry32(Number(ival)||0);}};
+
+// ---- Physics World ---------------------------------------------------------
+class Body{
+  constructor({x,y,vx=0,vy=0,m=1,r=8,kind='apple',q=0,color='#ffd166'}){
+    this.x=x;this.y=y;this.vx=vx;this.vy=vy;this.m=m;this.r=r;this.kind=kind;this.q=q;this.color=color;this.age=0;this.dead=false;this.groundHitTime=null;this.groundHitSpeed=null;this.glitches=0;
+  }
+}
+
+class World{
+  constructor(w,h){
+    this.w=w;this.h=h;this.bodies=[];this.bounds={left:0,right:w,top:0,bottom:h-14};
+    this.params={g:9.81,drag:0.02,pGrav:0.03,pImpulse:0.02,pStutter:0.01,pCoul:0.02,intensity:0.5};
+    this.time=0;this.dt=1/120;this.paused=false;this.lastState=null;this.glitchCount=0;this.stepCount=0;
+  }
+  add(body){this.bodies.push(body);return body;}
+  clear(){this.bodies.length=0;this.glitchCount=0;this.stepCount=0;}
+  update(){
+    if(this.paused) return;
+    const {g,drag,pGrav,pImpulse,pStutter,pCoul,intensity}=this.params;
+    const dt=this.dt;
+    const weird=(p)=> RNG.fn()<p;
+
+    // Optional time stutter: reuse last step state
+    if(weird(pStutter)){
+      this.glitchCount++;this.stepCount++;
+      // do nothing (state frozen), counts as a step
+      return;
+    }
+
+    // Pairwise Coulomb (and misbehavior)
+    for(let i=0;i<this.bodies.length;i++){
+      const bi=this.bodies[i];
+      bi.fx=0;bi.fy=0;
+    }
+    for(let i=0;i<this.bodies.length;i++){
+      for(let j=i+1;j<this.bodies.length;j++){
+        const a=this.bodies[i], b=this.bodies[j];
+        if(!a.q && !b.q) continue;
+        let dx=b.x-a.x, dy=b.y-a.y; let r2=dx*dx+dy*dy; let r=Math.sqrt(r2)+1e-6; let ux=dx/r, uy=dy/r;
+        const k=60; // scaled Coulomb constant (arbitrary units)
+        let lawPow=2; let sign=1; // baseline inverse-square, like charges repel
+        if(RNG.fn()<pCoul){
+          // misbehave: sometimes inverse-cube, sometimes sign flip
+          lawPow = RNG.fn()<0.5?3:2; sign = RNG.fn()<0.5?-1:1; this.glitchCount++;
+        }
+        const mag = sign * k * a.q*b.q / Math.pow(r,lawPow);
+        const fx = mag*ux, fy=mag*uy;
+        a.fx += fx; a.fy += fy; b.fx -= fx; b.fy -= fy;
+      }
+    }
+
+    // Integrate each body with gravity, drag, and impulse glitches
+    for(const b of this.bodies){
+      if(b.dead) continue;
+      // Gravity baseline
+      let gx=0, gy=g;
+      if(RNG.fn()<pGrav){
+        // anomaly: tilt/flip/scale gravity but mean-revert around g
+        const theta=(RNG.fn()*Math.PI*2);
+        const mag=g*lerp(0.2,1.8,RNG.fn()*this.params.intensity);
+        gx = Math.cos(theta)*mag*(RNG.fn()<0.7?0:1); // often still vertical
+        gy = Math.sin(theta)*mag*(RNG.fn()<0.7?1:-1); // sometimes flips
+        this.glitchCount++; b.glitches++;
+      }
+
+      // Accumulate forces
+      const ax = (gx) + (b.fx||0)/b.m - this.params.drag*b.vx;
+      const ay = (gy) + (b.fy||0)/b.m - this.params.drag*b.vy;
+
+      // Random impulse glitch: mean-zero impulse (so population mean ≈ 0)
+      if(RNG.fn()<pImpulse){
+        const J = (RNG.fn()-0.5)*6*this.params.intensity; // symmetric
+        const ang = RNG.fn()*Math.PI*2; b.vx += Math.cos(ang)*J/b.m; b.vy += Math.sin(ang)*J/b.m;
+        this.glitchCount++; b.glitches++;
+      }
+
+      // Semi-implicit Euler
+      b.vx += ax*dt; b.vy += ay*dt;
+      b.x += b.vx*dt; b.y += b.vy*dt;
+
+      // Collide with ground
+      const ground=this.bounds.bottom - b.r;
+      if(b.y>ground){
+        b.y=ground; if(b.vy>0){
+          // mark landing data if apple
+          if(b.kind==='apple' && b.groundHitTime===null){b.groundHitTime=this.time; b.groundHitSpeed=Math.hypot(b.vx,b.vy);} 
+          // damped bounce
+          b.vy*=-0.35; b.vx*=0.9; if(Math.abs(b.vy)<0.8) {b.vy=0;}
+        }
+      }
+
+      // Walls
+      const left=this.bounds.left + b.r, right=this.bounds.right - b.r;
+      if(b.x<left){b.x=left;b.vx*=-0.6}
+      if(b.x>right){b.x=right;b.vx*=-0.6}
+
+      b.age+=dt;
+    }
+
+    this.time+=dt; this.stepCount++;
+  }
+}
+
+// ---- Rendering -------------------------------------------------------------
+const canvas=document.getElementById('view');
+const ctx=canvas.getContext('2d');
+let world;
+
+function resize(){
+  const dpr=window.devicePixelRatio||1; canvas.width=canvas.clientWidth*dpr; canvas.height=canvas.clientHeight*dpr; ctx.setTransform(dpr,0,0,dpr,0,0);
+  if(world){world.w=canvas.clientWidth; world.h=canvas.clientHeight; world.bounds.right=world.w; world.bounds.bottom=world.h-14;}
+}
+window.addEventListener('resize',resize);
+
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  // grid
+  ctx.save(); ctx.globalAlpha=0.25; ctx.strokeStyle='#253147'; ctx.lineWidth=1; 
+  for(let y=0;y<canvas.height;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(canvas.width,y);ctx.stroke();}
+  for(let x=0;x<canvas.width;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,canvas.height);ctx.stroke();}
+  ctx.restore();
+
+  // bodies
+  for(const b of world.bodies){
+    ctx.beginPath();
+    ctx.fillStyle=b.kind==='apple'?'#ffd166':(b.q>=0?'#6ee7ff':'#a78bfa');
+    ctx.arc(b.x,b.y,b.r,0,Math.PI*2);
+    ctx.fill();
+    if(b.kind==='apple'){
+      // tiny stem
+      ctx.strokeStyle='#6a5230'; ctx.beginPath(); ctx.moveTo(b.x-2,b.y-b.r); ctx.lineTo(b.x+2,b.y-b.r-6); ctx.stroke();
+    } else {
+      // charge annotation
+      ctx.fillStyle='rgba(255,255,255,.5)'; ctx.font='11px ui-monospace, monospace'; ctx.fillText((b.q>0?'+':'-')+Math.abs(b.q).toFixed(1), b.x+b.r+4, b.y-2);
+    }
+  }
+}
+
+// ---- UI & Experiments ------------------------------------------------------
+const ui={
+  g:document.getElementById('g'), drag:document.getElementById('drag'),
+  pGrav:document.getElementById('pGrav'), pImpulse:document.getElementById('pImpulse'), pStutter:document.getElementById('pStutter'), pCoul:document.getElementById('pCoul'), intensity:document.getElementById('intensity'),
+  pGravV:document.getElementById('pGravV'), pImpulseV:document.getElementById('pImpulseV'), pStutterV:document.getElementById('pStutterV'), pCoulV:document.getElementById('pCoulV'), intensityV:document.getElementById('intensityV'),
+  dropApple:document.getElementById('dropApple'), spawnCharge:document.getElementById('spawnCharge'), clear:document.getElementById('clear'),
+  dropHeight:document.getElementById('dropHeight'), applesPerTrial:document.getElementById('applesPerTrial'),
+  runTrials:document.getElementById('runTrials'), exportCSV:document.getElementById('exportCSV'),
+  legendG:document.getElementById('legendG'), legendW:document.getElementById('legendW'),
+  meanT:document.getElementById('meanT'), predT:document.getElementById('predT'), meanV:document.getElementById('meanV'), predV:document.getElementById('predV'), nTrials:document.getElementById('nTrials'), obsGlitch:document.getElementById('obsGlitch'),
+  seed:document.getElementById('seed'), reseat:document.getElementById('reseat')
+};
+
+function syncParams(){
+  world.params.g=Number(ui.g.value); world.params.drag=Number(ui.drag.value);
+  world.params.pGrav=Number(ui.pGrav.value); ui.pGravV.textContent=Number(ui.pGrav.value).toFixed(3);
+  world.params.pImpulse=Number(ui.pImpulse.value); ui.pImpulseV.textContent=Number(ui.pImpulse.value).toFixed(3);
+  world.params.pStutter=Number(ui.pStutter.value); ui.pStutterV.textContent=Number(ui.pStutter.value).toFixed(3);
+  world.params.pCoul=Number(ui.pCoul.value); ui.pCoulV.textContent=Number(ui.pCoul.value).toFixed(3);
+  world.params.intensity=Number(ui.intensity.value); ui.intensityV.textContent=Number(ui.intensity.value).toFixed(2);
+  ui.legendG.textContent=world.params.g.toFixed(2); ui.legendW.textContent=world.params.intensity.toFixed(2);
+}
+['g','drag','pGrav','pImpulse','pStutter','pCoul','intensity'].forEach(id=>{
+  ui[id].addEventListener('input',syncParams);
+});
+
+function dropApple(height){
+  const x=world.w*0.5 + (RNG.fn()-0.5)*100, y=world.bounds.bottom - Number(height) - 20;
+  for(let i=0;i<Number(ui.applesPerTrial.value);i++){
+    world.add(new Body({x:x+ (RNG.fn()-0.5)*30, y, m:1, r:10, kind:'apple'}));
+  }
+}
+function spawnCharge(){
+  const x=world.w*(0.2+0.6*RNG.fn()), y=world.h*(0.2+0.4*RNG.fn());
+  const q = (RNG.fn()<0.5?1:-1) * (0.5+1.5*RNG.fn());
+  world.add(new Body({x,y,m:0.5+RNG.fn(),r:8,kind:'charge',q, color:q>0?'#6ee7ff':'#a78bfa'}));
+}
+
+// Stats
+const results=[]; // {height, t, v, glitches}
+function resetStats(){results.length=0; updateStats();}
+
+function updateStats(){
+  const n=results.length; ui.nTrials.textContent=n;
+  if(!n){ui.meanT.textContent='—'; ui.meanV.textContent='—'; ui.predT.textContent='—'; ui.predV.textContent='—'; ui.obsGlitch.textContent='—'; drawChart([]); return;}
+  const mean=(arr)=>arr.reduce((a,b)=>a+b,0)/arr.length;
+  const meanT=mean(results.map(r=>r.t));
+  const meanV=mean(results.map(r=>r.v));
+  const meanGlitches=mean(results.map(r=>r.glitches));
+  const h=results[results.length-1].height, g=world.params.g;
+  const predT=Math.sqrt(2*h/g);
+  const predV=Math.sqrt(2*g*h);
+  ui.meanT.textContent=meanT.toFixed(3)+' s';
+  ui.meanV.textContent=meanV.toFixed(2)+' m/s';
+  ui.predT.textContent=predT.toFixed(3)+' s';
+  ui.predV.textContent=predV.toFixed(2)+' m/s';
+  ui.obsGlitch.textContent=(meanGlitches).toFixed(2)+' /apple';
+  drawChart(results.map(r=>r.t));
+}
+
+// Simple line chart for fall times
+const chart=document.createElement('div'); chart.className='chart';
+const chartCanvas=document.createElement('canvas'); chartCanvas.width=600; chartCanvas.height=140; chart.appendChild(chartCanvas);
+document.querySelector('.controls').appendChild(chart);
+function drawChart(series){
+  const c=chartCanvas, cx=c.getContext('2d'); c.width=chart.clientWidth; c.height=chart.clientHeight; cx.clearRect(0,0,c.width,c.height);
+  cx.strokeStyle='#6ee7ff'; cx.lineWidth=2; cx.beginPath();
+  if(series.length){
+    const min=Math.min(...series), max=Math.max(...series);
+    for(let i=0;i<series.length;i++){
+      const x=i/(series.length-1||1)* (c.width-20)+10;
+      const y=c.height-10 - (series[i]-min)/(max-min||1)*(c.height-20);
+      if(i===0) cx.moveTo(x,y); else cx.lineTo(x,y);
+    }
+  }
+  cx.stroke();
+  // baseline line = predT
+  if(results.length){
+    const h=results[results.length-1].height; const predT=Math.sqrt(2*h/world.params.g);
+    const min = Math.min(...series, predT), max=Math.max(...series, predT);
+    const y=c.height-10 - (predT-min)/(max-min||1)*(c.height-20);
+    cx.strokeStyle='#ffd166'; cx.setLineDash([6,4]); cx.beginPath(); cx.moveTo(10,y); cx.lineTo(c.width-10,y); cx.stroke(); cx.setLineDash([]);
+  }
+}
+
+// Batch trials (ensemble)
+async function runTrials(n=200){
+  const height=Number(ui.dropHeight.value);
+  for(let k=0;k<n;k++){
+    // create a fresh apple and simulate until ground hit
+    const temp=new World(world.w,world.h); temp.params=JSON.parse(JSON.stringify(world.params));
+    // use same RNG stream for reproducibility but step deterministically
+    const savedRNG=RNG.fn; RNG.fn=mulberry32(Number(ui.seed.value)+k);
+    const x=temp.w*0.5, y=temp.bounds.bottom - height - 20; const b=temp.add(new Body({x,y,kind:'apple',m:1,r:10}));
+    let t=0; let glitchesBefore=0; let maxSteps=60*20; // cap 20s
+    while(b.groundHitTime===null && maxSteps-->0){
+      temp.update();
+      t=temp.time;
+      glitchesBefore=temp.glitchCount;
+      if(b.groundHitTime!==null) break;
+    }
+    // Restore RNG
+    RNG.fn=savedRNG;
+    const landedT=b.groundHitTime??t; const v=b.groundHitSpeed??Math.hypot(b.vx,b.vy);
+    results.push({height,t:landedT,v,glitches:b.glitches});
+    if(k%20===0){updateStats(); await new Promise(r=>setTimeout(r,0));}
+  }
+  updateStats();
+}
+
+// CSV export
+function exportCSV(){
+  const header='height,t,v,glitches\n';
+  const rows=results.map(r=>`${r.height},${r.t.toFixed(4)},${r.v.toFixed(4)},${r.glitches}`);
+  const blob=new Blob([header+rows.join("\n")],{type:'text/csv'});
+  const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='weird_physics_results.csv'; a.click(); URL.revokeObjectURL(url);
+}
+
+// ---- Loop ------------------------------------------------------------------
+function frame(){
+  world.update(); draw(); requestAnimationFrame(frame);
+  ui.obsGlitch.title=`${world.glitchCount} glitches / ${world.stepCount} steps`;
+}
+
+// ---- Bootstrap -------------------------------------------------------------
+function init(){
+  resize(); world=new World(canvas.clientWidth,canvas.clientHeight); syncParams();
+  // seed RNG
+  RNG.seed(Number(ui.seed.value)||42);
+  // spawn a baseline charge dipole for field demos
+  world.add(new Body({x:world.w*0.3,y:world.h*0.6,kind:'charge',q:+1.5,m:0.8}));
+  world.add(new Body({x:world.w*0.7,y:world.h*0.5,kind:'charge',q:-1.2,m:0.8}));
+  requestAnimationFrame(frame);
+}
+
+// ---- Events ----------------------------------------------------------------
+ui.dropApple.addEventListener('click',()=>dropApple(ui.dropHeight.value));
+ui.spawnCharge.addEventListener('click',spawnCharge);
+ui.clear.addEventListener('click',()=>{world.clear(); resetStats();});
+ui.runTrials.addEventListener('click',()=>runTrials(200));
+ui.exportCSV.addEventListener('click',exportCSV);
+ui.reseat.addEventListener('click',()=>{RNG.seed(Number(ui.seed.value)||0);});
+
+window.addEventListener('keydown',(e)=>{
+  if(e.code==='Space'){world.paused=!world.paused;}
+  if(e.key==='a'||e.key==='A'){dropApple(ui.dropHeight.value);} 
+  if(e.key==='c'||e.key==='C'){spawnCharge();}
+});
+
+window.addEventListener('load',init);
+</script>
+</body>
+</html>
