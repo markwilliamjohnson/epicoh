@@ -1,0 +1,686 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weird Physics World Simulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e6e6e6;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, #ff7e5f, #feb47b);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: #a0a0a0;
+            margin-bottom: 20px;
+        }
+        
+        .content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .simulation-area {
+            flex: 2;
+            min-width: 300px;
+            background: rgba(30, 30, 46, 0.7);
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .control-panel {
+            flex: 1;
+            min-width: 250px;
+            background: rgba(30, 30, 46, 0.7);
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .experiments {
+            flex: 1;
+            min-width: 250px;
+            background: rgba(30, 30, 46, 0.7);
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        h2 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: #feb47b;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 8px;
+        }
+        
+        canvas {
+            background: rgba(10, 10, 20, 0.8);
+            border-radius: 5px;
+            width: 100%;
+            height: 400px;
+            display: block;
+            cursor: crosshair;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #a0a0a0;
+        }
+        
+        .btn {
+            background: linear-gradient(to right, #ff7e5f, #feb47b);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            margin: 5px 0;
+            width: 100%;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .control-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #e6e6e6;
+        }
+        
+        select, input {
+            width: 100%;
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(20, 20, 35, 0.8);
+            color: #e6e6e6;
+        }
+        
+        .experiment-item {
+            background: rgba(20, 20, 35, 0.8);
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .experiment-item:hover {
+            background: rgba(25, 25, 45, 0.9);
+            transform: translateX(5px);
+        }
+        
+        .experiment-item h3 {
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+            color: #feb47b;
+        }
+        
+        .experiment-item p {
+            font-size: 0.9rem;
+            color: #a0a0a0;
+        }
+        
+        .data-log {
+            margin-top: 20px;
+            height: 150px;
+            overflow-y: auto;
+            background: rgba(10, 10, 20, 0.8);
+            border-radius: 5px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 0.85rem;
+        }
+        
+        .log-entry {
+            margin-bottom: 5px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .time-stamp {
+            color: #ff7e5f;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Weird Physics World Simulator</h1>
+            <p class="subtitle">Explore a world where gravity, motion, and electricity behave unexpectedly</p>
+        </header>
+        
+        <div class="content">
+            <div class="simulation-area">
+                <h2>Simulation</h2>
+                <canvas id="physicsCanvas"></canvas>
+                <div class="stats">
+                    <div>Objects: <span id="objectCount">0</span></div>
+                    <div>Gravity Anomaly: <span id="anomalyLevel">Low</span></div>
+                    <div>Time: <span id="simulationTime">0</span>s</div>
+                </div>
+            </div>
+            
+            <div class="control-panel">
+                <h2>Controls</h2>
+                <div class="control-group">
+                    <button id="dropApple" class="btn">Drop Apple</button>
+                    <button id="launchBall" class="btn">Launch Ball</button>
+                    <button id="createPendulum" class="btn">Create Pendulum</button>
+                    <button id="clearAll" class="btn">Clear All</button>
+                </div>
+                
+                <div class="control-group">
+                    <label for="gravityAnomaly">Gravity Anomaly Level:</label>
+                    <select id="gravityAnomaly">
+                        <option value="low">Low (Mostly Newtonian)</option>
+                        <option value="medium">Medium (Some Anomalies)</option>
+                        <option value="high">High (Very Weird)</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label for="electricField">Electric Field Strength:</label>
+                    <input type="range" id="electricField" min="0" max="100" value="30">
+                </div>
+                
+                <div class="control-group">
+                    <label for="timeScale">Time Scale:</label>
+                    <input type="range" id="timeScale" min="1" max="10" value="5">
+                </div>
+                
+                <h2>Data Log</h2>
+                <div id="dataLog" class="data-log">
+                    <div class="log-entry"><span class="time-stamp">[0.0s]</span> Simulation started</div>
+                </div>
+            </div>
+            
+            <div class="experiments">
+                <h2>Experiments</h2>
+                <div class="experiment-item" id="exp1">
+                    <h3>Falling Apples</h3>
+                    <p>Observe how apples fall with varying gravitational anomalies</p>
+                </div>
+                <div class="experiment-item" id="exp2">
+                    <h3>Projectile Motion</h3>
+                    <p>Launch objects and observe their unpredictable trajectories</p>
+                </div>
+                <div class="experiment-item" id="exp3">
+                    <h3>Pendulum Swing</h3>
+                    <p>Create pendulums that sometimes defy normal oscillation patterns</p>
+                </div>
+                <div class="experiment-item" id="exp4">
+                    <h3>Electric Interactions</h3>
+                    <p>Observe how charged particles interact in strange ways</p>
+                </div>
+                
+                <h2>Observations</h2>
+                <p>In this world, Newton's laws appear to hold on average, but individual objects often behave unexpectedly. Gravity might reverse, objects accelerate without apparent cause, and electric fields create bizarre force patterns.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Get the canvas and context
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Set canvas dimensions
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+        
+        // Physics objects array
+        let objects = [];
+        let simulationTime = 0;
+        let objectIdCounter = 0;
+        
+        // Physics parameters
+        let gravityAnomalyLevel = 'low';
+        let electricFieldStrength = 30;
+        let timeScale = 5;
+        
+        // DOM elements
+        const objectCountEl = document.getElementById('objectCount');
+        const anomalyLevelEl = document.getElementById('anomalyLevel');
+        const simulationTimeEl = document.getElementById('simulationTime');
+        const dataLogEl = document.getElementById('dataLog');
+        
+        // Control elements
+        document.getElementById('dropApple').addEventListener('click', dropApple);
+        document.getElementById('launchBall').addEventListener('click', launchBall);
+        document.getElementById('createPendulum').addEventListener('click', createPendulum);
+        document.getElementById('clearAll').addEventListener('click', clearAll);
+        document.getElementById('gravityAnomaly').addEventListener('change', function() {
+            gravityAnomalyLevel = this.value;
+            anomalyLevelEl.textContent = this.options[this.selectedIndex].text.split(' ')[0];
+        });
+        document.getElementById('electricField').addEventListener('input', function() {
+            electricFieldStrength = parseInt(this.value);
+        });
+        document.getElementById('timeScale').addEventListener('input', function() {
+            timeScale = parseInt(this.value);
+        });
+        
+        // Experiment buttons
+        document.getElementById('exp1').addEventListener('click', dropApple);
+        document.getElementById('exp2').addEventListener('click', launchBall);
+        document.getElementById('exp3').addEventListener('click', createPendulum);
+        document.getElementById('exp4').addEventListener('click', function() {
+            createChargedParticles();
+        });
+        
+        // Physics object class
+        class PhysicsObject {
+            constructor(x, y, type, properties = {}) {
+                this.id = objectIdCounter++;
+                this.x = x;
+                this.y = y;
+                this.vx = properties.vx || 0;
+                this.vy = properties.vy || 0;
+                this.type = type; // 'apple', 'ball', 'pendulum', 'charged'
+                this.radius = properties.radius || 10;
+                this.mass = properties.mass || 1;
+                this.charge = properties.charge || 0;
+                this.color = properties.color || '#ff7e5f';
+                this.anchorX = properties.anchorX || x;
+                this.anchorY = properties.anchorY || y;
+                this.length = properties.length || 100;
+                this.angle = properties.angle || Math.PI / 4;
+                this.angularVelocity = 0;
+                this.createdAt = simulationTime;
+                
+                // Add to objects array
+                objects.push(this);
+                updateObjectCount();
+            }
+            
+            applyForces() {
+                // Standard gravity (with anomalies)
+                let gravityY = 0.5;
+                
+                // Apply gravity anomalies based on level
+                if (gravityAnomalyLevel === 'medium') {
+                    // Medium anomalies: occasional reversals and fluctuations
+                    if (Math.random() < 0.005) gravityY *= -1; // Occasionally reverse gravity
+                    if (Math.random() < 0.01) gravityY *= (0.5 + Math.random()); // Random strength
+                } else if (gravityAnomalyLevel === 'high') {
+                    // High anomalies: frequent and strong anomalies
+                    if (Math.random() < 0.02) gravityY *= -1;
+                    if (Math.random() < 0.05) gravityY *= (0.2 + Math.random() * 1.8);
+                    
+                    // Sometimes add horizontal gravity
+                    if (Math.random() < 0.03) {
+                        this.vx += (Math.random() - 0.5) * 0.5;
+                    }
+                }
+                
+                // Apply electric field forces if charged
+                if (this.charge !== 0) {
+                    // Electric field strength affects force
+                    const electricForce = electricFieldStrength / 1000;
+                    
+                    // Electric field direction (could be made more complex)
+                    const ex = Math.sin(simulationTime * 0.1) * electricForce * this.charge;
+                    const ey = Math.cos(simulationTime * 0.05) * electricForce * this.charge;
+                    
+                    this.vx += ex / this.mass;
+                    this.vy += ey / this.mass;
+                }
+                
+                // Apply gravity
+                this.vy += gravityY;
+                
+                // Random quantum fluctuations (tiny random forces)
+                this.vx += (Math.random() - 0.5) * 0.05;
+                this.vy += (Math.random() - 0.5) * 0.05;
+            }
+            
+            update() {
+                if (this.type === 'pendulum') {
+                    // Pendulum physics with anomalies
+                    const gravity = 0.5;
+                    const damping = 0.995;
+                    
+                    // Calculate angular acceleration
+                    let angularAcceleration = -gravity / this.length * Math.sin(this.angle);
+                    
+                    // Apply anomalies
+                    if (gravityAnomalyLevel === 'medium' && Math.random() < 0.01) {
+                        angularAcceleration *= -1; // Occasionally reverse the force
+                    } else if (gravityAnomalyLevel === 'high') {
+                        // High anomalies: random forces and direction changes
+                        if (Math.random() < 0.02) angularAcceleration *= -1;
+                        angularAcceleration += (Math.random() - 0.5) * 0.1;
+                    }
+                    
+                    // Update angular velocity and angle
+                    this.angularVelocity += angularAcceleration;
+                    this.angularVelocity *= damping;
+                    this.angle += this.angularVelocity;
+                    
+                    // Update position based on angle
+                    this.x = this.anchorX + this.length * Math.sin(this.angle);
+                    this.y = this.anchorY + this.length * Math.cos(this.angle);
+                } else {
+                    // Regular object physics
+                    this.applyForces();
+                    
+                    // Update position
+                    this.x += this.vx;
+                    this.y += this.vy;
+                    
+                    // Boundary collisions with energy loss
+                    if (this.x < this.radius) {
+                        this.x = this.radius;
+                        this.vx = -this.vx * 0.8;
+                    } else if (this.x > canvas.width - this.radius) {
+                        this.x = canvas.width - this.radius;
+                        this.vx = -this.vx * 0.8;
+                    }
+                    
+                    if (this.y < this.radius) {
+                        this.y = this.radius;
+                        this.vy = -this.vy * 0.8;
+                    } else if (this.y > canvas.height - this.radius) {
+                        this.y = canvas.height - this.radius;
+                        this.vy = -this.vy * 0.8;
+                    }
+                }
+            }
+            
+            draw() {
+                ctx.beginPath();
+                
+                if (this.type === 'pendulum') {
+                    // Draw pendulum string
+                    ctx.strokeStyle = '#666';
+                    ctx.lineWidth = 2;
+                    ctx.moveTo(this.anchorX, this.anchorY);
+                    ctx.lineTo(this.x, this.y);
+                    ctx.stroke();
+                    
+                    // Draw pendulum bob
+                    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = this.color;
+                    ctx.fill();
+                } else if (this.type === 'charged') {
+                    // Draw charged particle with glow effect
+                    const gradient = ctx.createRadialGradient(
+                        this.x, this.y, 0,
+                        this.x, this.y, this.radius
+                    );
+                    
+                    if (this.charge > 0) {
+                        gradient.addColorStop(0, '#ff7e5f');
+                        gradient.addColorStop(1, 'rgba(255, 126, 95, 0.3)');
+                    } else {
+                        gradient.addColorStop(0, '#5f7eff');
+                        gradient.addColorStop(1, 'rgba(95, 126, 255, 0.3)');
+                    }
+                    
+                    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = gradient;
+                    ctx.fill();
+                    
+                    // Draw charge symbol
+                    ctx.fillStyle = 'white';
+                    ctx.font = '12px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(this.charge > 0 ? '+' : '-', this.x, this.y);
+                } else {
+                    // Regular object
+                    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = this.color;
+                    ctx.fill();
+                    
+                    // Add a small highlight for 3D effect
+                    ctx.beginPath();
+                    ctx.arc(this.x - this.radius/3, this.y - this.radius/3, this.radius/3, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                    ctx.fill();
+                }
+                
+                ctx.closePath();
+            }
+        }
+        
+        // Object creation functions
+        function dropApple() {
+            const x = canvas.width / 2 + (Math.random() - 0.5) * 100;
+            new PhysicsObject(x, 50, 'apple', {
+                radius: 12,
+                color: '#ff5252',
+                mass: 1.2
+            });
+            logEvent(`Apple dropped at (${Math.round(x)}, 50)`);
+        }
+        
+        function launchBall() {
+            const x = 50;
+            const y = canvas.height - 100;
+            new PhysicsObject(x, y, 'ball', {
+                vx: 5 + Math.random() * 3,
+                vy: -10 - Math.random() * 5,
+                radius: 8,
+                color: '#4fc3f7',
+                mass: 0.8
+            });
+            logEvent(`Ball launched from (${x}, ${y})`);
+        }
+        
+        function createPendulum() {
+            const x = canvas.width / 2 + (Math.random() - 0.5) * 200;
+            const y = 80;
+            new PhysicsObject(x, y, 'pendulum', {
+                anchorX: x,
+                anchorY: y,
+                length: 120 + Math.random() * 80,
+                angle: Math.PI / 4 + (Math.random() - 0.5) * Math.PI / 8,
+                radius: 10,
+                color: '#66bb6a'
+            });
+            logEvent(`Pendulum created at (${Math.round(x)}, ${y})`);
+        }
+        
+        function createChargedParticles() {
+            // Create a positive particle
+            new PhysicsObject(
+                canvas.width / 2 - 50,
+                canvas.height / 2,
+                'charged',
+                {
+                    radius: 15,
+                    charge: 1,
+                    color: '#ff7e5f',
+                    mass: 1
+                }
+            );
+            
+            // Create a negative particle
+            new PhysicsObject(
+                canvas.width / 2 + 50,
+                canvas.height / 2,
+                'charged',
+                {
+                    radius: 15,
+                    charge: -1,
+                    color: '#5f7eff',
+                    mass: 1
+                }
+            );
+            
+            logEvent(`Charged particles created (positive and negative)`);
+        }
+        
+        function clearAll() {
+            objects = [];
+            updateObjectCount();
+            logEvent('All objects cleared');
+        }
+        
+        // Utility functions
+        function updateObjectCount() {
+            objectCountEl.textContent = objects.length;
+        }
+        
+        function logEvent(message) {
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.innerHTML = `<span class="time-stamp">[${simulationTime.toFixed(1)}s]</span> ${message}`;
+            dataLogEl.appendChild(logEntry);
+            dataLogEl.scrollTop = dataLogEl.scrollHeight;
+        }
+        
+        // Main animation loop
+        function animate() {
+            // Clear canvas with a slight fade effect for trails
+            ctx.fillStyle = 'rgba(10, 10, 20, 0.2)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw a grid for reference
+            drawGrid();
+            
+            // Update and draw all objects
+            for (let i = 0; i < objects.length; i++) {
+                objects[i].update();
+                objects[i].draw();
+            }
+            
+            // Update simulation time
+            simulationTime += 0.016 * timeScale;
+            simulationTimeEl.textContent = simulationTime.toFixed(1);
+            
+            // Occasionally log physics anomalies
+            if (Math.random() < 0.01 && objects.length > 0) {
+                const obj = objects[Math.floor(Math.random() * objects.length)];
+                if (Math.abs(obj.vx) > 10 || Math.abs(obj.vy) > 10) {
+                    logEvent(`Anomaly detected: Object ${obj.id} moving at unusual velocity`);
+                }
+            }
+            
+            requestAnimationFrame(animate);
+        }
+        
+        function drawGrid() {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+            ctx.lineWidth = 1;
+            
+            // Vertical lines
+            for (let x = 0; x < canvas.width; x += 50) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            
+            // Horizontal lines
+            for (let y = 0; y < canvas.height; y += 50) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+        }
+        
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+        });
+        
+        // Click on canvas to create objects
+        canvas.addEventListener('click', function(event) {
+            const rect = canvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            
+            // Create a random object on click
+            const types = ['apple', 'ball', 'charged'];
+            const type = types[Math.floor(Math.random() * types.length)];
+            
+            if (type === 'charged') {
+                new PhysicsObject(x, y, 'charged', {
+                    radius: 12,
+                    charge: Math.random() > 0.5 ? 1 : -1,
+                    color: Math.random() > 0.5 ? '#ff7e5f' : '#5f7eff',
+                    mass: 1
+                });
+            } else {
+                new PhysicsObject(x, y, type, {
+                    radius: 8 + Math.random() * 8,
+                    color: `hsl(${Math.random() * 360}, 70%, 60%)`,
+                    mass: 0.5 + Math.random()
+                });
+            }
+            
+            logEvent(`${type} created at (${Math.round(x)}, ${Math.round(y)})`);
+        });
+        
+        // Start the simulation
+        animate();
+        
+        // Add some initial objects
+        setTimeout(() => {
+            dropApple();
+            createPendulum();
+        }, 500);
+    </script>
+</body>
+</html>
