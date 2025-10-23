@@ -1,0 +1,430 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Contagion Simulation (No React)</title>
+  <style>
+    :root{
+      --bg:#0f172a; /* slate-900 */
+      --panel:#111827f2; /* gray-900 */
+      --text:#e5e7eb; /* gray-200 */
+      --muted:#9ca3af; /* gray-400 */
+      --accent:#22d3ee; /* cyan-400 */
+      --danger:#f87171; /* red-400 */
+      --ok:#34d399; /* green-400 */
+      --warn:#fbbf24; /* amber-400 */
+    }
+    html,body{height:100%;margin:0;background:linear-gradient(180deg,#0b1229,#0f172a);color:var(--text);font-family:system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";}
+    .shell{display:grid;grid-template-columns: 360px 1fr;gap:16px;height:100%;padding:16px;box-sizing:border-box}
+    .left{display:flex;flex-direction:column;gap:12px;}
+    .panel{background:var(--panel);backdrop-filter: blur(6px);border:1px solid #1f2937;border-radius:16px;padding:14px;box-shadow:0 10px 30px #0005}
+    h1{font-size:20px;margin:0 0 6px 0;letter-spacing:.2px}
+    h2{font-size:14px;margin:10px 0 6px 0;color:var(--muted);font-weight:600}
+    label{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);margin-bottom:4px}
+    .row{display:grid;grid-template-columns: 1fr 1fr; gap:8px}
+    .controls .grp{margin-bottom:10px}
+    input[type="range"]{width:100%}
+    .value{color:var(--accent);font-variant-numeric:tabular-nums}
+    .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+    button{background:#111827;border:1px solid #1f2937;color:var(--text);padding:8px 10px;border-radius:12px;cursor:pointer}
+    button:hover{border-color:#334155}
+    button.primary{background:linear-gradient(180deg,#0ea5e9,#06b6d4);border:none;color:#001018}
+    button.danger{background:linear-gradient(180deg,#ef4444,#f59e0b);border:none;color:#1b0b00}
+    .legend{display:flex;gap:10px;flex-wrap:wrap;font-size:12px}
+    .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:middle}
+    .dot.s{background:#94a3b8}
+    .dot.i{background:var(--danger)}
+    .dot.r{background:var(--ok)}
+    .dot.d{background:#475569}
+
+    .stats{display:grid;grid-template-columns: repeat(4,1fr); gap:8px;margin-top:6px}
+    .kpi{background:#0b1229;border:1px solid #1f2937;border-radius:12px;padding:10px}
+    .kpi .big{font-size:18px;font-variant-numeric:tabular-nums}
+    .kpi .lbl{font-size:11px;color:var(--muted)}
+
+    /* Canvas wrapper */
+    .stage{position:relative}
+    #world{width:100%;height:100%;background:#030712;border-radius:16px;border:1px solid #1f2937;display:block}
+    .overlay{position:absolute;left:10px;bottom:10px;right:10px;height:110px;pointer-events:none}
+    #chart{width:100%;height:100%}
+
+    @media (max-width: 980px){
+      .shell{grid-template-columns: 1fr;grid-template-rows:auto 1fr}
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="left">
+      <div class="panel controls">
+        <h1>Contagion Simulation</h1>
+        <div class="legend">
+          <span><span class="dot s"></span>Susceptible</span>
+          <span><span class="dot i"></span>Infected</span>
+          <span><span class="dot r"></span>Recovered</span>
+          <span><span class="dot d"></span>Dead</span>
+        </div>
+
+        <h2>Population & Motion</h2>
+        <div class="grp">
+          <label>Population <span class="value" id="popVal"></span></label>
+          <input id="pop" type="range" min="50" max="800" step="10" value="250" />
+        </div>
+        <div class="row">
+          <div class="grp">
+            <label>Speed <span class="value" id="spdVal"></span></label>
+            <input id="speed" type="range" min="0" max="200" step="1" value="60" />
+          </div>
+          <div class="grp">
+            <label>Contact radius (px) <span class="value" id="radVal"></span></label>
+            <input id="radius" type="range" min="2" max="20" step="1" value="8" />
+          </div>
+        </div>
+
+        <h2>Epidemiology (per second)</h2>
+        <div class="row">
+          <div class="grp">
+            <label>Incidence rate β <span class="value" id="betaVal"></span></label>
+            <input id="beta" type="range" min="0" max="2.0" step="0.01" value="0.35" />
+          </div>
+          <div class="grp">
+            <label>Recovery rate γ <span class="value" id="gammaVal"></span></label>
+            <input id="gamma" type="range" min="0" max="1.0" step="0.01" value="0.15" />
+          </div>
+        </div>
+        <div class="row">
+          <div class="grp">
+            <label>Mortality rate μ <span class="value" id="muVal"></span></label>
+            <input id="mu" type="range" min="0" max="0.5" step="0.005" value="0.02" />
+          </div>
+          <div class="grp">
+            <label>Prevalence (target %) <span class="value" id="prevVal"></span></label>
+            <input id="prevalence" type="range" min="0" max="100" step="1" value="2" />
+          </div>
+        </div>
+
+        <div class="btns">
+          <button class="primary" id="playPause">Pause</button>
+          <button id="seed">Reseed Infection</button>
+          <button id="reset">Reset Simulation</button>
+          <button class="danger" id="clearDead">Clear Dead Bodies</button>
+        </div>
+
+        <div class="stats">
+          <div class="kpi"><div class="lbl">Susceptible</div><div class="big" id="sCount">0</div></div>
+          <div class="kpi"><div class="lbl">Infected</div><div class="big" id="iCount">0</div></div>
+          <div class="kpi"><div class="lbl">Recovered</div><div class="big" id="rCount">0</div></div>
+          <div class="kpi"><div class="lbl">Dead</div><div class="big" id="dCount">0</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel stage">
+      <canvas id="world"></canvas>
+      <div class="overlay">
+        <canvas id="chart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Utility helpers ---
+    const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
+    function expoProb(rate, dt){
+      // Probability of at least one event in Poisson with rate per second
+      return 1 - Math.exp(-rate * dt);
+    }
+
+    // --- Simulation state ---
+    const canvas = document.getElementById('world');
+    const ctx = canvas.getContext('2d');
+    const chart = document.getElementById('chart');
+    const cctx = chart.getContext('2d');
+
+    let W,H; const DPR = Math.max(1, Math.min(2, window.devicePixelRatio||1));
+    function resize(){
+      const panel = document.querySelector('.stage');
+      W = panel.clientWidth; H = panel.clientHeight;
+      canvas.width = W * DPR; canvas.height = H * DPR; canvas.style.width=W+'px'; canvas.style.height=H+'px';
+      chart.width = (W-20) * DPR; chart.height = 110 * DPR; chart.style.width=(W-20)+'px'; chart.style.height=110+'px';
+      ctx.setTransform(DPR,0,0,DPR,0,0);
+      cctx.setTransform(DPR,0,0,DPR,0,0);
+    }
+    addEventListener('resize', resize);
+
+    const UI = {
+      pop: document.getElementById('pop'),
+      speed: document.getElementById('speed'),
+      radius: document.getElementById('radius'),
+      beta: document.getElementById('beta'),
+      gamma: document.getElementById('gamma'),
+      mu: document.getElementById('mu'),
+      prevalence: document.getElementById('prevalence'),
+      playPause: document.getElementById('playPause'),
+      seed: document.getElementById('seed'),
+      reset: document.getElementById('reset'),
+      clearDead: document.getElementById('clearDead')
+    };
+    const VALS = {
+      popVal: document.getElementById('popVal'),
+      spdVal: document.getElementById('spdVal'),
+      radVal: document.getElementById('radVal'),
+      betaVal: document.getElementById('betaVal'),
+      gammaVal: document.getElementById('gammaVal'),
+      muVal: document.getElementById('muVal'),
+      prevVal: document.getElementById('prevVal'),
+      sCount: document.getElementById('sCount'),
+      iCount: document.getElementById('iCount'),
+      rCount: document.getElementById('rCount'),
+      dCount: document.getElementById('dCount'),
+    };
+
+    const State = { S:0, I:1, R:2, D:3 };
+
+    let params = {
+      N: +UI.pop.value,
+      speed: +UI.speed.value, // px/sec
+      radius: +UI.radius.value, // px
+      beta: +UI.beta.value,   // per sec
+      gamma: +UI.gamma.value, // per sec
+      mu: +UI.mu.value,       // per sec
+      targetPrev: +UI.prevalence.value / 100
+    };
+
+    function syncLabels(){
+      VALS.popVal.textContent = params.N;
+      VALS.spdVal.textContent = params.speed.toFixed(0);
+      VALS.radVal.textContent = params.radius.toFixed(0);
+      VALS.betaVal.textContent = params.beta.toFixed(2);
+      VALS.gammaVal.textContent = params.gamma.toFixed(2);
+      VALS.muVal.textContent = params.mu.toFixed(3);
+      VALS.prevVal.textContent = Math.round(params.targetPrev*100)+'%';
+    }
+
+    class Agent{
+      constructor(x,y,vx,vy,state=State.S){
+        this.x=x; this.y=y; this.vx=vx; this.vy=vy; this.state=state;
+      }
+    }
+
+    let agents=[]; let running=true; let lastT=performance.now();
+
+    function initAgents(){
+      agents = [];
+      for(let i=0;i<params.N;i++){
+        const x = Math.random()*(W-20)+10;
+        const y = Math.random()*(H-20)+10;
+        const ang = Math.random()*Math.PI*2;
+        const spd = params.speed*(0.5+Math.random()*0.5);
+        const vx = Math.cos(ang)*spd, vy=Math.sin(ang)*spd;
+        agents.push(new Agent(x,y,vx,vy,State.S));
+      }
+      seedPrevalence(params.targetPrev);
+    }
+
+    function seedPrevalence(prev){
+      // Set infected proportion among all non-dead to requested prevalence
+      const alive = agents.filter(a=>a.state!==State.D);
+      const targetI = Math.round(alive.length * prev);
+      // First, set everyone susceptible, keep recovered as recovered (we'll allow conversion too)
+      for(const a of alive){ if(a.state!==State.S) a.state=State.S; }
+      // Infect random subset
+      shuffle(alive);
+      for(let i=0;i<targetI;i++){ alive[i].state = State.I; }
+    }
+
+    function shuffle(arr){ for(let i=arr.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; [arr[i],arr[j]]=[arr[j],arr[i]]; } }
+
+    function addOrRemoveAgents(targetN){
+      const diff = targetN - agents.length;
+      if(diff>0){
+        for(let i=0;i<diff;i++){
+          const x = Math.random()*W, y=Math.random()*H; const ang=Math.random()*Math.PI*2; const spd=params.speed*(0.5+Math.random()*0.5);
+          agents.push(new Agent(x,y,Math.cos(ang)*spd,Math.sin(ang)*spd,State.S));
+        }
+      } else if(diff<0){
+        agents.splice(agents.length+diff, -diff);
+      }
+    }
+
+    // --- Spatial hashing for faster neighborhood queries ---
+    const grid = { size: 20, cells: new Map() };
+    function buildGrid(){
+      grid.cells.clear();
+      const g = grid.size;
+      for(let i=0;i<agents.length;i++){
+        const a = agents[i];
+        if(a.state===State.D) continue;
+        const cx = Math.floor(a.x/g), cy=Math.floor(a.y/g);
+        const key = cx+","+cy;
+        if(!grid.cells.has(key)) grid.cells.set(key,[]);
+        grid.cells.get(key).push(i);
+      }
+    }
+    function queryNeighbors(ax,ay,r){
+      const g = grid.size; const R = Math.ceil(r/g);
+      const cx = Math.floor(ax/g), cy=Math.floor(ay/g);
+      const idxs=[];
+      for(let dx=-R;dx<=R;dx++){
+        for(let dy=-R;dy<=R;dy++){
+          const key=(cx+dx)+","+(cy+dy);
+          const cell = grid.cells.get(key);
+          if(cell) idxs.push(...cell);
+        }
+      }
+      return idxs;
+    }
+
+    // --- Time series ---
+    const history = { S:[], I:[], R:[], D:[], t:[], maxLen: 600 };
+    function pushHistory(t){
+      const counts = countStates();
+      history.S.push(counts.S); history.I.push(counts.I); history.R.push(counts.R); history.D.push(counts.D); history.t.push(t);
+      if(history.S.length>history.maxLen){
+        ['S','I','R','D','t'].forEach(k=>history[k].shift());
+      }
+    }
+
+    function countStates(){
+      let S=0,I=0,R=0,D=0; for(const a of agents){
+        if(a.state===State.S) S++; else if(a.state===State.I) I++; else if(a.state===State.R) R++; else D++;
+      }
+      VALS.sCount.textContent=S; VALS.iCount.textContent=I; VALS.rCount.textContent=R; VALS.dCount.textContent=D;
+      return {S,I,R,D};
+    }
+
+    function drawChart(){
+      const n = history.t.length; if(n<2) return;
+      const w = chart.width/DPR, h = chart.height/DPR; cctx.clearRect(0,0,w,h);
+      const maxY = Math.max(1, ...history.S, ...history.I, ...history.R, ...history.D);
+      const series = [
+        {data:history.S, stroke:'#94a3b8'},
+        {data:history.I, stroke:'#f87171'},
+        {data:history.R, stroke:'#34d399'},
+        {data:history.D, stroke:'#475569'}
+      ];
+      for(const s of series){
+        cctx.beginPath();
+        for(let i=0;i<n;i++){
+          const x = (i/(n-1))*w; const y = h - (history[s===series[0]?'S': s===series[1]?'I': s===series[2]?'R':'D'][i]/maxY)*h;
+          if(i===0) cctx.moveTo(x,y); else cctx.lineTo(x,y);
+        }
+        cctx.lineWidth=2; cctx.strokeStyle=s.stroke; cctx.stroke();
+      }
+    }
+
+    // --- Dynamics ---
+    function step(dt){
+      const r = params.radius;
+      // Move and bounce
+      for(const a of agents){
+        if(a.state===State.D){ continue; }
+        a.x += a.vx*dt; a.y += a.vy*dt;
+        if(a.x<3||a.x>W-3){ a.vx*=-1; a.x=clamp(a.x,3,W-3); }
+        if(a.y<3||a.y>H-3){ a.vy*=-1; a.y=clamp(a.y,3,H-3); }
+      }
+
+      buildGrid();
+
+      const pInfect = expoProb(params.beta, dt);
+      const pRecover = (i)=>{
+        // Competing risks recovery vs death. Sample which happens first this tick.
+        const total = params.gamma + params.mu;
+        if(total<=0) return {rec:false, die:false};
+        const pAny = expoProb(total, dt);
+        // If event occurs, choose type by relative hazard
+        const rec = Math.random() < (params.gamma/total);
+        return {rec: (Math.random()<pAny) && rec, die: (Math.random()<pAny) && !rec};
+      };
+
+      // Infection pass: for each susceptible, check nearby infected
+      for(let i=0;i<agents.length;i++){
+        const a = agents[i];
+        if(a.state!==State.S) continue;
+        const idxs = queryNeighbors(a.x,a.y,r+2);
+        let nearInfected=false;
+        for(const j of idxs){
+          if(j===i) continue; const b=agents[j];
+          if(b.state!==State.I) continue;
+          const dx=a.x-b.x, dy=a.y-b.y; if(dx*dx+dy*dy <= r*r){ nearInfected=true; break; }
+        }
+        if(nearInfected && Math.random()<pInfect){ a.state = State.I; }
+      }
+
+      // Recovery / mortality pass
+      for(const a of agents){
+        if(a.state!==State.I) continue;
+        const ev = pRecover();
+        if(ev.rec){ a.state=State.R; }
+        else if(ev.die){ a.state=State.D; a.vx=0; a.vy=0; }
+      }
+    }
+
+    function draw(){
+      ctx.clearRect(0,0,W,H);
+      const r=3;
+      for(const a of agents){
+        if(a.state===State.S){ ctx.fillStyle='#94a3b8'; }
+        else if(a.state===State.I){ ctx.fillStyle='#f87171'; }
+        else if(a.state===State.R){ ctx.fillStyle='#34d399'; }
+        else { ctx.fillStyle='#475569'; }
+        ctx.beginPath(); ctx.arc(a.x,a.y,r,0,Math.PI*2); ctx.fill();
+      }
+    }
+
+    function loop(now){
+      if(running){
+        let dt = (now-lastT)/1000; dt = Math.min(dt, 0.05); // clamp big jumps
+        const fixed = 1/60; // integrate in fixed steps for stability
+        let acc = dt;
+        while(acc>0){ const stepDt = Math.min(fixed, acc); step(stepDt); acc -= stepDt; }
+        pushHistory(now/1000);
+        draw();
+        drawChart();
+      }
+      lastT = now; requestAnimationFrame(loop);
+    }
+
+    // --- UI wiring ---
+    for(const [key,el] of Object.entries(UI)){
+      if(el.tagName==='INPUT' && el.type==='range'){
+        el.addEventListener('input',()=>{
+          if(key==='pop'){ params.N=+el.value; addOrRemoveAgents(params.N); }
+          if(key==='speed'){ params.speed=+el.value; for(const a of agents){ const ang=Math.atan2(a.vy,a.vx); const spd=params.speed*(0.5+Math.random()*0.5); a.vx=Math.cos(ang)*spd; a.vy=Math.sin(ang)*spd; } }
+          if(key==='radius'){ params.radius=+el.value; }
+          if(key==='beta'){ params.beta=+el.value; }
+          if(key==='gamma'){ params.gamma=+el.value; }
+          if(key==='mu'){ params.mu=+el.value; }
+          if(key==='prevalence'){ params.targetPrev=+el.value/100; seedPrevalence(params.targetPrev); }
+          syncLabels();
+        });
+      }
+    }
+
+    UI.playPause.addEventListener('click',()=>{
+      running=!running; UI.playPause.textContent = running ? 'Pause' : 'Play';
+    });
+
+    UI.seed.addEventListener('click',()=> seedPrevalence(params.targetPrev));
+
+    UI.reset.addEventListener('click',()=>{
+      history.S.length=history.I.length=history.R.length=history.D.length=history.t.length=0;
+      initAgents();
+    });
+
+    UI.clearDead.addEventListener('click',()=>{
+      agents = agents.filter(a=>a.state!==State.D);
+      params.N = agents.length; UI.pop.value = params.N; syncLabels();
+    });
+
+    // --- Boot ---
+    resize();
+    syncLabels();
+    initAgents();
+    countStates();
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>
