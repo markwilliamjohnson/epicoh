@@ -1,0 +1,441 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Disease Spread Simulation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        .simulation-area {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .canvas-container {
+            flex: 1;
+            min-width: 600px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+            background-color: #f9f9f9;
+        }
+        .controls {
+            flex: 0 0 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        label {
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+        }
+        input[type="range"] {
+            width: 100%;
+        }
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border-radius: 4px;
+        }
+        .stat-item {
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        .stat-label {
+            font-size: 0.8em;
+            color: #666;
+        }
+        .color-legend {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 10px;
+        }
+        .color-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .color-box {
+            width: 15px;
+            height: 15px;
+            border-radius: 3px;
+        }
+        button {
+            padding: 8px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        h1 {
+            margin-top: 0;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Disease Spread Simulation</h1>
+        
+        <div class="simulation-area">
+            <div class="canvas-container">
+                <canvas id="simulationCanvas" width="800" height="600"></canvas>
+                <div class="color-legend">
+                    <div class="color-item">
+                        <div class="color-box" style="background-color: #4CAF50;"></div>
+                        <span>Healthy</span>
+                    </div>
+                    <div class="color-item">
+                        <div class="color-box" style="background-color: #FF5722;"></div>
+                        <span>Infected</span>
+                    </div>
+                    <div class="color-item">
+                        <div class="color-box" style="background-color: #2196F3;"></div>
+                        <span>Recovered</span>
+                    </div>
+                    <div class="color-item">
+                        <div class="color-box" style="background-color: #333;"></div>
+                        <span>Deceased</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <div class="control-group">
+                    <label>
+                        <span>Population:</span>
+                        <span id="populationValue">200</span>
+                    </label>
+                    <input type="range" id="populationSlider" min="50" max="500" value="200">
+                </div>
+                
+                <div class="control-group">
+                    <label>
+                        <span>Initial Prevalence (%):</span>
+                        <span id="prevalenceValue">5</span>
+                    </label>
+                    <input type="range" id="prevalenceSlider" min="0" max="20" value="5">
+                </div>
+                
+                <div class="control-group">
+                    <label>
+                        <span>Transmission Rate (%):</span>
+                        <span id="transmissionValue">15</span>
+                    </label>
+                    <input type="range" id="transmissionSlider" min="1" max="50" value="15">
+                </div>
+                
+                <div class="control-group">
+                    <label>
+                        <span>Mortality Rate (%):</span>
+                        <span id="mortalityValue">2</span>
+                    </label>
+                    <input type="range" id="mortalitySlider" min="0" max="20" value="2">
+                </div>
+                
+                <div class="control-group">
+                    <label>
+                        <span>Recovery Rate (%):</span>
+                        <span id="recoveryValue">10</span>
+                    </label>
+                    <input type="range" id="recoverySlider" min="1" max="50" value="10">
+                </div>
+                
+                <div class="control-group">
+                    <label>
+                        <span>Movement Speed:</span>
+                        <span id="speedValue">2</span>
+                    </label>
+                    <input type="range" id="speedSlider" min="1" max="10" value="2">
+                </div>
+                
+                <button id="resetButton">Reset Simulation</button>
+                
+                <div class="stats">
+                    <div class="stat-item">
+                        <div class="stat-value" id="healthyCount">190</div>
+                        <div class="stat-label">Healthy</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="infectedCount">10</div>
+                        <div class="stat-label">Infected</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="recoveredCount">0</div>
+                        <div class="stat-label">Recovered</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="deceasedCount">0</div>
+                        <div class="stat-label">Deceased</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Canvas setup
+        const canvas = document.getElementById('simulationCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Simulation parameters
+        let params = {
+            population: 200,
+            prevalence: 0.05,  // 5% initially infected
+            transmissionRate: 0.15,  // 15% chance of transmission
+            mortalityRate: 0.02,  // 2% chance of death
+            recoveryRate: 0.10,  // 10% chance of recovery
+            movementSpeed: 2
+        };
+
+        // Person class
+        class Person {
+            constructor(x, y, radius, status) {
+                this.x = x;
+                this.y = y;
+                this.radius = radius;
+                this.status = status; // 'healthy', 'infected', 'recovered', 'deceased'
+                this.dx = (Math.random() - 0.5) * params.movementSpeed;
+                this.dy = (Math.random() - 0.5) * params.movementSpeed;
+                this.infectionTime = 0;
+                this.recoveryTime = Math.floor(Math.random() * 300) + 200; // Random recovery time
+            }
+
+            update() {
+                if (this.status === 'deceased') return;
+
+                // Update position
+                this.x += this.dx;
+                this.y += this.dy;
+
+                // Bounce off walls
+                if (this.x - this.radius < 0 || this.x + this.radius > canvas.width) {
+                    this.dx = -this.dx;
+                }
+                if (this.y - this.radius < 0 || this.y + this.radius > canvas.height) {
+                    this.dy = -this.dy;
+                }
+
+                // Update infection status
+                if (this.status === 'infected') {
+                    this.infectionTime++;
+
+                    // Check for recovery
+                    if (this.infectionTime > this.recoveryTime && Math.random() < params.recoveryRate / 100) {
+                        this.status = 'recovered';
+                    }
+
+                    // Check for death
+                    if (Math.random() < params.mortalityRate / 1000) { // Divided to make it less frequent
+                        this.status = 'deceased';
+                        this.dx = 0;
+                        this.dy = 0;
+                    }
+                }
+            }
+
+            draw() {
+                // Set color based on status
+                switch(this.status) {
+                    case 'healthy':
+                        ctx.fillStyle = '#4CAF50'; // Green
+                        break;
+                    case 'infected':
+                        ctx.fillStyle = '#FF5722'; // Red
+                        break;
+                    case 'recovered':
+                        ctx.fillStyle = '#2196F3'; // Blue
+                        break;
+                    case 'deceased':
+                        ctx.fillStyle = '#333'; // Dark gray
+                        break;
+                }
+
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Check collision with another person
+            isColliding(other) {
+                const dx = this.x - other.x;
+                const dy = this.y - other.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                return distance < this.radius + other.radius;
+            }
+        }
+
+        // Simulation variables
+        let people = [];
+        let animationId;
+
+        // Initialize simulation
+        function initSimulation() {
+            people = [];
+            
+            // Create people
+            for (let i = 0; i < params.population; i++) {
+                const radius = 5;
+                const x = Math.random() * (canvas.width - radius * 2) + radius;
+                const y = Math.random() * (canvas.height - radius * 2) + radius;
+                
+                // Determine initial status based on prevalence
+                let status = 'healthy';
+                if (Math.random() < params.prevalence) {
+                    status = 'infected';
+                }
+                
+                people.push(new Person(x, y, radius, status));
+            }
+            
+            updateStats();
+        }
+
+        // Update statistics display
+        function updateStats() {
+            const healthy = people.filter(p => p.status === 'healthy').length;
+            const infected = people.filter(p => p.status === 'infected').length;
+            const recovered = people.filter(p => p.status === 'recovered').length;
+            const deceased = people.filter(p => p.status === 'deceased').length;
+            
+            document.getElementById('healthyCount').textContent = healthy;
+            document.getElementById('infectedCount').textContent = infected;
+            document.getElementById('recoveredCount').textContent = recovered;
+            document.getElementById('deceasedCount').textContent = deceased;
+        }
+
+        // Main simulation loop
+        function simulate() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Update and draw each person
+            for (let person of people) {
+                person.update();
+                person.draw();
+            }
+            
+            // Check for collisions and disease transmission
+            for (let i = 0; i < people.length; i++) {
+                for (let j = i + 1; j < people.length; j++) {
+                    if (people[i].isColliding(people[j])) {
+                        // Handle disease transmission
+                        if (people[i].status === 'infected' && people[j].status === 'healthy') {
+                            if (Math.random() < params.transmissionRate) {
+                                people[j].status = 'infected';
+                            }
+                        } else if (people[j].status === 'infected' && people[i].status === 'healthy') {
+                            if (Math.random() < params.transmissionRate) {
+                                people[i].status = 'infected';
+                            }
+                        }
+                        
+                        // Bounce off each other
+                        const tempDx = people[i].dx;
+                        const tempDy = people[i].dy;
+                        people[i].dx = people[j].dx;
+                        people[i].dy = people[j].dy;
+                        people[j].dx = tempDx;
+                        people[j].dy = tempDy;
+                    }
+                }
+            }
+            
+            updateStats();
+            
+            // Continue animation
+            animationId = requestAnimationFrame(simulate);
+        }
+
+        // Set up event listeners for controls
+        document.getElementById('populationSlider').addEventListener('input', function() {
+            params.population = parseInt(this.value);
+            document.getElementById('populationValue').textContent = params.population;
+            resetSimulation();
+        });
+
+        document.getElementById('prevalenceSlider').addEventListener('input', function() {
+            params.prevalence = parseInt(this.value) / 100;
+            document.getElementById('prevalenceValue').textContent = this.value;
+            resetSimulation();
+        });
+
+        document.getElementById('transmissionSlider').addEventListener('input', function() {
+            params.transmissionRate = parseInt(this.value) / 100;
+            document.getElementById('transmissionValue').textContent = this.value;
+        });
+
+        document.getElementById('mortalitySlider').addEventListener('input', function() {
+            params.mortalityRate = parseInt(this.value);
+            document.getElementById('mortalityValue').textContent = this.value;
+        });
+
+        document.getElementById('recoverySlider').addEventListener('input', function() {
+            params.recoveryRate = parseInt(this.value);
+            document.getElementById('recoveryValue').textContent = this.value;
+        });
+
+        document.getElementById('speedSlider').addEventListener('input', function() {
+            params.movementSpeed = parseInt(this.value);
+            document.getElementById('speedValue').textContent = this.value;
+            
+            // Update movement speed for all people
+            for (let person of people) {
+                if (person.status !== 'deceased') {
+                    const speedFactor = params.movementSpeed / 2; // Normalize to original speed
+                    person.dx = (person.dx / Math.abs(person.dx) || 1) * speedFactor;
+                    person.dy = (person.dy / Math.abs(person.dy) || 1) * speedFactor;
+                }
+            }
+        });
+
+        document.getElementById('resetButton').addEventListener('click', resetSimulation);
+
+        function resetSimulation() {
+            cancelAnimationFrame(animationId);
+            initSimulation();
+            simulate();
+        }
+
+        // Start the simulation
+        initSimulation();
+        simulate();
+    </script>
+</body>
+</html>
