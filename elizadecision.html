@@ -1,0 +1,500 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Embedded Research in Local Authorities — Agent‑Based Model</title>
+  <style>
+    :root{
+      --bg:#0f172a; /* slate-900 */
+      --panel:#111827; /* gray-900 */
+      --muted:#334155; /* slate-600 */
+      --ink:#e5e7eb; /* gray-200 */
+      --ink-soft:#cbd5e1; /* slate-300 */
+      --accent:#22d3ee; /* cyan-400 */
+      --accent2:#a78bfa; /* violet-400 */
+      --success:#10b981; /* emerald-500 */
+      --warn:#f59e0b; /* amber-500 */
+      --danger:#ef4444; /* red-500 */
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(180deg,var(--bg),#0b1022);color:var(--ink);font:14px/1.4 system-ui,Segoe UI,Roboto,Helvetica,Arial}
+    a{color:var(--accent)}
+    .app{display:grid;grid-template-columns: 340px 1fr;min-height:100vh}
+    .side{padding:18px;border-right:1px solid #1f2937;background:radial-gradient(1200px 600px at 0% 0%, #111827 0%, #0c1428 80%)}
+    .main{display:grid;grid-template-rows:auto 1fr auto;gap:10px}
+    h1{font-size:18px;margin:0 0 12px 0;font-weight:700;letter-spacing:.3px}
+    h2{font-size:13px;margin:16px 0 8px 0;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.1em}
+    .card{background:rgba(17,24,39,.6);border:1px solid #1f2937;border-radius:14px;padding:12px;margin-bottom:10px;backdrop-filter: blur(4px)}
+    .row{display:flex;gap:8px;align-items:center;justify-content:space-between}
+    .row > label{flex: 1}
+    .row > input[type=range]{width:140px}
+    .small{font-size:12px;color:var(--ink-soft)}
+    .btn{background:linear-gradient(180deg,#1f2937,#0f172a);color:var(--ink);border:1px solid #334155;padding:8px 10px;border-radius:12px;cursor:pointer;transition:transform .05s ease, background .2s}
+    .btn:hover{background:#111827}
+    .btn:active{transform:scale(.98)}
+    .btn.primary{border-color: var(--accent); box-shadow: 0 0 0 1px inset rgba(34,211,238,.3)}
+    .btn.danger{border-color: var(--danger); color:#fecaca}
+    .toolbar{display:flex; gap:8px; padding:12px}
+    canvas{width:100%;height:100%;display:block;background:radial-gradient(600px 400px at 50% 50%, #0b1224 0%, #050a18 80%);border-top:1px solid #1f2937;border-bottom:1px solid #1f2937}
+    .legend{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:6px 12px}
+    .dot{width:10px;height:10px;border-radius:50%}
+    .badge{font-size:12px;color:var(--ink-soft);padding:2px 8px;border:1px solid #334155;border-radius:999px}
+    .metrics{display:flex;gap:10px;flex-wrap:wrap;padding:8px 12px;border-top:1px solid #1f2937}
+    .metric{background:#0b1326;border:1px solid #1f2937;border-radius:12px;padding:8px 10px;min-width:120px}
+    .metric b{display:block;font-size:18px;margin-bottom:4px}
+    .preset{display:flex;flex-wrap:wrap;gap:6px}
+    .preset .btn{font-size:12px}
+    .log{max-height:180px;overflow:auto;background:#070e1f;border:1px solid #1f2937;border-radius:12px;padding:8px;white-space:pre-wrap}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .tip{color:#94a3b8;font-size:12px}
+    .footer{opacity:.7;font-size:12px;padding:8px 12px}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="side">
+      <h1>Embedded Research — Agent‑Based Model</h1>
+      <div class="card small">
+        Explore how an embedded researcher’s influence rises or gets neutralised inside a politically exposed local authority. Tweak systemic pressures, defence mechanisms, and role design. Then run the simulation to see whether the project achieves <b>Decision Change</b> (success) or is domesticated via delay, reframing, diversion, exclusion, sanitisation, or symbolic absorption (failure).
+      </div>
+
+      <div class="card">
+        <h2>Presets</h2>
+        <div class="preset">
+          <button class="btn" data-preset="translational">Translational Fantasy</button>
+          <button class="btn" data-preset="defended">Defended System</button>
+          <button class="btn" data-preset="highAuthority">High‑Authority Researcher</button>
+          <button class="btn" data-preset="symbolic">Symbolic Compliance</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Structure & Exposure</h2>
+        <div class="row"><label>Risk Exposure</label><input id="risk" type="range" min="0" max="100" value="65"><span class="badge" id="risk_v">65</span></div>
+        <div class="row"><label>Hierarchy Strength</label><input id="hier" type="range" min="0" max="100" value="70"><span class="badge" id="hier_v">70</span></div>
+        <div class="row"><label>Defensibility Pressure</label><input id="def" type="range" min="0" max="100" value="75"><span class="badge" id="def_v">75</span></div>
+        <div class="row"><label>Budget Constraint</label><input id="budget" type="range" min="0" max="100" value="60"><span class="badge" id="budget_v">60</span></div>
+      </div>
+
+      <div class="card">
+        <h2>Role Design</h2>
+        <div class="row"><label>Researcher Access Level</label><input id="access" type="range" min="0" max="100" value="40"><span class="badge" id="access_v">40</span></div>
+        <div class="row"><label>Positional Authority</label><input id="authority" type="range" min="0" max="100" value="30"><span class="badge" id="authority_v">30</span></div>
+        <div class="row"><label>Contract Precarity</label><input id="precarity" type="range" min="0" max="100" value="70"><span class="badge" id="precarity_v">70</span></div>
+        <div class="row"><label>Research Quality</label><input id="quality" type="range" min="0" max="100" value="75"><span class="badge" id="quality_v">75</span></div>
+      </div>
+
+      <div class="card">
+        <h2>Defence Repertoires</h2>
+        <div class="row"><label>Procedural Delay</label><input id="delay" type="range" min="0" max="100" value="65"><span class="badge" id="delay_v">65</span></div>
+        <div class="row"><label>Managerial Reframing</label><input id="reframe" type="range" min="0" max="100" value="60"><span class="badge" id="reframe_v">60</span></div>
+        <div class="row"><label>Diversion to Delivery</label><input id="divert" type="range" min="0" max="100" value="55"><span class="badge" id="divert_v">55</span></div>
+        <div class="row"><label>Exclusion from Rooms</label><input id="exclude" type="range" min="0" max="100" value="60"><span class="badge" id="exclude_v">60</span></div>
+        <div class="row"><label>Sanitisation</label><input id="sanitize" type="range" min="0" max="100" value="50"><span class="badge" id="sanitize_v">50</span></div>
+        <div class="row"><label>Symbolic Absorption</label><input id="symbolic" type="range" min="0" max="100" value="65"><span class="badge" id="symbolic_v">65</span></div>
+      </div>
+
+      <div class="card">
+        <h2>Run</h2>
+        <div class="row"><label>Ticks (time limit)</label><input id="ticks" type="range" min="100" max="2000" step="50" value="800"><span class="badge" id="ticks_v">800</span></div>
+        <div class="row"><label>Managers (agents)</label><input id="nManagers" type="range" min="4" max="40" value="16"><span class="badge" id="nManagers_v">16</span></div>
+        <div class="toolbar">
+          <button id="runBtn" class="btn primary">▶ Run</button>
+          <button id="stepBtn" class="btn">⏭ Step</button>
+          <button id="resetBtn" class="btn">⟲ Reset</button>
+          <button id="exportBtn" class="btn">⇩ Export Scenario</button>
+        </div>
+        <div class="tip">Tip: use presets to set up common scenarios, then adjust sliders and compare results.</div>
+      </div>
+
+      <div class="card">
+        <h2>Event Log</h2>
+        <div id="log" class="log"></div>
+      </div>
+
+      <div class="footer">Built as a conceptual learning tool. It simplifies real dynamics for clarity.
+      </div>
+    </aside>
+
+    <section class="main">
+      <div class="legend">
+        <div class="row" style="gap:10px">
+          <span class="badge">Researcher = <span class="dot" style="background:var(--accent)"></span></span>
+          <span class="badge">Managers = <span class="dot" style="background:#60a5fa"></span></span>
+          <span class="badge">Gatekeepers = <span class="dot" style="background:#f472b6"></span></span>
+          <span class="badge">Scrutiny/Audit = <span class="dot" style="background:#facc15"></span></span>
+        </div>
+      </div>
+      <canvas id="view" width="1200" height="750"></canvas>
+      <div class="metrics" id="metrics"></div>
+    </section>
+  </div>
+
+<script>
+// ======= Utility =======
+const $ = sel => document.querySelector(sel);
+const $$ = sel => Array.from(document.querySelectorAll(sel));
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+function rng(seed){ // simple LCG so presets feel consistent across runs
+  let s = (seed>>>0)||Math.floor(Math.random()*2**31);
+  return ()=> (s = (s*1664525 + 1013904223) % 4294967296) / 4294967296;
+}
+function lerp(a,b,t){return a+(b-a)*t}
+function chance(r){return Math.random() < r}
+function fmt(x){return Math.round(x*100)/100}
+
+// ======= Parameters (read from UI) =======
+const P = () => ({
+  risk: val('risk'),
+  hier: val('hier'),
+  def: val('def'),
+  budget: val('budget'),
+  access: val('access'),
+  authority: val('authority'),
+  precarity: val('precarity'),
+  quality: val('quality'),
+  delay: val('delay'),
+  reframe: val('reframe'),
+  divert: val('divert'),
+  exclude: val('exclude'),
+  sanitize: val('sanitize'),
+  symbolic: val('symbolic'),
+  ticks: parseInt($('#ticks').value,10),
+  nManagers: parseInt($('#nManagers').value,10)
+});
+function val(id){return parseInt(document.getElementById(id).value,10)/100}
+
+// reflect slider numbers
+$$('input[type=range]').forEach(inp=>{
+  const badge = document.getElementById(inp.id+"_v");
+  const set=()=>{badge.textContent = inp.value}; set();
+  inp.addEventListener('input', set);
+});
+
+// ======= ABM Core =======
+const canvas = document.getElementById('view');
+const ctx = canvas.getContext('2d');
+let R; // RNG for deterministic steps when seeded
+
+const W = canvas.width, H = canvas.height;
+
+const types = {
+  researcher: { color: getCSS('--accent'), r: 7 },
+  manager: { color: '#60a5fa', r: 5 },
+  gatekeeper: { color: '#f472b6', r: 6 },
+  scrutiny: { color: '#facc15', r: 6 },
+}
+function getCSS(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()}
+
+class Agent{
+  constructor(type,x,y){
+    this.type=type; this.x=x; this.y=y; this.vx= (Math.random()*2-1)*1.2; this.vy=(Math.random()*2-1)*1.2;
+    this.r = types[type].r;
+  }
+  step(){
+    // soft bouncing random walk
+    this.x += this.vx; this.y += this.vy;
+    if(this.x<10||this.x>W-10) this.vx*=-1;
+    if(this.y<10||this.y>H-10) this.vy*=-1;
+    // jitter
+    this.vx += (Math.random()-.5)*0.2; this.vy += (Math.random()-.5)*0.2;
+    this.vx = clamp(this.vx,-1.8,1.8); this.vy = clamp(this.vy,-1.8,1.8);
+  }
+  draw(){
+    ctx.fillStyle = types[this.type].color;
+    ctx.beginPath(); ctx.arc(this.x,this.y,this.r,0,Math.PI*2); ctx.fill();
+  }
+}
+
+// ======= Simulation State =======
+let agents=[], tick=0, running=false, raf=null, seed=Math.floor(Math.random()*1e9);
+
+const state = {
+  influence: 0, // researcher cumulative influence
+  disruption: 0, // how disruptive the evidence is perceived
+  decisionChange: 0, // success metric
+  neutralisation: 0, // accumulated neutralisation
+  routes:{delay:0,reframe:0,divert:0,exclude:0,sanitize:0,symbolic:0},
+};
+
+function reset(initPreset){
+  cancelAnimationFrame(raf);
+  running=false; tick=0; R=rng(seed);
+  agents=[];
+  const p=P();
+  // create agents
+  const researcher=new Agent('researcher',W*0.2,H*0.5); researcher.vx=1.2; agents.push(researcher);
+  // Managers
+  for(let i=0;i<p.nManagers;i++) agents.push(new Agent('manager', W*R(), H*R()));
+  // Gatekeepers (agenda/meetings)
+  for(let i=0;i<Math.max(3, Math.round(6*p.hier));i++) agents.push(new Agent('gatekeeper', W*(.55+.35*R()), H*R()));
+  // Scrutiny/Audit nodes sit near the right (public exposure)
+  for(let i=0;i<Math.max(2, Math.round(5*p.risk));i++) agents.push(new Agent('scrutiny', W*(.7+.25*R()), H*R()));
+
+  // reset metrics
+  state.influence=0; state.disruption=0; state.decisionChange=0; state.neutralisation=0;
+  for(const k in state.routes) state.routes[k]=0;
+  $('#log').textContent = (initPreset?`Preset: ${initPreset}\n`:'') + `Seed: ${seed}\n`;
+  draw();
+  renderMetrics();
+}
+
+// distance
+function d(a,b){const dx=a.x-b.x, dy=a.y-b.y; return Math.hypot(dx,dy)}
+
+// ======= Interaction Rules =======
+/*
+ High-level idea:
+ - Researcher interacts with Managers and Gatekeepers within radius.
+ - Each interaction creates either: Epistemic Uptake or Defence Response.
+ - Probabilities are shaped by structural parameters and role design.
+ - If Uptake chains through Gatekeepers and avoids Scrutiny penalties long enough, Decision Change accumulates.
+ - Defence Responses accumulate Neutralisation via specific routes.
+*/
+
+function step(){
+  const p=P();
+  tick++;
+  // move agents
+  agents.forEach(a=>a.step());
+
+  const researcher=agents.find(a=>a.type==='researcher');
+  // dynamic radius influenced by access
+  const R_interact = lerp(40, 140, p.access);
+
+  // perceived disruption: high quality + misfit with hierarchy/defensibility increases disruption
+  const baseDisruption = clamp((p.quality*0.7 + (1-p.authority)*0.3 + p.risk*0.4 + p.def*0.5) - (p.access*0.3), 0, 1);
+  state.disruption = lerp(state.disruption, baseDisruption, 0.05);
+
+  // nearby agents
+  const near = agents.filter(a => a!==researcher && d(a,researcher) < R_interact);
+  let interactions = 0;
+  near.forEach(other=>{
+    if(other.type==='manager' || other.type==='gatekeeper'){
+      interactions++;
+      const uptakeProb = uptakeProbability(p); // chance of genuine uptake
+      const defended = Math.random() > uptakeProb;
+      if(defended){
+        const route = chooseDefenceRoute(p);
+        state.routes[route] += 1;
+        state.neutralisation += neutralisationImpact(route, p);
+        log(`Defence: ${route.toUpperCase()} (${prettyP(route,p)})`);
+      }else{
+        const infl = influenceGain(p);
+        state.influence += infl;
+        log(`Uptake +${fmt(infl)} via ${other.type}`);
+        // Gatekeeper pass-through amplifies or throttles
+        if(other.type==='gatekeeper'){
+          const pass = clamp(p.access*0.6 + p.authority*0.4 - p.hier*0.5, 0, 1);
+          if(chance(pass)){
+            const gain = infl * lerp(0.5, 1.6, p.quality);
+            state.decisionChange += gain;
+            log(`Gatekeeper pass-through → DecisionChange +${fmt(gain)}`);
+          }else{
+            // silently parked (agenda control)
+            state.routes.delay += 0.5; state.neutralisation += neutralisationImpact('delay', p)*0.5;
+            log('Parked at gatekeeper (agenda timing)');
+          }
+        }else{
+          // manager-level influence needs cumulative mass to convert
+          if(state.influence > thresholdForChange(p)){
+            const gain = lerp(0.2,1.2,p.quality);
+            state.decisionChange += gain;
+            state.influence *= 0.9; // some influence gets cashed-in
+            log(`Manager conversion → DecisionChange +${fmt(gain)}`);
+          }
+        }
+      }
+    }
+  });
+
+  // scrutiny penalty if disruption is high and risk/defensibility strong
+  const scrutinyFactor = clamp(state.disruption * (p.risk*0.8 + p.def*0.6), 0, 1.4);
+  if(chance(scrutinyFactor*0.02)){
+    state.routes.sanitize += 0.5;
+    state.neutralisation += neutralisationImpact('sanitize', p)*0.7;
+    log('Scrutiny triggers sanitisation of findings');
+  }
+
+  // diversion increases with budget constraint & delivery pressure
+  if(chance((p.divert*0.6 + p.budget*0.5 + p.precarity*0.4) * 0.02)){
+    state.routes.divert += 1; state.neutralisation += neutralisationImpact('divert', p);
+    log('Researcher diverted to delivery/reporting work');
+  }
+
+  // success / failure conditions
+  const success = state.decisionChange >= successThreshold(p);
+  const failure = state.neutralisation >= failureThreshold(p) || tick >= p.ticks;
+
+  // draw and metrics
+  draw();
+  renderMetrics(success,failure);
+
+  if(success){
+    banner('PROJECT SUCCESS: Decision Change achieved', 'success');
+    running=false; return;
+  }
+  if(failure){
+    banner(tick>=p.ticks?'TIME UP: Scenario unresolved → treated as failure':'PROJECT FAILURE: Neutralised', 'danger');
+    running=false; return;
+  }
+}
+
+function uptakeProbability(p){
+  // quality + access + authority help; hierarchy, defensibility, risk and precarity hurt
+  let up = 0.15 + 0.6*p.quality + 0.3*p.access + 0.25*p.authority;
+  up -= 0.35*p.hier + 0.35*p.def + 0.25*p.risk + 0.2*p.precarity;
+  up -= 0.2*(p.delay+p.reframe+p.divert+p.exclude+p.sanitize+p.symbolic)/6; // defence baseline
+  return clamp(up, 0.02, 0.85);
+}
+function chooseDefenceRoute(p){
+  const weights = {
+    delay: p.delay*0.9 + p.hier*0.2,
+    reframe: p.reframe*1.0 + p.def*0.2,
+    divert: p.divert*1.0 + p.budget*0.3,
+    exclude: p.exclude*1.0 + p.hier*0.4,
+    sanitize: p.sanitize*1.0 + p.risk*0.3 + p.def*0.2,
+    symbolic: p.symbolic*1.0 + p.def*0.2
+  }
+  // roulette wheel
+  const entries = Object.entries(weights);
+  const sum = entries.reduce((a,[_k,v])=>a+v,0)+1e-9;
+  let r = Math.random()*sum;
+  for(const [k,v] of entries){ r-=v; if(r<=0) return k }
+  return 'delay';
+}
+function neutralisationImpact(route,p){
+  const base = {delay:.6, reframe:.8, divert:.9, exclude:1.0, sanitize:1.1, symbolic:.7}[route] || .8;
+  // stronger hierarchy/defensibility increase impact; access/authority reduce it
+  const sys = 0.6*(p.hier+p.def)/2 + 0.2*p.risk - 0.4*(p.access*0.6+p.authority*0.4);
+  return clamp(base + sys, 0.2, 1.8);
+}
+function influenceGain(p){
+  // higher quality + authority + access → more influence per interaction
+  return clamp(0.2 + 1.2*p.quality + 0.3*p.authority + 0.3*p.access - 0.2*p.precarity, 0.05, 1.8)
+}
+function thresholdForChange(p){
+  // hierarchical systems require more accumulated influence to convert a manager
+  return lerp(2.5, 7.5, p.hier*0.8 + p.def*0.2)
+}
+function successThreshold(p){
+  // need more decision change where defensibility/risk are high
+  return lerp(6, 16, clamp((p.def*0.6 + p.risk*0.4),0,1));
+}
+function failureThreshold(p){
+  // failure arrives sooner when defence repertoire is strong and role is precarious
+  const defence = (p.delay+p.reframe+p.divert+p.exclude+p.sanitize+p.symbolic)/6;
+  return lerp(8, 18, clamp( defence*0.7 + p.precarity*0.3, 0, 1));
+}
+function prettyP(route,p){
+  return {
+    delay: `delay=${Math.round(p.delay*100)}%`,
+    reframe: `reframe=${Math.round(p.reframe*100)}%`,
+    divert: `divert=${Math.round(p.divert*100)}%`,
+    exclude: `exclude=${Math.round(p.exclude*100)}%`,
+    sanitize:`sanitize=${Math.round(p.sanitize*100)}%`,
+    symbolic:`symbolic=${Math.round(p.symbolic*100)}%`
+  }[route]
+}
+
+// ======= Rendering =======
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  // soft vignette grid backdrop
+  ctx.fillStyle='#0c1224';
+  for(let x=0;x<W;x+=40){ ctx.fillRect(x,0,1,H); }
+  for(let y=0;y<H;y+=40){ ctx.fillRect(0,y,W,1); }
+  agents.forEach(a=>a.draw());
+  // progress bars (success vs neutralisation)
+  const p=P();
+  const pad=20, barW=W-2*pad, barH=8, y=H-26;
+  // neutralisation
+  ctx.fillStyle='rgba(239,68,68,.6)';
+  ctx.fillRect(pad, y, barW * (state.neutralisation/failureThreshold(p)), barH);
+  // success
+  ctx.fillStyle='rgba(16,185,129,.7)';
+  ctx.fillRect(pad, y-14, barW * (state.decisionChange/successThreshold(p)), barH);
+}
+
+function renderMetrics(success=false,failure=false){
+  const p=P();
+  const m = $('#metrics');
+  m.innerHTML = `
+    <div class="metric"><b>${fmt(state.influence)}</b><div class="small">Influence</div></div>
+    <div class="metric"><b>${fmt(state.disruption)}</b><div class="small">Perceived Disruption</div></div>
+    <div class="metric"><b>${fmt(state.decisionChange)} / ${fmt(successThreshold(p))}</b><div class="small">Decision Change (success bar)</div></div>
+    <div class="metric"><b>${fmt(state.neutralisation)} / ${fmt(failureThreshold(p))}</b><div class="small">Neutralisation (failure bar)</div></div>
+    <div class="metric"><b>${tick} / ${p.ticks}</b><div class="small">Ticks</div></div>
+    <div class="metric"><b>${state.routes.delay}</b><div class="small">Delay</div></div>
+    <div class="metric"><b>${state.routes.reframe}</b><div class="small">Reframing</div></div>
+    <div class="metric"><b>${state.routes.divert}</b><div class="small">Diversion</div></div>
+    <div class="metric"><b>${state.routes.exclude}</b><div class="small">Exclusion</div></div>
+    <div class="metric"><b>${state.routes.sanitize}</b><div class="small">Sanitisation</div></div>
+    <div class="metric"><b>${state.routes.symbolic}</b><div class="small">Symbolic Absorption</div></div>
+    ${success?'<div class="metric" style="border-color:var(--success)"><b>✔</b><div class="small">Success</div></div>':''}
+    ${failure?'<div class="metric" style="border-color:var(--danger)"><b>✖</b><div class="small">Failure</div></div>':''}
+  `;
+}
+
+function log(msg){
+  const el=$('#log');
+  el.textContent = `[t=${tick}] ${msg}\n` + el.textContent;
+}
+
+function banner(text, type){
+  const el = document.createElement('div');
+  el.textContent = text;
+  el.style.position='absolute'; el.style.left='360px'; el.style.top='14px'; el.style.padding='10px 14px';
+  el.style.border='1px solid #1f2937'; el.style.borderRadius='12px'; el.style.zIndex='10';
+  el.style.background= type==='success'? 'rgba(16,185,129,.15)' : 'rgba(239,68,68,.12)';
+  el.style.color = type==='success'? '#d1fae5' : '#fecaca';
+  document.body.appendChild(el);
+  setTimeout(()=> el.remove(), 2500);
+}
+
+// ======= Controls =======
+function loop(){ if(!running) return; step(); raf=requestAnimationFrame(loop); }
+$('#runBtn').addEventListener('click',()=>{ running=!running; if(running){ $('#runBtn').textContent='❚❚ Pause'; loop(); } else { $('#runBtn').textContent='▶ Run'; } });
+$('#stepBtn').addEventListener('click',()=>{ if(!running) step(); });
+$('#resetBtn').addEventListener('click',()=>{ seed=Math.floor(Math.random()*1e9); reset(); });
+$('#exportBtn').addEventListener('click',()=>{
+  const conf = { seed, params:P() };
+  const blob = new Blob([JSON.stringify(conf,null,2)], {type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='embedded_research_abm_scenario.json'; a.click();
+});
+
+// Presets reflecting conceptual scenarios
+function applyPreset(name){
+  const set=(id,v)=>{ const el=document.getElementById(id); el.value=v; document.getElementById(id+"_v").textContent=v; }
+  if(name==='translational'){
+    set('risk',30); set('hier',25); set('def',30); set('budget',40);
+    set('access',80); set('authority',65); set('precarity',20); set('quality',80);
+    set('delay',25); set('reframe',25); set('divert',25); set('exclude',20); set('sanitize',25); set('symbolic',20);
+  }
+  if(name==='defended'){
+    set('risk',85); set('hier',80); set('def',85); set('budget',70);
+    set('access',25); set('authority',20); set('precarity',75); set('quality',70);
+    set('delay',75); set('reframe',70); set('divert',65); set('exclude',70); set('sanitize',65); set('symbolic',75);
+  }
+  if(name==='highAuthority'){
+    set('risk',55); set('hier',45); set('def',55); set('budget',50);
+    set('access',70); set('authority',85); set('precarity',25); set('quality',85);
+    set('delay',35); set('reframe',35); set('divert',30); set('exclude',30); set('sanitize',35); set('symbolic',40);
+  }
+  if(name==='symbolic'){
+    set('risk',70); set('hier',60); set('def',75); set('budget',55);
+    set('access',45); set('authority',30); set('precarity',60); set('quality',70);
+    set('delay',45); set('reframe',55); set('divert',50); set('exclude',45); set('sanitize',55); set('symbolic',85);
+  }
+  reset(capitalise(name));
+}
+$$('[data-preset]').forEach(b=> b.addEventListener('click', e=>applyPreset(e.target.dataset.preset)) );
+function capitalise(s){return s.charAt(0).toUpperCase()+s.slice(1).replace(/([A-Z])/g,' $1')}
+
+// initial
+applyPreset('defended');
+</script>
+</body>
+</html>
