@@ -1,0 +1,329 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BAGE CAN Model v5 — HTML/JS</title>
+  <style>
+    :root{--bg:#0b1020;--panel:#101829;--ink:#e5e7eb;--muted:#94a3b8;--accent:#22d3ee;--good:#10b981;--bad:#ef4444;--line:#1f2937}
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(180deg,var(--bg),#070d1c);color:var(--ink);font:14px/1.45 system-ui,Segoe UI,Roboto,Helvetica,Arial}
+    .app{display:grid;grid-template-columns:360px 1fr;min-height:100vh}
+    .side{padding:16px;border-right:1px solid var(--line);background:radial-gradient(900px 400px at 0 0,#0f172a 0%,#0b1020 70%)}
+    .main{display:grid;grid-template-rows:auto 1fr auto}
+    h1{font-size:18px;margin:0 0 8px;font-weight:700}
+    h2{font-size:12px;margin:14px 0 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em}
+    .card{background:rgba(16,24,41,.6);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px}
+    .row{display:flex;gap:8px;align-items:center;justify-content:space-between}
+    label{flex:1}
+    input[type=range]{width:140px}
+    .badge{border:1px solid var(--line);border-radius:999px;padding:2px 8px;color:var(--muted);font-size:12px}
+    .btn{background:linear-gradient(180deg,#1f2937,#0f172a);color:var(--ink);border:1px solid #334155;padding:8px 10px;border-radius:12px;cursor:pointer}
+    .btn.primary{border-color:var(--accent)}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .log{max-height:190px;overflow:auto;background:#081024;border:1px solid var(--line);border-radius:12px;padding:8px;white-space:pre-wrap}
+    canvas{width:100%;height:100%;display:block;background:radial-gradient(600px 400px at 50% 50%, #0b1224 0%, #050a18 80%);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+    .metrics{display:flex;gap:10px;flex-wrap:wrap;padding:8px 12px;border-top:1px solid var(--line)}
+    .metric{background:#0b1326;border:1px solid var(--line);border-radius:12px;padding:8px 10px;min-width:140px}
+    .metric b{display:block;font-size:18px;margin-bottom:4px}
+    .small{font-size:12px;color:var(--muted)}
+    .tip{font-size:12px;color:var(--muted)}
+    table{width:100%;border-collapse:collapse}
+    th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;font-size:13px}
+  </style>
+  <!--
+    BAGE CAN MODEL v5 — JavaScript/HTML rendition
+
+    Mapping to your earlier "Embedded Research — Agent‑Based Model":
+      • Problems (PR) ↔ empirical/policy issues surfacing in the authority ("evidence problems").
+      • Choices (CH) ↔ actionable decisions/agenda items/gateway choices.
+      • Decision Makers (DM) ↔ managers/gatekeepers who carry energy budgets.
+      • Access structure JIA ↔ which problems can route to which choices (akin to access & agendas).
+      • Decision structure IKA ↔ which DMs are needed for a choice (akin to sponsorship/rooms).
+      • Energy requirements (XFRC, XERP) ↔ effort/barriers; higher values mirror defence repertoire strength.
+      • NA movement modes ↔ whether problems and/or DMs can re‑route (compare to “delay/exclusion” stickiness).
+
+    Output statistics correspond to the classic BAGE summary columns:
+      KZ: decisions not made; KY: active choice periods; KX: DM changes; KW: problems not solved;
+      KV: problem reattachments; KU: latent problem periods; KT: attached problem periods; KS: DM resting;
+      XR: unused energy.
+  -->
+</head>
+<body>
+  <div class="app">
+    <aside class="side">
+      <h1>BAGE CAN Model v5</h1>
+      <div class="card small">A faithful-but-modern JS/HTML interpretation of the classic BAGE CAN model. Configure dimensions and controls, then run. Designed to compare with the Embedded Research ABM you already have.</div>
+
+      <div class="card">
+        <h2>Controls</h2>
+        <div class="row"><label>IO (1=summary, 2=+histories)</label><input id="io" type="range" min="1" max="2" value="2"><span class="badge" id="io_v">2</span></div>
+        <div class="row"><label>NA (1=both move, 2=DMs only, 3=Problems only, 4=neither)</label><input id="na" type="range" min="1" max="4" value="1"><span class="badge" id="na_v">1</span></div>
+        <div class="row"><label>IL (Problem energy factor)</label><input id="il" type="range" min="1" max="300" value="100"><span class="badge" id="il_v">100</span></div>
+      </div>
+
+      <div class="card">
+        <h2>Dimensions</h2>
+        <div class="row"><label>NCH (Choices)</label><input id="nch" type="range" min="2" max="40" value="10"><span class="badge" id="nch_v">10</span></div>
+        <div class="row"><label>NPR (Problems)</label><input id="npr" type="range" min="2" max="120" value="40"><span class="badge" id="npr_v">40</span></div>
+        <div class="row"><label>NDM (Decision Makers)</label><input id="ndm" type="range" min="2" max="40" value="12"><span class="badge" id="ndm_v">12</span></div>
+        <div class="row"><label>NTP (Time steps)</label><input id="ntp" type="range" min="50" max="2000" step="50" value="600"><span class="badge" id="ntp_v">600</span></div>
+      </div>
+
+      <div class="card">
+        <div class="row"><button id="run" class="btn primary">▶ Run</button><button id="step" class="btn">⏭ Step</button><button id="reset" class="btn">⟲ Reset</button></div>
+        <div class="tip">Use NA to toggle re‑routing behaviour; increase IL to make problems harder.</div>
+      </div>
+
+      <div class="card">
+        <h2>Event Log</h2>
+        <div id="log" class="log"></div>
+      </div>
+    </aside>
+
+    <section class="main">
+      <div style="padding:10px 12px">
+        <div class="grid">
+          <div class="card">
+            <h2>Summary (BAGE columns)</h2>
+            <table id="summary">
+              <thead><tr><th>Col</th><th>Code</th><th>Description</th><th>Value</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="card">
+            <h2>Histories (if IO=2)</h2>
+            <div class="small">XSC[t]: solution coefficient; XR[t]: unused energy, etc.</div>
+            <div id="hist" class="log" style="height:260px"></div>
+          </div>
+        </div>
+      </div>
+      <canvas id="view" width="1200" height="620"></canvas>
+      <div class="metrics" id="metrics"></div>
+    </section>
+  </div>
+
+<script>
+// ===== Utilities
+const $=s=>document.querySelector(s); const $$=s=>Array.from(document.querySelectorAll(s));
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+function rng(seed){let s=(seed>>>0)||Math.floor(Math.random()*2**31);return()=> (s = (s*1664525+1013904223)>>>0)/4294967296}
+function pick(arr,r){const i=Math.floor((r||Math.random())*arr.length);return arr[i]}
+function sum(a){return a.reduce((x,y)=>x+y,0)}
+function fmt(x){return Math.round(x*100)/100}
+
+// reflect range inputs
+$$('input[type=range]').forEach(inp=>{const badge=$('#'+inp.id+'_v'); const f=()=>badge.textContent=inp.value; inp.addEventListener('input',f); f();});
+
+// ===== Parameters from UI
+const P=()=>({
+  io: +$('#io').value,
+  na: +$('#na').value,
+  il: +$('#il').value/100, // scale
+  NCH:+$('#nch').value,
+  NPR:+$('#npr').value,
+  NDM:+$('#ndm').value,
+  NTP:+$('#ntp').value,
+});
+
+// ===== Model State (arrays use BAGE names as comments)
+let seed=Math.floor(Math.random()*1e9), R=rng(seed);
+let t=0, running=false, raf=null;
+
+let ICH, ICS, JET, JF, JFF, JOS, KDC, KDCW, XEF, XFRC, XERP, XSC, IKA, JIA, XEA;
+
+// Summary stats
+let KZ=0, KY=0, KX=0, KW=0, KV=0, KU=0, KT=0, KS=0; // columns 1..8
+let XR_total=0; // col 9 (summed unused energy)
+let XR_hist=[]; let XSC_hist=[];
+
+// Visuals
+const canvas=$('#view'); const ctx=canvas.getContext('2d'); const W=canvas.width, H=canvas.height;
+
+function init(){
+  const p=P(); R=rng(seed); t=0; running=false; cancelAnimationFrame(raf);
+  ICH=new Array(p.NCH).fill(-1);     // choice entry time
+  ICS=new Array(p.NCH).fill(0);      // choice status (0 idle, 1 executed at t)
+  JET=new Array(p.NPR).fill(0);      // problem entry time
+  JF=new Array(p.NPR).fill(-1);      // problem attached choice index
+  JFF=new Array(p.NPR).fill(-1);     // working copy
+  JOS=new Array(p.NPR).fill(0);      // problem status (0 latent,1 attached,2 solved)
+  KDC=new Array(p.NDM).fill(-1);     // DM attached choice (-1 resting)
+  KDCW=new Array(p.NDM).fill(-1);    // working copy
+  XEF=new Array(p.NCH).fill(0);      // energy expended per choice
+  XFRC=new Array(p.NCH).fill(0).map(()=> 3 + Math.floor(R()*7)); // choice energy req 3..9
+  XERP=new Array(p.NPR).fill(0).map(()=> Math.floor((2+R()*6)*p.il)); // problem energy req
+  XSC=new Array(p.NTP).fill(0);      // solution coefficient (solved/total)
+
+  // Decision structure IKA[NCH][NDM] (who is needed for a choice)
+  IKA=[...Array(p.NCH)].map(()=> new Array(p.NDM).fill(0));
+  for(let ch=0; ch<p.NCH; ch++){
+    const need = 1 + Math.floor(R()*Math.min(4,p.NDM));
+    const ids=shuffle(range(p.NDM)).slice(0,need);
+    ids.forEach(id=> IKA[ch][id]=1);
+  }
+  // Access structure JIA[NPR][NCH] (which choices can address this problem)
+  JIA=[...Array(p.NPR)].map(()=> new Array(p.NCH).fill(0));
+  for(let pr=0; pr<p.NPR; pr++){
+    const k = 1 + Math.floor(R()*Math.min(5,p.NCH));
+    const ids=shuffle(range(p.NCH)).slice(0,k);
+    ids.forEach(id=> JIA[pr][id]=1);
+  }
+  // Energy matrix XEA[NDM][NTP] — DM energy by time
+  XEA=[...Array(p.NDM)].map(()=> new Array(p.NTP).fill(0).map(()=> 4 + Math.floor(R()*7))); // 4..10 per period
+
+  // Stats reset
+  KZ=KY=KX=KW=KV=KU=KT=KS=0; XR_total=0; XR_hist=[]; XSC_hist=[];
+  $('#log').textContent=`Seed: ${seed}\n`;
+  renderSummary(); draw();
+}
+
+function range(n){return [...Array(n).keys()]}
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(R()*(i+1)); [a[i],a[j]]=[a[j],a[i]] } return a }
+
+// ===== Dynamics per tick
+function step(){
+  const p=P(); t++; if(t>p.NTP){ running=false; return }
+  // reset per‑tick flags
+  ICS.fill(0);
+
+  // 1) Arrivals / latent periods
+  for(let pr=0; pr<p.NPR; pr++){
+    if(JOS[pr]===2) continue; // solved
+
+    if(JF[pr]===-1){ // latent or unattached
+      KU++; // latent problem period
+      // arrival burst chance: encourage activation
+      if(Math.random()<0.12){ // becomes active
+        // choose an accessible choice
+        const choices = range(p.NCH).filter(ch=> JIA[pr][ch]===1);
+        if(choices.length){ const ch = pick(choices,R()); JF[pr]=ch; JOS[pr]=1; JET[pr]=t; KT++; log(`Problem ${pr} attaches to choice ${ch}`); }
+      }
+    }else{
+      // already attached
+      KT++; // attached problem period
+      if((p.na===1||p.na===3) && Math.random()<0.06){ // problems can reattach
+        const choices = range(p.NCH).filter(ch=> JIA[pr][ch]===1 && ch!==JF[pr]);
+        if(choices.length && Math.random()<0.5){ const ch2=pick(choices,R()); JF[pr]=ch2; KV++; log(`Problem ${pr} reattaches to choice ${ch2}`); }
+      }
+    }
+  }
+
+  // 2) Decision makers pick/leave choices
+  for(let dm=0; dm<p.NDM; dm++){
+    const energy = XEA[dm][t-1];
+    if(KDC[dm]===-1) KS++; // resting period
+
+    if(p.na===1||p.na===2){ // DMs can move
+      // if resting or random switch, pick a choice that needs this DM and has attached problems
+      if(KDC[dm]===-1 || Math.random()<0.08){
+        const candidates = range(p.NCH).filter(ch=> IKA[ch][dm]===1 && JF.some(v=>v===ch));
+        if(candidates.length){ const ch=pick(candidates,R()); if(KDC[dm]!==ch) {KDC[dm]=ch; KX++; log(`DM ${dm} -> choice ${ch}`);} }
+      }
+    }
+
+    // If stuck (NA=3 or 4), keep current assignment
+  }
+
+  // 3) Execute choices when all required DMs present AND enough total energy this tick
+  for(let ch=0; ch<p.NCH; ch++){
+    const neededDMs = range(p.NDM).filter(dm=> IKA[ch][dm]===1);
+    const presentDMs = neededDMs.filter(dm=> KDC[dm]===ch);
+    if(presentDMs.length===neededDMs.length && JF.includes(ch)){
+      const energyAvail = sum(presentDMs.map(dm=> XEA[dm][t-1]||0));
+      if(energyAvail >= XFRC[ch]){
+        ICS[ch]=1; KY++; XEF[ch]+=XFRC[ch];
+        // spend energy: any surplus contributes to XR (unused)
+        const unused = Math.max(0, energyAvail - XFRC[ch]);
+        XR_total += unused; XR_hist.push(unused);
+        // mark the attached problems as progressed/solved
+        for(let pr=0; pr<p.NPR; pr++) if(JF[pr]===ch && JOS[pr]!==2){
+          XERP[pr] -= XFRC[ch];
+          if(XERP[pr] <= 0){ JOS[pr]=2; JF[pr]=-1; log(`Problem ${pr} solved via choice ${ch}`); }
+        }
+      }
+    }
+  }
+
+  // 4) Update solution coefficient and failures
+  const solved = JOS.filter(s=>s===2).length; XSC[t-1]= solved / p.NPR; XSC_hist.push(XSC[t-1]);
+
+  // 5) Decisions not made & problems not solved (end only, but we can accumulate heuristically)
+  // If a choice has attached problems but not executed this tick, count toward KZ
+  for(let ch=0; ch<p.NCH; ch++) if(JF.includes(ch) && !ICS[ch]) KZ++;
+
+  draw(); renderSummary(); maybeLogHist();
+}
+
+function maybeLogHist(){ if(P().io===2 && t%10===0){ $('#hist').textContent = `t=${t}  XSC=${fmt(XSC[t-1])}  XR+=${fmt(XR_total)}\n` + $('#hist').textContent } }
+
+// ===== Rendering
+function draw(){
+  const p=P(); ctx.clearRect(0,0,W,H);
+  // Layout: three rows — DMs on top; Choices in middle; Problems bottom
+  const m=40; const rowH=(H-2*m)/3;
+  // Draw choices
+  for(let ch=0; ch<p.NCH; ch++){
+    const x = m + ch*( (W-2*m)/(p.NCH) ) + 12; const y = m + rowH;
+    ctx.fillStyle = ICS[ch]? 'rgba(16,185,129,.9)' : 'rgba(148,163,184,.4)';
+    ctx.fillRect(x-8,y-8,16,16); // choice node
+    // energy req bar
+    ctx.fillStyle='rgba(34,211,238,.8)'; ctx.fillRect(x-8,y+12, 16*Math.min(1, XFRC[ch]/10), 4);
+  }
+  // Draw DMs
+  for(let dm=0; dm<p.NDM; dm++){
+    const x = m + dm*( (W-2*m)/(p.NDM) ) + 6; const y = m + 10;
+    const ch = KDC[dm];
+    ctx.fillStyle = ch===-1? 'rgba(148,163,184,.5)' : 'rgba(96,165,250,.95)';
+    ctx.beginPath(); ctx.arc(x,y,6,0,Math.PI*2); ctx.fill();
+    if(ch!==-1){ // line to choice
+      const cx = m + ch*( (W-2*m)/(p.NCH) ) + 12; const cy = m + rowH;
+      ctx.strokeStyle='rgba(96,165,250,.4)'; ctx.beginPath(); ctx.moveTo(x,y+6); ctx.lineTo(cx,cy-8); ctx.stroke();
+    }
+  }
+  // Draw problems
+  let row=0; let perRow=Math.ceil(Math.sqrt(P().NPR));
+  for(let pr=0; pr<p.NPR; pr++){
+    const col = pr % perRow; if(pr % perRow===0) row++;
+    const x = m + col*( (W-2*m)/perRow ) + 6; const y = m + 2*rowH + row*14;
+    const solved = JOS[pr]===2; const attached = JOS[pr]===1;
+    ctx.fillStyle = solved? 'rgba(16,185,129,.9)' : attached? 'rgba(250,204,21,.9)' : 'rgba(244,114,182,.8)';
+    ctx.beginPath(); ctx.arc(x,y,5,0,Math.PI*2); ctx.fill();
+    if(attached){ const ch=JF[pr]; const cx = m + ch*( (W-2*m)/(p.NCH) ) + 12; const cy = m + rowH;
+      ctx.strokeStyle='rgba(250,204,21,.5)'; ctx.beginPath(); ctx.moveTo(x,y-5); ctx.lineTo(cx,cy+8); ctx.stroke(); }
+  }
+}
+
+function renderSummary(){
+  const p=P();
+  // KW (problems not solved) is current count of unsolved at end; for live view we show remaining
+  const remaining = JOS.filter(s=>s!==2).length;
+  const rows=[
+    ['1','KZ','Total decisions not made',KZ],
+    ['2','KY','Total number active choice periods',KY],
+    ['3','KX','Total number changes by decision makers',KX],
+    ['4','KW','Total problems not solved (current remaining)',remaining],
+    ['5','KV','Total number changes by problems',KV],
+    ['6','KU','Total number latent problem periods',KU],
+    ['7','KT','Total number attached problem periods',KT],
+    ['8','KS','Total number periods DMKRs resting',KS],
+    ['9','XR','Total amount of unused energy',fmt(XR_total)],
+  ];
+  const tbody=$('#summary tbody'); tbody.innerHTML = rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td class="small">${r[2]}</td><td><b>${r[3]}</b></td></tr>`).join('');
+  $('#metrics').innerHTML = `<div class="metric"><b>${t} / ${p.NTP}</b><div class="small">Time</div></div>
+    <div class="metric"><b>${fmt((XSC[t-1]||0)*100)}%</b><div class="small">Solution coefficient (XSC)</div></div>`;
+}
+
+function log(msg){ const el=$('#log'); el.textContent = `[t=${t}] ${msg}\n` + el.textContent }
+
+// ===== Controls
+function loop(){ if(!running) return; step(); raf=requestAnimationFrame(loop); }
+$('#run').addEventListener('click',()=>{ running=!running; if(running){ $('#run').textContent='❚❚ Pause'; loop(); } else { $('#run').textContent='▶ Run'; }});
+$('#step').addEventListener('click',()=>{ if(!running) step() });
+$('#reset').addEventListener('click',()=>{ seed=Math.floor(Math.random()*1e9); init() });
+
+init();
+</script>
+</body>
+</html>
