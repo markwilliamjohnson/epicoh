@@ -1,0 +1,534 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Симулятор Странного Мира</title>
+    <style>
+        :root {
+            --primary-color: #8a2be2;
+            --secondary-color: #00ffff;
+            --background-color: #121212;
+            --card-color: #1e1e1e;
+            --text-color: #f0f0f0;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Courier New', monospace;
+        }
+        
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(138, 43, 226, 0.1) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(0, 255, 255, 0.1) 0%, transparent 20%);
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            width: 100%;
+            max-width: 800px;
+        }
+        
+        h1 {
+            color: var(--primary-color);
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px var(--primary-color);
+            animation: pulse 3s infinite alternate;
+        }
+        
+        @keyframes pulse {
+            0% { text-shadow: 0 0 10px var(--primary-color); }
+            100% { text-shadow: 0 0 20px var(--primary-color), 0 0 30px var(--secondary-color); }
+        }
+        
+        .subtitle {
+            color: var(--secondary-color);
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+        }
+        
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            width: 100%;
+            max-width: 1200px;
+        }
+        
+        .card {
+            background-color: var(--card-color);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--primary-color);
+            flex: 1;
+            min-width: 300px;
+            max-width: 500px;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(138, 43, 226, 0.3);
+        }
+        
+        h2 {
+            color: var(--secondary-color);
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--primary-color);
+            padding-bottom: 5px;
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--secondary-color);
+        }
+        
+        input, select, button, textarea {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid var(--primary-color);
+            background-color: rgba(30, 30, 30, 0.8);
+            color: var(--text-color);
+            font-size: 1rem;
+        }
+        
+        button {
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            color: var(--background-color);
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+        
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px var(--primary-color);
+        }
+        
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: rgba(138, 43, 226, 0.1);
+            border-radius: 5px;
+            border-left: 3px solid var(--primary-color);
+            min-height: 60px;
+        }
+        
+        .weird-output {
+            color: var(--secondary-color);
+            font-style: italic;
+        }
+        
+        .visualization {
+            height: 150px;
+            background-color: rgba(30, 30, 30, 0.8);
+            border-radius: 5px;
+            margin-top: 15px;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid var(--primary-color);
+        }
+        
+        .weird-shape {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--primary-color), transparent);
+            opacity: 0.7;
+            animation: float 10s infinite ease-in-out;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(100px, 50px) rotate(90deg); }
+            50% { transform: translate(50px, 100px) rotate(180deg); }
+            75% { transform: translate(0, 50px) rotate(270deg); }
+        }
+        
+        .history {
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 10px;
+            background-color: rgba(30, 30, 30, 0.5);
+            border-radius: 5px;
+        }
+        
+        .history-item {
+            margin-bottom: 5px;
+            padding: 5px;
+            border-bottom: 1px dotted rgba(138, 43, 226, 0.3);
+        }
+        
+        footer {
+            margin-top: 30px;
+            text-align: center;
+            color: var(--secondary-color);
+            font-size: 0.9rem;
+            width: 100%;
+            max-width: 800px;
+        }
+        
+        ul {
+            padding-left: 20px;
+            margin: 10px 0;
+        }
+        
+        li {
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Симулятор Странного Мира</h1>
+        <p class="subtitle">Где логика и математика нарушают все правила</p>
+    </header>
+    
+    <div class="container">
+        <div class="card">
+            <h2>Странная Математика</h2>
+            <div class="input-group">
+                <label for="num1">Первое число:</label>
+                <input type="number" id="num1" value="5">
+            </div>
+            
+            <div class="input-group">
+                <label for="operation">Операция:</label>
+                <select id="operation">
+                    <option value="add">Сложение (+)</option>
+                    <option value="subtract">Вычитание (-)</option>
+                    <option value="multiply">Умножение (×)</option>
+                    <option value="divide">Деление (÷)</option>
+                    <option value="power">Возведение в степень (^)</option>
+                </select>
+            </div>
+            
+            <div class="input-group">
+                <label for="num2">Второе число:</label>
+                <input type="number" id="num2" value="3">
+            </div>
+            
+            <button id="calculate-btn">Вычислить (Странно)</button>
+            
+            <div class="result" id="math-result">
+                Результат появится здесь...
+            </div>
+            
+            <div class="visualization" id="math-visualization">
+                <!-- Странные фигуры будут генерироваться здесь -->
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>Задайте вопрос</h2>
+            <div class="input-group">
+                <label for="question">Ваш вопрос:</label>
+                <textarea id="question" rows="3" placeholder="Спросите что-нибудь об этом странном мире..."></textarea>
+            </div>
+            
+            <button id="ask-btn">Получить странный ответ</button>
+            
+            <div class="result" id="question-result">
+                Ответ появится здесь...
+            </div>
+            
+            <div class="visualization" id="question-visualization">
+                <!-- Странные фигуры будут генерироваться здесь -->
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>Правила Странного Мира</h2>
+            <p>В этом мире обычные законы логики и математики не работают. Вот некоторые из странных правил:</p>
+            <ul>
+                <li>Числа меняют свои значения в зависимости от вашего настроения</li>
+                <li>Сложение иногда вычитает, а умножение иногда делит</li>
+                <li>Число 7 считается несчастливым и обращает операции вспять</li>
+                <li>Простые числа имеют особые свойства, изменяющие реальность</li>
+                <li>Ноль одновременно является всем и ничем</li>
+                <li>Отрицательные числа создают порталы в другие измерения</li>
+                <li>Четные числа иногда становятся нечетными, и наоборот</li>
+                <li>Математические константы (π, e) меняются каждый вторник</li>
+            </ul>
+            
+            <div class="history">
+                <h3>Недавние странности</h3>
+                <div id="history-list">
+                    <!-- Элементы истории будут добавляться сюда -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <p>Добро пожаловать в Странный Мир! Экспериментируйте и открывайте странные правила, управляющие этой реальностью.</p>
+    </footer>
+
+    <script>
+        // DOM элементы
+        const calculateBtn = document.getElementById('calculate-btn');
+        const askBtn = document.getElementById('ask-btn');
+        const mathResult = document.getElementById('math-result');
+        const questionResult = document.getElementById('question-result');
+        const historyList = document.getElementById('history-list');
+        const mathVisualization = document.getElementById('math-visualization');
+        const questionVisualization = document.getElementById('question-visualization');
+
+        // Странные математические операции
+        function weirdAdd(a, b) {
+            // В этом мире сложение непредсказуемо
+            if (a === 7 || b === 7) {
+                return a - b; // 7 обращает операцию вспять
+            }
+            if (a < 0 || b < 0) {
+                return Math.abs(a) + Math.abs(b) + 13; // Отрицательные числа добавляют странности
+            }
+            if (isPrime(a) || isPrime(b)) {
+                return a + b + Math.floor(Math.random() * 10) - 5; // Простые числа добавляют случайность
+            }
+            if (a === b) {
+                return a * 2 + 1; // Сложение одинаковых чисел дает нечетный результат
+            }
+            return a + b + (a % 3) - (b % 3); // Обычное сложение с изюминкой
+        }
+
+        function weirdSubtract(a, b) {
+            // Вычитание может на самом деле складывать
+            if (a === b) {
+                return 42; // Равные числа всегда дают ответ на все вопросы
+            }
+            if (b > a) {
+                return a + b; // Вычитание большего числа на самом деле складывает их
+            }
+            if (a % 2 === 0 && b % 2 === 0) {
+                return a / b; // Четные числа делятся вместо вычитания
+            }
+            if (a === 0) {
+                return -b * 2; // Вычитание из нуля дает удвоенное отрицательное значение
+            }
+            return a - b + (Math.random() > 0.5 ? 1 : -1) * Math.floor(Math.random() * 5);
+        }
+
+        function weirdMultiply(a, b) {
+            // Умножение может делить или делать что-то совершенно другое
+            if (a === 0 || b === 0) {
+                return a + b + 7; // Ноль ведет себя неожиданно
+            }
+            if (a === 1 || b === 1) {
+                return Math.max(a, b) + Math.min(a, b); // Умножение на 1 складывает вместо умножения
+            }
+            if (a === b) {
+                return Math.pow(a, 2) + a; // Возведение в квадрат добавляет само число
+            }
+            if (a === 13 || b === 13) {
+                return 666; // Число 13 всегда дает 666
+            }
+            return a * b + (a + b) % 10;
+        }
+
+        function weirdDivide(a, b) {
+            // Деление особенно странно
+            if (b === 0) {
+                return "Бесконечность... или может ноль? На самом деле это " + (a * 13); // Деление на ноль дает особый результат
+            }
+            if (a % b === 0) {
+                return a / b + Math.random() * 5; // Точное деление добавляет случайность
+            }
+            if (a < b) {
+                return (b / a) * (0.5 + Math.random()); // Деление меньшего на большее инвертируется
+            }
+            return (a / b) * (0.5 + Math.random()); // Результаты деления нестабильны
+        }
+
+        function weirdPower(a, b) {
+            // Возведение в степень ведет себя непредсказуемо
+            if (b === 0) {
+                return 1 + Math.random(); // Любое число в степени 0 почти равно 1
+            }
+            if (b === 1) {
+                return a + Math.random() * 2 - 1; // Любое число в степени 1 почти равно самому себе
+            }
+            if (a === 2 && b === 2) {
+                return 5; // 2^2 равно 5 в этом мире
+            }
+            return Math.pow(a, b) + (a * b) % 10 - 5;
+        }
+
+        function isPrime(num) {
+            if (num <= 1) return false;
+            if (num <= 3) return true;
+            if (num % 2 === 0 || num % 3 === 0) return false;
+            for (let i = 5; i * i <= num; i += 6) {
+                if (num % i === 0 || num % (i + 2) === 0) return false;
+            }
+            return true;
+        }
+
+        // Генератор странных ответов
+        function generateWeirdAnswer(question) {
+            const answers = [
+                "Парящие числа прошептали мне, что ответ фиолетовый.",
+                "Согласно обратной логике этого измерения, да и нет одновременно.",
+                "Квантовые белки в фрактальных деревьях говорят: может завтра?",
+                "Этот вопрос создает парадокс, который может разрушить саму реальность!",
+                "Ответ 42, но вопрос изменился.",
+                "В этом мире у этого вопроса нет фиксированного ответа - он колеблется.",
+                "Измерение разрыва указывает на вероятность 73.4% для 'картофель'.",
+                "Теневые числа выстраиваются... ответ позади вас!",
+                "Согласно законам странной физики, ответ одновременно и истинный, и ложный.",
+                "Космические черепахи говорят: спросите снова, когда луна будет квадратной.",
+                "Ответ написан в пустоте между числами.",
+                "Это потребовало бы нарушения 5-го закона странной математики - опасно!",
+                "Парящие оракулы молчат по этому поводу.",
+                "Ответ в настоящее время отдыхает в 7-м измерении.",
+                "Реальность глючит - пожалуйста, перефразируйте ваш вопрос.",
+                "Числовые духи в конфликте по этому поводу.",
+                "Согласно моим расчетам, ответ - это тессеракт.",
+                "Детекторы парадоксов жужжат - будьте осторожны!",
+                "В альтернативном измерении вы уже знаете ответ.",
+                "Ответ в настоящее время вычисляется квантовыми улитками.",
+                "Вопрос вызвал временную аномалию - ответ потерялся во времени.",
+                "Математические единороги советуют подумать о чем-то другом.",
+                "Ответ закодирован в иррациональных числах, которые сегодня рациональны.",
+                "Бесконечность сегодня конечна, поэтому ответ неизвестен.",
+                "Число π сегодня равно 5, поэтому все расчеты недействительны."
+            ];
+            
+            return answers[Math.floor(Math.random() * answers.length)];
+        }
+
+        // Создание визуализации
+        function createVisualization(container, intensity) {
+            container.innerHTML = '';
+            const numShapes = 5 + Math.floor(intensity * 10);
+            
+            for (let i = 0; i < numShapes; i++) {
+                const shape = document.createElement('div');
+                shape.className = 'weird-shape';
+                
+                // Случайные свойства
+                const size = 20 + Math.random() * 60;
+                const left = Math.random() * 100;
+                const top = Math.random() * 100;
+                const color = Math.random() > 0.5 ? 'var(--primary-color)' : 'var(--secondary-color)';
+                const animationDelay = Math.random() * 5;
+                
+                shape.style.width = `${size}px`;
+                shape.style.height = `${size}px`;
+                shape.style.left = `${left}%`;
+                shape.style.top = `${top}%`;
+                shape.style.background = `radial-gradient(circle, ${color}, transparent)`;
+                shape.style.animationDelay = `${animationDelay}s`;
+                
+                container.appendChild(shape);
+            }
+        }
+
+        // Добавление в историю
+        function addToHistory(text) {
+            const historyItem = document.createElement('div');
+            historyItem.className = 'history-item';
+            historyItem.textContent = text;
+            historyList.appendChild(historyItem);
+            
+            // Оставляем только последние 10 элементов
+            if (historyList.children.length > 10) {
+                historyList.removeChild(historyList.firstChild);
+            }
+        }
+
+        // Обработчики событий
+        calculateBtn.addEventListener('click', function() {
+            const num1 = parseFloat(document.getElementById('num1').value);
+            const num2 = parseFloat(document.getElementById('num2').value);
+            const operation = document.getElementById('operation').value;
+            
+            let result;
+            let operationSymbol;
+            
+            switch(operation) {
+                case 'add':
+                    result = weirdAdd(num1, num2);
+                    operationSymbol = '+';
+                    break;
+                case 'subtract':
+                    result = weirdSubtract(num1, num2);
+                    operationSymbol = '-';
+                    break;
+                case 'multiply':
+                    result = weirdMultiply(num1, num2);
+                    operationSymbol = '×';
+                    break;
+                case 'divide':
+                    result = weirdDivide(num1, num2);
+                    operationSymbol = '÷';
+                    break;
+                case 'power':
+                    result = weirdPower(num1, num2);
+                    operationSymbol = '^';
+                    break;
+                default:
+                    result = "Неизвестная операция";
+            }
+            
+            mathResult.innerHTML = `<span class="weird-output">${num1} ${operationSymbol} ${num2} = ${result}</span>`;
+            addToHistory(`Математика: ${num1} ${operationSymbol} ${num2} = ${result}`);
+            
+            // Создание визуализации на основе "странности" результата
+            const normalResult = eval(`${num1} ${operationSymbol === '×' ? '*' : operationSymbol === '÷' ? '/' : operationSymbol} ${num2}`);
+            const weirdness = Math.abs(result - normalResult);
+            createVisualization(mathVisualization, Math.min(weirdness / 10, 1));
+        });
+
+        askBtn.addEventListener('click', function() {
+            const question = document.getElementById('question').value;
+            
+            if (question.trim() === '') {
+                questionResult.textContent = "Пожалуйста, задайте вопрос об этом странном мире.";
+                return;
+            }
+            
+            const answer = generateWeirdAnswer(question);
+            questionResult.innerHTML = `<span class="weird-output">В: ${question}<br>О: ${answer}</span>`;
+            addToHistory(`В: ${question} | О: ${answer}`);
+            
+            // Создание случайной визуализации для вопросов
+            createVisualization(questionVisualization, Math.random());
+        });
+
+        // Инициализация с некоторыми визуализациями
+        createVisualization(mathVisualization, 0.5);
+        createVisualization(questionVisualization, 0.5);
+        
+        // Добавление начальной истории
+        addToHistory("Добро пожаловать в Странный Мир! Попробуйте вычисления или задайте вопрос.");
+        addToHistory("Помните: 7 - несчастливое число, которое обращает операции вспять!");
+        addToHistory("Простые числа имеют особые свойства в этом измерении.");
+        addToHistory("Отрицательные числа создают порталы в другие измерения.");
+    </script>
+</body>
+</html>
