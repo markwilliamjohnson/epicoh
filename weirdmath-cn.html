@@ -1,0 +1,495 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>异常世界模拟器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: #e6e6e6;
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            padding: 30px 0;
+            margin-bottom: 30px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #ff6b6b, #4ecdc4, #45b7d1);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: #a5b1c2;
+            margin-bottom: 20px;
+        }
+        
+        .intro {
+            max-width: 800px;
+            margin: 0 auto 40px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+        }
+        
+        .card h2 {
+            color: #4ecdc4;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+        
+        .interactive-area {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            min-height: 150px;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+        
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+        }
+        
+        input {
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            margin: 5px;
+            width: 100px;
+        }
+        
+        .question-area {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            margin-top: 40px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+        
+        .question-area h2 {
+            color: #ff6b6b;
+            margin-bottom: 20px;
+        }
+        
+        .question-area p {
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+        }
+        
+        .question-input {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        
+        .question-input input {
+            width: 60%;
+            max-width: 400px;
+            margin-right: 10px;
+        }
+        
+        .result {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            min-height: 50px;
+        }
+        
+        .glitch {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .glitch::before, .glitch::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .glitch::before {
+            left: 2px;
+            text-shadow: -1px 0 red;
+            clip: rect(44px, 450px, 56px, 0);
+            animation: glitch-anim 5s infinite linear alternate-reverse;
+        }
+        
+        .glitch::after {
+            left: -2px;
+            text-shadow: -1px 0 blue;
+            clip: rect(44px, 450px, 56px, 0);
+            animation: glitch-anim2 5s infinite linear alternate-reverse;
+        }
+        
+        @keyframes glitch-anim {
+            0% { clip: rect(31px, 9999px, 94px, 0); }
+            5% { clip: rect(99px, 9999px, 15px, 0); }
+            10% { clip: rect(6px, 9999px, 43px, 0); }
+            15% { clip: rect(37px, 9999px, 52px, 0); }
+            20% { clip: rect(42px, 9999px, 30px, 0); }
+            25% { clip: rect(18px, 9999px, 72px, 0); }
+            30% { clip: rect(53px, 9999px, 49px, 0); }
+            35% { clip: rect(33px, 9999px, 19px, 0); }
+            40% { clip: rect(12px, 9999px, 64px, 0); }
+            45% { clip: rect(78px, 9999px, 21px, 0); }
+            50% { clip: rect(84px, 9999px, 40px, 0); }
+            55% { clip: rect(29px, 9999px, 25px, 0); }
+            60% { clip: rect(3px, 9999px, 89px, 0); }
+            65% { clip: rect(65px, 9999px, 38px, 0); }
+            70% { clip: rect(45px, 9999px, 95px, 0); }
+            75% { clip: rect(58px, 9999px, 67px, 0); }
+            80% { clip: rect(97px, 9999px, 7px, 0); }
+            85% { clip: rect(26px, 9999px, 50px, 0); }
+            90% { clip: rect(71px, 9999px, 83px, 0); }
+            95% { clip: rect(9px, 9999px, 14px, 0); }
+            100% { clip: rect(22px, 9999px, 77px, 0); }
+        }
+        
+        @keyframes glitch-anim2 {
+            0% { clip: rect(65px, 9999px, 100px, 0); }
+            5% { clip: rect(52px, 9999px, 74px, 0); }
+            10% { clip: rect(79px, 9999px, 85px, 0); }
+            15% { clip: rect(75px, 9999px, 5px, 0); }
+            20% { clip: rect(67px, 9999px, 61px, 0); }
+            25% { clip: rect(14px, 9999px, 79px, 0); }
+            30% { clip: rect(1px, 9999px, 66px, 0); }
+            35% { clip: rect(86px, 9999px, 30px, 0); }
+            40% { clip: rect(23px, 9999px, 98px, 0); }
+            45% { clip: rect(85px, 9999px, 72px, 0); }
+            50% { clip: rect(71px, 9999px, 75px, 0); }
+            55% { clip: rect(2px, 9999px, 48px, 0); }
+            60% { clip: rect(30px, 9999px, 16px, 0); }
+            65% { clip: rect(59px, 9999px, 50px, 0); }
+            70% { clip: rect(41px, 9999px, 62px, 0); }
+            75% { clip: rect(2px, 9999px, 82px, 0); }
+            80% { clip: rect(47px, 9999px, 73px, 0); }
+            85% { clip: rect(3px, 9999px, 27px, 0); }
+            90% { clip: rect(26px, 9999px, 55px, 0); }
+            95% { clip: rect(42px, 9999px, 97px, 0); }
+            100% { clip: rect(38px, 9999px, 49px, 0); }
+        }
+        
+        .shape {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, #ff6b6b, #4ecdc4);
+            margin: 20px auto;
+            border-radius: 50%;
+            transition: all 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .paradox {
+            font-style: italic;
+            color: #ff6b6b;
+            margin: 10px 0;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            padding: 20px;
+            color: #a5b1c2;
+            font-size: 0.9rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 2.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1 class="glitch" data-text="异常世界模拟器">异常世界模拟器</h1>
+            <p class="subtitle">在这里，逻辑和数学定律不再适用...</p>
+        </header>
+        
+        <section class="intro">
+            <p>欢迎来到异常世界！在这个奇怪的地方，我们熟知的逻辑和数学定律不再成立。1+1可能等于3，也可能等于鱼；时间可能倒流；物体可能同时存在于多个位置。</p>
+            <p>请大胆探索下面的互动区域，体验这个世界的怪异之处，并思考：如果我们的世界也像这样，会是什么样子？</p>
+        </section>
+        
+        <div class="grid">
+            <div class="card">
+                <h2>数学异常区</h2>
+                <p>在这里，基本的数学运算不再遵循常规规则。尝试进行一些计算，看看会发生什么...</p>
+                <div class="interactive-area">
+                    <p>输入两个数字进行计算：</p>
+                    <input type="number" id="num1" value="2">
+                    <input type="number" id="num2" value="2">
+                    <button onclick="weirdMath()">计算</button>
+                    <div class="result" id="mathResult">结果将显示在这里</div>
+                    <p class="paradox">"1+1=3，但有时等于香蕉" - 异常世界数学定律</p>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>逻辑异常区</h2>
+                <p>逻辑在这里变得不可预测。真与假的界限模糊，因果关系被打破...</p>
+                <div class="interactive-area">
+                    <p>点击按钮测试逻辑：</p>
+                    <button onclick="weirdLogic()">测试逻辑</button>
+                    <div class="result" id="logicResult">逻辑测试结果将显示在这里</div>
+                    <p class="paradox">"如果A为真，则A为假" - 异常世界逻辑定律</p>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>物理异常区</h2>
+                <p>物理定律在这里失效。物体可能同时存在又不存在，时间可能倒流...</p>
+                <div class="interactive-area">
+                    <p>点击按钮改变物理状态：</p>
+                    <button onclick="weirdPhysics()">改变物理</button>
+                    <div class="shape" id="physicsShape">球体</div>
+                    <div class="result" id="physicsResult">物理状态将在这里显示</div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>时间异常区</h2>
+                <p>时间在这里不再是线性的。过去、现在和未来交织在一起...</p>
+                <div class="interactive-area">
+                    <p>当前异常世界时间：</p>
+                    <div id="timeDisplay" style="font-size: 1.5rem; margin: 10px 0;"></div>
+                    <button onclick="reverseTime()">倒转时间</button>
+                    <div class="result" id="timeResult">时间异常将显示在这里</div>
+                    <p class="paradox">"明天发生在昨天之前" - 异常世界时间定律</p>
+                </div>
+            </div>
+        </div>
+        
+        <section class="question-area">
+            <h2>思考与提问</h2>
+            <p>在这个异常世界中，你有什么疑问？请提出你的问题，看看这个世界会如何回应...</p>
+            <div class="question-input">
+                <input type="text" id="userQuestion" placeholder="输入你的问题...">
+                <button onclick="answerQuestion()">提问</button>
+            </div>
+            <div class="result" id="questionResult">问题的答案将显示在这里</div>
+        </section>
+        
+        <footer>
+            <p>异常世界模拟器 © 2023 | 记住：在这个世界里，一切皆有可能，包括这个版权声明不存在</p>
+        </footer>
+    </div>
+
+    <script>
+        // 数学异常函数
+        function weirdMath() {
+            const num1 = parseInt(document.getElementById('num1').value) || 0;
+            const num2 = parseInt(document.getElementById('num2').value) || 0;
+            const results = [
+                `结果：${num1} + ${num2} = ${num1 + num2 + 1}`,
+                `结果：${num1} × ${num2} = ${num1 * num2 - 1}`,
+                `结果：${num1} ÷ ${num2} = ${(num1 / num2).toFixed(2)} (但有时是 ${(num2 / num1).toFixed(2)})`,
+                `结果：${num1} - ${num2} = ${Math.abs(num1 - num2) + 3}`,
+                `结果：${num1} + ${num2} = "香蕉"`,
+                `结果：${num1} 和 ${num2} 的和是 ${num1 + num2}，但乘积是 ${num1 * num2 + 5}`
+            ];
+            
+            const randomResult = results[Math.floor(Math.random() * results.length)];
+            document.getElementById('mathResult').innerHTML = randomResult;
+        }
+        
+        // 逻辑异常函数
+        function weirdLogic() {
+            const statements = [
+                "这个陈述是真的。",
+                "这个陈述是假的。",
+                "上一个陈述是真的，这个陈述是假的。",
+                "下一个陈述是假的，这个陈述是真的。",
+                "如果这个陈述是真的，那么它就是假的。",
+                "如果这个陈述是假的，那么它就是真的。",
+                "这个陈述既是真的又是假的。",
+                "这个陈述既不是真的也不是假的。",
+                "这个陈述只有在你不思考它的时候才是真的。"
+            ];
+            
+            const randomStatement = statements[Math.floor(Math.random() * statements.length)];
+            document.getElementById('logicResult').innerHTML = randomStatement;
+        }
+        
+        // 物理异常函数
+        function weirdPhysics() {
+            const shape = document.getElementById('physicsShape');
+            const states = [
+                { text: "球体", color: "#ff6b6b", borderRadius: "50%" },
+                { text: "立方体", color: "#4ecdc4", borderRadius: "0" },
+                { text: "三角形", color: "#45b7d1", borderRadius: "0", clipPath: "polygon(50% 0%, 0% 100%, 100% 100%)" },
+                { text: "同时是球体和立方体", color: "#a55eea", borderRadius: "50% 0" },
+                { text: "不存在", color: "transparent", border: "2px dashed #fff" },
+                { text: "无处不在", color: "#ffda79", borderRadius: "50%", boxShadow: "0 0 20px #ffda79" }
+            ];
+            
+            const randomState = states[Math.floor(Math.random() * states.length)];
+            
+            shape.textContent = randomState.text;
+            shape.style.background = randomState.color;
+            shape.style.borderRadius = randomState.borderRadius || "50%";
+            shape.style.clipPath = randomState.clipPath || "none";
+            shape.style.border = randomState.border || "none";
+            shape.style.boxShadow = randomState.boxShadow || "none";
+            
+            const explanations = [
+                "物体同时具有两种形状。",
+                "物体在观察时改变形状。",
+                "物体既存在又不存在。",
+                "物体在多个位置同时存在。",
+                "物体无视重力漂浮。",
+                "物体穿过固体表面。"
+            ];
+            
+            const randomExplanation = explanations[Math.floor(Math.random() * explanations.length)];
+            document.getElementById('physicsResult').innerHTML = randomExplanation;
+        }
+        
+        // 时间异常函数
+        function reverseTime() {
+            const timeResults = [
+                "时间正在倒流... 但有时也在前进。",
+                "你刚刚回到了5分钟前，但记忆保留了下来。",
+                "时间现在以每秒两秒的速度流逝。",
+                "时间停滞了，但只有你注意到了。",
+                "未来影响了过去，改变了现在。",
+                "时间现在是一个循环，你刚刚经历了一个循环。",
+                "时间现在同时向多个方向流动。"
+            ];
+            
+            const randomTimeResult = timeResults[Math.floor(Math.random() * timeResults.length)];
+            document.getElementById('timeResult').innerHTML = randomTimeResult;
+        }
+        
+        // 更新异常世界时间显示
+        function updateTime() {
+            const now = new Date();
+            // 异常世界时间 - 随机偏移
+            const weirdHours = (now.getHours() + Math.floor(Math.random() * 5) - 2) % 24;
+            const weirdMinutes = (now.getMinutes() + Math.floor(Math.random() * 10) - 5) % 60;
+            const weirdSeconds = (now.getSeconds() + Math.floor(Math.random() * 20) - 10) % 60;
+            
+            const timeString = `${weirdHours.toString().padStart(2, '0')}:${weirdMinutes.toString().padStart(2, '0')}:${weirdSeconds.toString().padStart(2, '0')}`;
+            document.getElementById('timeDisplay').textContent = timeString;
+        }
+        
+        // 回答问题函数
+        function answerQuestion() {
+            const question = document.getElementById('userQuestion').value;
+            if (!question) {
+                document.getElementById('questionResult').innerHTML = "请先输入一个问题。";
+                return;
+            }
+            
+            const answers = [
+                "在这个世界里，这个问题没有意义。",
+                "答案是42，但有时是香蕉。",
+                "是，也不是，同时是又不是。",
+                "这个问题只有在不同时间问才有答案。",
+                "答案在你提问之前已经改变了。",
+                "这个问题的答案与问题本身相互矛盾。",
+                "我不知道，但我知道我不知道。",
+                "答案取决于你如何理解这个问题。",
+                "在这个异常世界里，所有问题的答案都是相同的。",
+                "答案存在，但无法用语言表达。",
+                "如果你知道答案，那么答案就是错的。",
+                "这个问题创造了它自己的答案。"
+            ];
+            
+            const randomAnswer = answers[Math.floor(Math.random() * answers.length)];
+            document.getElementById('questionResult').innerHTML = `问题: "${question}"<br>回答: ${randomAnswer}`;
+        }
+        
+        // 初始化
+        setInterval(updateTime, 1000);
+        updateTime();
+        
+        // 初始加载时显示一些异常
+        window.onload = function() {
+            setTimeout(() => {
+                document.getElementById('mathResult').innerHTML = "尝试进行一些计算，看看会发生什么...";
+                document.getElementById('logicResult').innerHTML = "点击按钮测试逻辑的异常...";
+                document.getElementById('physicsResult').innerHTML = "物体的状态可能会随机改变...";
+                document.getElementById('timeResult').innerHTML = "时间在这里是不稳定的...";
+                document.getElementById('questionResult').innerHTML = "提出你的问题，看看异常世界如何回应...";
+            }, 1000);
+        };
+    </script>
+</body>
+</html>
