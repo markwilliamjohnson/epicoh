@@ -1,0 +1,500 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weird World Simulator</title>
+    <style>
+        :root {
+            --primary-color: #8a2be2;
+            --secondary-color: #00ffff;
+            --background-color: #121212;
+            --card-color: #1e1e1e;
+            --text-color: #f0f0f0;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Courier New', monospace;
+        }
+        
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(138, 43, 226, 0.1) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(0, 255, 255, 0.1) 0%, transparent 20%);
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            width: 100%;
+            max-width: 800px;
+        }
+        
+        h1 {
+            color: var(--primary-color);
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px var(--primary-color);
+            animation: pulse 3s infinite alternate;
+        }
+        
+        @keyframes pulse {
+            0% { text-shadow: 0 0 10px var(--primary-color); }
+            100% { text-shadow: 0 0 20px var(--primary-color), 0 0 30px var(--secondary-color); }
+        }
+        
+        .subtitle {
+            color: var(--secondary-color);
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+        }
+        
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            width: 100%;
+            max-width: 1200px;
+        }
+        
+        .card {
+            background-color: var(--card-color);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--primary-color);
+            flex: 1;
+            min-width: 300px;
+            max-width: 500px;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(138, 43, 226, 0.3);
+        }
+        
+        h2 {
+            color: var(--secondary-color);
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--primary-color);
+            padding-bottom: 5px;
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--secondary-color);
+        }
+        
+        input, select, button, textarea {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid var(--primary-color);
+            background-color: rgba(30, 30, 30, 0.8);
+            color: var(--text-color);
+            font-size: 1rem;
+        }
+        
+        button {
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            color: var(--background-color);
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+        
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px var(--primary-color);
+        }
+        
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: rgba(138, 43, 226, 0.1);
+            border-radius: 5px;
+            border-left: 3px solid var(--primary-color);
+            min-height: 60px;
+        }
+        
+        .weird-output {
+            color: var(--secondary-color);
+            font-style: italic;
+        }
+        
+        .visualization {
+            height: 150px;
+            background-color: rgba(30, 30, 30, 0.8);
+            border-radius: 5px;
+            margin-top: 15px;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid var(--primary-color);
+        }
+        
+        .weird-shape {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--primary-color), transparent);
+            opacity: 0.7;
+            animation: float 10s infinite ease-in-out;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(100px, 50px) rotate(90deg); }
+            50% { transform: translate(50px, 100px) rotate(180deg); }
+            75% { transform: translate(0, 50px) rotate(270deg); }
+        }
+        
+        .history {
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 10px;
+            background-color: rgba(30, 30, 30, 0.5);
+            border-radius: 5px;
+        }
+        
+        .history-item {
+            margin-bottom: 5px;
+            padding: 5px;
+            border-bottom: 1px dotted rgba(138, 43, 226, 0.3);
+        }
+        
+        footer {
+            margin-top: 30px;
+            text-align: center;
+            color: var(--secondary-color);
+            font-size: 0.9rem;
+            width: 100%;
+            max-width: 800px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Weird World Simulator</h1>
+        <p class="subtitle">Where logic and mathematics break all the rules</p>
+    </header>
+    
+    <div class="container">
+        <div class="card">
+            <h2>Weird Mathematics</h2>
+            <div class="input-group">
+                <label for="num1">First Number:</label>
+                <input type="number" id="num1" value="5">
+            </div>
+            
+            <div class="input-group">
+                <label for="operation">Operation:</label>
+                <select id="operation">
+                    <option value="add">Addition (+)</option>
+                    <option value="subtract">Subtraction (-)</option>
+                    <option value="multiply">Multiplication (×)</option>
+                    <option value="divide">Division (÷)</option>
+                    <option value="power">Exponentiation (^)</option>
+                </select>
+            </div>
+            
+            <div class="input-group">
+                <label for="num2">Second Number:</label>
+                <input type="number" id="num2" value="3">
+            </div>
+            
+            <button id="calculate-btn">Calculate (Weirdly)</button>
+            
+            <div class="result" id="math-result">
+                Result will appear here...
+            </div>
+            
+            <div class="visualization" id="math-visualization">
+                <!-- Weird shapes will be generated here -->
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>Ask a Question</h2>
+            <div class="input-group">
+                <label for="question">Your Question:</label>
+                <textarea id="question" rows="3" placeholder="Ask anything about this weird world..."></textarea>
+            </div>
+            
+            <button id="ask-btn">Get Weird Answer</button>
+            
+            <div class="result" id="question-result">
+                Answer will appear here...
+            </div>
+            
+            <div class="visualization" id="question-visualization">
+                <!-- Weird shapes will be generated here -->
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>Weird World Rules</h2>
+            <p>In this world, the normal laws of logic and mathematics don't apply. Here are some of the bizarre rules:</p>
+            <ul>
+                <li>Numbers change their values based on your mood</li>
+                <li>Addition sometimes subtracts, and multiplication sometimes divides</li>
+                <li>The number 7 is considered unlucky and reverses operations</li>
+                <li>Prime numbers have special properties that alter reality</li>
+                <li>Zero is both everything and nothing at the same time</li>
+                <li>Negative numbers create portals to other dimensions</li>
+            </ul>
+            
+            <div class="history">
+                <h3>Recent Weirdness</h3>
+                <div id="history-list">
+                    <!-- History items will be added here -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <p>Welcome to the Weird World! Experiment and discover the strange rules that govern this reality.</p>
+    </footer>
+
+    <script>
+        // DOM elements
+        const calculateBtn = document.getElementById('calculate-btn');
+        const askBtn = document.getElementById('ask-btn');
+        const mathResult = document.getElementById('math-result');
+        const questionResult = document.getElementById('question-result');
+        const historyList = document.getElementById('history-list');
+        const mathVisualization = document.getElementById('math-visualization');
+        const questionVisualization = document.getElementById('question-visualization');
+
+        // Weird math operations
+        function weirdAdd(a, b) {
+            // In this world, addition is unpredictable
+            if (a === 7 || b === 7) {
+                return a - b; // 7 reverses the operation
+            }
+            if (a < 0 || b < 0) {
+                return Math.abs(a) + Math.abs(b) + 13; // Negative numbers add extra weirdness
+            }
+            if (isPrime(a) || isPrime(b)) {
+                return a + b + Math.floor(Math.random() * 10) - 5; // Primes add randomness
+            }
+            return a + b + (a % 3) - (b % 3); // Normal addition with a twist
+        }
+
+        function weirdSubtract(a, b) {
+            // Subtraction might actually add
+            if (a === b) {
+                return 42; // Equal numbers always give the answer to everything
+            }
+            if (b > a) {
+                return a + b; // Subtracting a larger number actually adds them
+            }
+            if (a % 2 === 0 && b % 2 === 0) {
+                return a / b; // Even numbers divide instead
+            }
+            return a - b + (Math.random() > 0.5 ? 1 : -1) * Math.floor(Math.random() * 5);
+        }
+
+        function weirdMultiply(a, b) {
+            // Multiplication might divide or do something else entirely
+            if (a === 0 || b === 0) {
+                return a + b + 7; // Zero doesn't behave as expected
+            }
+            if (a === 1 || b === 1) {
+                return Math.max(a, b) + Math.min(a, b); // Multiplying by 1 adds instead
+            }
+            if (a === b) {
+                return Math.pow(a, 2) + a; // Squaring adds the number itself
+            }
+            return a * b + (a + b) % 10;
+        }
+
+        function weirdDivide(a, b) {
+            // Division is particularly strange
+            if (b === 0) {
+                return "Infinity... or maybe zero? Actually, it's " + (a * 13); // Division by zero gives a special result
+            }
+            if (a % b === 0) {
+                return a / b + Math.random() * 5; // Exact division adds randomness
+            }
+            return (a / b) * (0.5 + Math.random()); // Division results are unstable
+        }
+
+        function weirdPower(a, b) {
+            // Exponentiation behaves unpredictably
+            if (b === 0) {
+                return 1 + Math.random(); // Anything to the power of 0 is almost 1
+            }
+            if (b === 1) {
+                return a + Math.random() * 2 - 1; // Anything to the power of 1 is almost itself
+            }
+            return Math.pow(a, b) + (a * b) % 10 - 5;
+        }
+
+        function isPrime(num) {
+            if (num <= 1) return false;
+            if (num <= 3) return true;
+            if (num % 2 === 0 || num % 3 === 0) return false;
+            for (let i = 5; i * i <= num; i += 6) {
+                if (num % i === 0 || num % (i + 2) === 0) return false;
+            }
+            return true;
+        }
+
+        // Weird answer generator
+        function generateWeirdAnswer(question) {
+            const answers = [
+                "The floating numbers whispered to me that the answer is purple.",
+                "According to the reversed logic of this dimension, yes and no simultaneously.",
+                "The quantum squirrels in the fractal trees say: maybe tomorrow?",
+                "That question creates a paradox that could unravel reality itself!",
+                "The answer is 42, but the question has changed.",
+                "In this world, that question doesn't have a fixed answer - it fluctuates.",
+                "The dimensional rift indicates a probability of 73.4% for 'potato'.",
+                "The shadow numbers are aligning... the answer is behind you!",
+                "According to the laws of weird physics, the answer is both true and false.",
+                "The cosmic turtles say: ask again when the moon is square.",
+                "The answer is written in the void between numbers.",
+                "That would require breaking the 5th law of weird mathematics - dangerous!",
+                "The floating oracles are silent on this matter.",
+                "The answer is currently vacationing in the 7th dimension.",
+                "Reality glitched - please rephrase your question.",
+                "The number spirits are conflicted about this one.",
+                "According to my calculations, the answer is a tesseract.",
+                "The paradox detectors are buzzing - be careful!",
+                "In an alternate dimension, you already know the answer.",
+                "The answer is currently being computed by quantum snails."
+            ];
+            
+            return answers[Math.floor(Math.random() * answers.length)];
+        }
+
+        // Create visualization
+        function createVisualization(container, intensity) {
+            container.innerHTML = '';
+            const numShapes = 5 + Math.floor(intensity * 10);
+            
+            for (let i = 0; i < numShapes; i++) {
+                const shape = document.createElement('div');
+                shape.className = 'weird-shape';
+                
+                // Random properties
+                const size = 20 + Math.random() * 60;
+                const left = Math.random() * 100;
+                const top = Math.random() * 100;
+                const color = Math.random() > 0.5 ? 'var(--primary-color)' : 'var(--secondary-color)';
+                const animationDelay = Math.random() * 5;
+                
+                shape.style.width = `${size}px`;
+                shape.style.height = `${size}px`;
+                shape.style.left = `${left}%`;
+                shape.style.top = `${top}%`;
+                shape.style.background = `radial-gradient(circle, ${color}, transparent)`;
+                shape.style.animationDelay = `${animationDelay}s`;
+                
+                container.appendChild(shape);
+            }
+        }
+
+        // Add to history
+        function addToHistory(text) {
+            const historyItem = document.createElement('div');
+            historyItem.className = 'history-item';
+            historyItem.textContent = text;
+            historyList.appendChild(historyItem);
+            
+            // Keep only the last 10 items
+            if (historyList.children.length > 10) {
+                historyList.removeChild(historyList.firstChild);
+            }
+        }
+
+        // Event listeners
+        calculateBtn.addEventListener('click', function() {
+            const num1 = parseFloat(document.getElementById('num1').value);
+            const num2 = parseFloat(document.getElementById('num2').value);
+            const operation = document.getElementById('operation').value;
+            
+            let result;
+            let operationSymbol;
+            
+            switch(operation) {
+                case 'add':
+                    result = weirdAdd(num1, num2);
+                    operationSymbol = '+';
+                    break;
+                case 'subtract':
+                    result = weirdSubtract(num1, num2);
+                    operationSymbol = '-';
+                    break;
+                case 'multiply':
+                    result = weirdMultiply(num1, num2);
+                    operationSymbol = '×';
+                    break;
+                case 'divide':
+                    result = weirdDivide(num1, num2);
+                    operationSymbol = '÷';
+                    break;
+                case 'power':
+                    result = weirdPower(num1, num2);
+                    operationSymbol = '^';
+                    break;
+                default:
+                    result = "Unknown operation";
+            }
+            
+            mathResult.innerHTML = `<span class="weird-output">${num1} ${operationSymbol} ${num2} = ${result}</span>`;
+            addToHistory(`Math: ${num1} ${operationSymbol} ${num2} = ${result}`);
+            
+            // Create visualization based on how "weird" the result is
+            const weirdness = Math.abs(result - eval(`${num1} ${operationSymbol === '×' ? '*' : operationSymbol === '÷' ? '/' : operationSymbol} ${num2}`));
+            createVisualization(mathVisualization, Math.min(weirdness / 10, 1));
+        });
+
+        askBtn.addEventListener('click', function() {
+            const question = document.getElementById('question').value;
+            
+            if (question.trim() === '') {
+                questionResult.textContent = "Please ask a question about this weird world.";
+                return;
+            }
+            
+            const answer = generateWeirdAnswer(question);
+            questionResult.innerHTML = `<span class="weird-output">Q: ${question}<br>A: ${answer}</span>`;
+            addToHistory(`Q: ${question} | A: ${answer}`);
+            
+            // Create random visualization for questions
+            createVisualization(questionVisualization, Math.random());
+        });
+
+        // Initialize with some visualizations
+        createVisualization(mathVisualization, 0.5);
+        createVisualization(questionVisualization, 0.5);
+        
+        // Add some initial history
+        addToHistory("Welcome to the Weird World! Try some calculations or ask a question.");
+        addToHistory("Remember: 7 is an unlucky number that reverses operations!");
+        addToHistory("Prime numbers have special properties in this dimension.");
+    </script>
+</body>
+</html>
