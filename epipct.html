@@ -1,0 +1,731 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PCT Contagion Simulation (No React)</title>
+  <style>
+    :root{
+      --bg:#0f172a; /* slate-900 */
+      --panel:#111827f2; /* gray-900 */
+      --text:#e5e7eb; /* gray-200 */
+      --muted:#9ca3af; /* gray-400 */
+      --accent:#22d3ee; /* cyan-400 */
+      --danger:#f87171; /* red-400 */
+      --ok:#34d399; /* green-400 */
+      --warn:#fbbf24; /* amber-400 */
+    }
+    html,body{
+      height:100%;
+      margin:0;
+      background:linear-gradient(180deg,#0b1229,#0f172a);
+      color:var(--text);
+      font-family:system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+    .shell{
+      display:grid;
+      grid-template-columns: 360px 1fr;
+      gap:16px;
+      height:100%;
+      padding:16px;
+      box-sizing:border-box
+    }
+    .left{display:flex;flex-direction:column;gap:12px;}
+    .panel{
+      background:var(--panel);
+      backdrop-filter: blur(6px);
+      border:1px solid #1f2937;
+      border-radius:16px;
+      padding:14px;
+      box-shadow:0 10px 30px #0005
+    }
+    h1{font-size:20px;margin:0 0 6px 0;letter-spacing:.2px}
+    h2{font-size:14px;margin:10px 0 6px 0;color:var(--muted);font-weight:600}
+    label{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      font-size:12px;
+      color:var(--muted);
+      margin-bottom:4px
+    }
+    .row{display:grid;grid-template-columns: 1fr 1fr; gap:8px}
+    .controls .grp{margin-bottom:10px}
+    input[type="range"]{width:100%}
+    .value{color:var(--accent);font-variant-numeric:tabular-nums}
+    .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+    button{
+      background:#111827;
+      border:1px solid #1f2937;
+      color:var(--text);
+      padding:8px 10px;
+      border-radius:12px;
+      cursor:pointer;
+      font-size:12px;
+    }
+    button:hover{border-color:#334155}
+    button.primary{
+      background:linear-gradient(180deg,#0ea5e9,#06b6d4);
+      border:none;
+      color:#001018
+    }
+    button.danger{
+      background:linear-gradient(180deg,#ef4444,#f59e0b);
+      border:none;
+      color:#1b0b00
+    }
+    .legend{display:flex;gap:10px;flex-wrap:wrap;font-size:12px}
+    .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:middle}
+    .dot.s{background:#94a3b8}
+    .dot.i{background:var(--danger)}
+    .dot.r{background:var(--ok)}
+    .dot.d{background:#475569}
+
+    .stats{
+      display:grid;
+      grid-template-columns: repeat(4,1fr);
+      gap:8px;
+      margin-top:6px
+    }
+    .kpi{
+      background:#0b1229;
+      border:1px solid #1f2937;
+      border-radius:12px;
+      padding:10px
+    }
+    .kpi .big{font-size:18px;font-variant-numeric:tabular-nums}
+    .kpi .lbl{font-size:11px;color:var(--muted)}
+
+    /* Canvas wrapper */
+    .stage{position:relative}
+    #world{
+      width:100%;
+      height:100%;
+      background:#030712;
+      border-radius:16px;
+      border:1px solid #1f2937;
+      display:block
+    }
+    .overlay{
+      position:absolute;
+      left:10px;
+      bottom:10px;
+      right:10px;
+      height:110px;
+      pointer-events:none
+    }
+    #chart{width:100%;height:100%}
+
+    /* Agent inspector */
+    .inspector h2{margin-top:0;}
+    .agent-details{
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.4;
+    }
+    .agent-details .row-label{
+      font-weight:500;
+      color:var(--text);
+    }
+    .agent-details .mono{
+      font-variant-numeric:tabular-nums;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+    .pct-note{
+      font-size:11px;
+      color:var(--muted);
+      margin-top:6px;
+    }
+
+    @media (max-width: 980px){
+      .shell{
+        grid-template-columns: 1fr;
+        grid-template-rows:auto 1fr
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="left">
+      <div class="panel controls">
+        <h1>Contagion Simulation (PCT Agents)</h1>
+        <div class="legend">
+          <span><span class="dot s"></span>Susceptible</span>
+          <span><span class="dot i"></span>Infected</span>
+          <span><span class="dot r"></span>Recovered</span>
+          <span><span class="dot d"></span>Dead</span>
+        </div>
+
+        <h2>Population & Motion</h2>
+        <div class="grp">
+          <label>Population <span class="value" id="popVal"></span></label>
+          <input id="pop" type="range" min="50" max="800" step="10" value="250" />
+        </div>
+        <div class="row">
+          <div class="grp">
+            <label>Speed (baseline) <span class="value" id="spdVal"></span></label>
+            <input id="speed" type="range" min="0" max="200" step="1" value="60" />
+          </div>
+          <div class="grp">
+            <label>Contact radius (px) <span class="value" id="radVal"></span></label>
+            <input id="radius" type="range" min="2" max="20" step="1" value="8" />
+          </div>
+        </div>
+
+        <h2>Epidemiology (per second)</h2>
+        <div class="row">
+          <div class="grp">
+            <label>Incidence rate β <span class="value" id="betaVal"></span></label>
+            <input id="beta" type="range" min="0" max="2.0" step="0.01" value="0.35" />
+          </div>
+          <div class="grp">
+            <label>Recovery rate γ <span class="value" id="gammaVal"></span></label>
+            <input id="gamma" type="range" min="0" max="1.0" step="0.01" value="0.15" />
+          </div>
+        </div>
+        <div class="row">
+          <div class="grp">
+            <label>Mortality rate μ <span class="value" id="muVal"></span></label>
+            <input id="mu" type="range" min="0" max="0.5" step="0.005" value="0.02" />
+          </div>
+          <div class="grp">
+            <label>Prevalence (target %) <span class="value" id="prevVal"></span></label>
+            <input id="prevalence" type="range" min="0" max="100" step="1" value="2" />
+          </div>
+        </div>
+
+        <div class="btns">
+          <button class="primary" id="playPause">Pause</button>
+          <button id="seed">Reseed Infection</button>
+          <button id="reset">Reset Simulation</button>
+          <button class="danger" id="clearDead">Clear Dead Bodies</button>
+        </div>
+
+        <div class="stats">
+          <div class="kpi"><div class="lbl">Susceptible</div><div class="big" id="sCount">0</div></div>
+          <div class="kpi"><div class="lbl">Infected</div><div class="big" id="iCount">0</div></div>
+          <div class="kpi"><div class="lbl">Recovered</div><div class="big" id="rCount">0</div></div>
+          <div class="kpi"><div class="lbl">Dead</div><div class="big" id="dCount">0</div></div>
+        </div>
+      </div>
+
+      <!-- Agent inspector: explore hidden PCT parameters per agent -->
+      <div class="panel inspector">
+        <h2>Agent Inspector (Perceptual Control)</h2>
+        <div id="agentHint" class="pct-note">
+          Click an agent in the world to inspect its control parameters.
+        </div>
+        <div id="agentDetails" class="agent-details" style="display:none;"></div>
+        <div class="pct-note">
+          Each agent is a simple controller: it senses its distance to the nearest neighbour
+          and adjusts its movement to keep that perceived distance near a private reference
+          value. Different agents have different reference distances, gains, and noise levels.
+        </div>
+      </div>
+    </div>
+
+    <div class="panel stage">
+      <canvas id="world"></canvas>
+      <div class="overlay">
+        <canvas id="chart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Utility helpers ---
+    const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
+    function expoProb(rate, dt){
+      // Probability of at least one event in Poisson with rate per second
+      return 1 - Math.exp(-rate * dt);
+    }
+
+    // --- Simulation state ---
+    const canvas = document.getElementById('world');
+    const ctx = canvas.getContext('2d');
+    const chart = document.getElementById('chart');
+    const cctx = chart.getContext('2d');
+
+    let W,H; const DPR = Math.max(1, Math.min(2, window.devicePixelRatio||1));
+    function resize(){
+      const panel = document.querySelector('.stage');
+      W = panel.clientWidth; H = panel.clientHeight;
+      canvas.width = W * DPR; canvas.height = H * DPR; canvas.style.width=W+'px'; canvas.style.height=H+'px';
+      chart.width = (W-20) * DPR; chart.height = 110 * DPR; chart.style.width=(W-20)+'px'; chart.style.height=110+'px';
+      ctx.setTransform(DPR,0,0,DPR,0,0);
+      cctx.setTransform(DPR,0,0,DPR,0,0);
+    }
+    addEventListener('resize', resize);
+
+    const UI = {
+      pop: document.getElementById('pop'),
+      speed: document.getElementById('speed'),
+      radius: document.getElementById('radius'),
+      beta: document.getElementById('beta'),
+      gamma: document.getElementById('gamma'),
+      mu: document.getElementById('mu'),
+      prevalence: document.getElementById('prevalence'),
+      playPause: document.getElementById('playPause'),
+      seed: document.getElementById('seed'),
+      reset: document.getElementById('reset'),
+      clearDead: document.getElementById('clearDead')
+    };
+    const VALS = {
+      popVal: document.getElementById('popVal'),
+      spdVal: document.getElementById('spdVal'),
+      radVal: document.getElementById('radVal'),
+      betaVal: document.getElementById('betaVal'),
+      gammaVal: document.getElementById('gammaVal'),
+      muVal: document.getElementById('muVal'),
+      prevVal: document.getElementById('prevVal'),
+      sCount: document.getElementById('sCount'),
+      iCount: document.getElementById('iCount'),
+      rCount: document.getElementById('rCount'),
+      dCount: document.getElementById('dCount'),
+    };
+
+    const State = { S:0, I:1, R:2, D:3 };
+
+    let params = {
+      N: +UI.pop.value,
+      speed: +UI.speed.value, // baseline px/sec
+      radius: +UI.radius.value, // px
+      beta: +UI.beta.value,   // per sec
+      gamma: +UI.gamma.value, // per sec
+      mu: +UI.mu.value,       // per sec
+      targetPrev: +UI.prevalence.value / 100
+    };
+
+    function syncLabels(){
+      VALS.popVal.textContent = params.N;
+      VALS.spdVal.textContent = params.speed.toFixed(0);
+      VALS.radVal.textContent = params.radius.toFixed(0);
+      VALS.betaVal.textContent = params.beta.toFixed(2);
+      VALS.gammaVal.textContent = params.gamma.toFixed(2);
+      VALS.muVal.textContent = params.mu.toFixed(3);
+      VALS.prevVal.textContent = Math.round(params.targetPrev*100)+'%';
+    }
+
+    // --- Agent definition with PCT parameters ---
+    class Agent{
+      constructor(x,y,vx,vy,state=State.S){
+        this.x=x; this.y=y; this.vx=vx; this.vy=vy; this.state=state;
+
+        // PCT: each agent controls its perceived spacing to nearest neighbour.
+        this.refDist = 20 + Math.random()*80;   // desired distance [20,100] px
+        this.gain = 0.5 + Math.random()*2.5;    // control responsiveness
+        this.noise = Math.random()*5;           // noise in distance perception (px)
+        this.mobility = 0.5 + Math.random();    // scales baseline speed
+
+        // For display in inspector
+        this.lastPerception = 0;
+        this.lastError = 0;
+      }
+    }
+
+    let agents=[]; let running=true; let lastT=performance.now();
+
+    function initAgents(){
+      agents = [];
+      for(let i=0;i<params.N;i++){
+        const x = Math.random()*(W-20)+10;
+        const y = Math.random()*(H-20)+10;
+        const ang = Math.random()*Math.PI*2;
+        const spd = params.speed*(0.5+Math.random()*0.5);
+        const vx = Math.cos(ang)*spd, vy=Math.sin(ang)*spd;
+        agents.push(new Agent(x,y,vx,vy,State.S));
+      }
+      seedPrevalence(params.targetPrev);
+      selectedAgent = null;
+      updateInspector();
+    }
+
+    function seedPrevalence(prev){
+      // Set infected proportion among all non-dead to requested prevalence
+      const alive = agents.filter(a=>a.state!==State.D);
+      const targetI = Math.round(alive.length * prev);
+      for(const a of alive){ if(a.state!==State.S) a.state=State.S; }
+      shuffle(alive);
+      for(let i=0;i<targetI;i++){ alive[i].state = State.I; }
+    }
+
+    function shuffle(arr){
+      for(let i=arr.length-1;i>0;i--){
+        const j=(Math.random()*(i+1))|0;
+        [arr[i],arr[j]]=[arr[j],arr[i]];
+      }
+    }
+
+    function addOrRemoveAgents(targetN){
+      const diff = targetN - agents.length;
+      if(diff>0){
+        for(let i=0;i<diff;i++){
+          const x = Math.random()*W, y=Math.random()*H;
+          const ang=Math.random()*Math.PI*2;
+          const spd=params.speed*(0.5+Math.random()*0.5);
+          agents.push(new Agent(x,y,Math.cos(ang)*spd,Math.sin(ang)*spd,State.S));
+        }
+      } else if(diff<0){
+        agents.splice(agents.length+diff, -diff);
+      }
+      if(selectedAgent && !agents.includes(selectedAgent)){
+        selectedAgent = null;
+        updateInspector();
+      }
+    }
+
+    // --- Spatial hashing for faster neighborhood queries ---
+    const grid = { size: 20, cells: new Map() };
+    function buildGrid(){
+      grid.cells.clear();
+      const g = grid.size;
+      for(let i=0;i<agents.length;i++){
+        const a = agents[i];
+        if(a.state===State.D) continue;
+        const cx = Math.floor(a.x/g), cy=Math.floor(a.y/g);
+        const key = cx+","+cy;
+        if(!grid.cells.has(key)) grid.cells.set(key,[]);
+        grid.cells.get(key).push(i);
+      }
+    }
+    function queryNeighbors(ax,ay,r){
+      const g = grid.size; const R = Math.ceil(r/g);
+      const cx = Math.floor(ax/g), cy=Math.floor(ay/g);
+      const idxs=[];
+      for(let dx=-R;dx<=R;dx++){
+        for(let dy=-R;dy<=R;dy++){
+          const key=(cx+dx)+","+(cy+dy);
+          const cell = grid.cells.get(key);
+          if(cell) idxs.push(...cell);
+        }
+      }
+      return idxs;
+    }
+
+    // --- Time series ---
+    const history = { S:[], I:[], R:[], D:[], t:[], maxLen: 600 };
+    function pushHistory(t){
+      const counts = countStates();
+      history.S.push(counts.S); history.I.push(counts.I);
+      history.R.push(counts.R); history.D.push(counts.D); history.t.push(t);
+      if(history.S.length>history.maxLen){
+        ['S','I','R','D','t'].forEach(k=>history[k].shift());
+      }
+    }
+
+    function countStates(){
+      let S=0,I=0,R=0,D=0;
+      for(const a of agents){
+        if(a.state===State.S) S++;
+        else if(a.state===State.I) I++;
+        else if(a.state===State.R) R++;
+        else D++;
+      }
+      VALS.sCount.textContent=S;
+      VALS.iCount.textContent=I;
+      VALS.rCount.textContent=R;
+      VALS.dCount.textContent=D;
+      return {S,I,R,D};
+    }
+
+    function drawChart(){
+      const n = history.t.length; if(n<2) return;
+      const w = chart.width/DPR, h = chart.height/DPR;
+      cctx.clearRect(0,0,w,h);
+      const maxY = Math.max(1, ...history.S, ...history.I, ...history.R, ...history.D);
+      const series = [
+        {key:'S', stroke:'#94a3b8'},
+        {key:'I', stroke:'#f87171'},
+        {key:'R', stroke:'#34d399'},
+        {key:'D', stroke:'#475569'}
+      ];
+      for(const s of series){
+        const data = history[s.key];
+        cctx.beginPath();
+        for(let i=0;i<n;i++){
+          const x = (i/(n-1))*w;
+          const y = h - (data[i]/maxY)*h;
+          if(i===0) cctx.moveTo(x,y); else cctx.lineTo(x,y);
+        }
+        cctx.lineWidth=2; cctx.strokeStyle=s.stroke; cctx.stroke();
+      }
+    }
+
+    // --- PCT control: update agent velocities based on perceived spacing ---
+    function updateVelocitiesFromPCT(dt){
+      const baseSpeed = params.speed;
+      const searchR = Math.max(W,H); // effectively "everyone", but still using grid
+
+      for(const a of agents){
+        if(a.state===State.D) continue;
+
+        const idxs = queryNeighbors(a.x, a.y, searchR);
+        let nearest = null;
+        let nearestDist2 = Infinity;
+        for(const idx of idxs){
+          const b = agents[idx];
+          if(b === a || b.state === State.D) continue;
+          const dx = b.x - a.x;
+          const dy = b.y - a.y;
+          const d2 = dx*dx + dy*dy;
+          if(d2 < nearestDist2){
+            nearestDist2 = d2;
+            nearest = b;
+          }
+        }
+
+        let perceptionDist;
+        let dirX = 0, dirY = 0;
+
+        if(nearest){
+          perceptionDist = Math.sqrt(nearestDist2);
+          const inv = perceptionDist > 0 ? 1/perceptionDist : 0;
+          dirX = (nearest.x - a.x)*inv;
+          dirY = (nearest.y - a.y)*inv;
+        } else {
+          // No neighbour: treat as very far, wander randomly
+          perceptionDist = Math.max(W,H);
+          const ang = Math.random()*Math.PI*2;
+          dirX = Math.cos(ang); dirY = Math.sin(ang);
+        }
+
+        // Perceptual noise
+        perceptionDist += (Math.random()*2-1) * a.noise;
+
+        const error = a.refDist - perceptionDist; // reference - perception
+        a.lastPerception = perceptionDist;
+        a.lastError = error;
+
+        // If too close (error > 0), move away, else move toward neighbour.
+        const moveSign = (error >= 0) ? -1 : 1;
+        const magError = Math.abs(error);
+
+        // Target speed scales with baseline speed, mobility, and nonlinearly with error.
+        const speedScale = 0.4 + 0.6 * Math.tanh(a.gain * magError / 50);
+        const targetSpeed = baseSpeed * a.mobility * speedScale;
+
+        const desiredVx = moveSign * dirX * targetSpeed;
+        const desiredVy = moveSign * dirY * targetSpeed;
+
+        // Smoothly adjust velocity (low-pass: output ~ integral of error)
+        const smooth = clamp(a.gain * dt, 0, 1);
+        a.vx = (1 - smooth)*a.vx + smooth*desiredVx;
+        a.vy = (1 - smooth)*a.vy + smooth*desiredVy;
+      }
+    }
+
+    // --- Dynamics ---
+    function step(dt){
+      // 1. Build grid based on current positions for perceptual queries.
+      buildGrid();
+
+      // 2. Each agent updates its output (velocity) to control perceived spacing.
+      updateVelocitiesFromPCT(dt);
+
+      // 3. Move and bounce
+      for(const a of agents){
+        if(a.state===State.D){ continue; }
+        a.x += a.vx*dt; a.y += a.vy*dt;
+        if(a.x<3||a.x>W-3){ a.vx*=-1; a.x=clamp(a.x,3,W-3); }
+        if(a.y<3||a.y>H-3){ a.vy*=-1; a.y=clamp(a.y,3,H-3); }
+      }
+
+      // 4. Rebuild grid with updated positions for infection
+      buildGrid();
+
+      const pInfect = expoProb(params.beta, dt);
+      const pRecover = ()=>{
+        // Competing risks recovery vs death. Sample which happens first this tick.
+        const total = params.gamma + params.mu;
+        if(total<=0) return {rec:false, die:false};
+        const pAny = expoProb(total, dt);
+        if(Math.random() >= pAny) return {rec:false, die:false};
+        const rec = Math.random() < (params.gamma/total);
+        return {rec, die:!rec};
+      };
+
+      const r = params.radius;
+
+      // Infection pass: for each susceptible, check nearby infected
+      for(let i=0;i<agents.length;i++){
+        const a = agents[i];
+        if(a.state!==State.S) continue;
+        const idxs = queryNeighbors(a.x,a.y,r+2);
+        let nearInfected=false;
+        for(const j of idxs){
+          if(j===i) continue; const b=agents[j];
+          if(b.state!==State.I) continue;
+          const dx=a.x-b.x, dy=a.y-b.y;
+          if(dx*dx+dy*dy <= r*r){ nearInfected=true; break; }
+        }
+        if(nearInfected && Math.random()<pInfect){ a.state = State.I; }
+      }
+
+      // Recovery / mortality pass
+      for(const a of agents){
+        if(a.state!==State.I) continue;
+        const ev = pRecover();
+        if(ev.rec){ a.state=State.R; }
+        else if(ev.die){ a.state=State.D; a.vx=0; a.vy=0; }
+      }
+    }
+
+    function draw(){
+      ctx.clearRect(0,0,W,H);
+      const r=3;
+      for(const a of agents){
+        if(a.state===State.S){ ctx.fillStyle='#94a3b8'; }
+        else if(a.state===State.I){ ctx.fillStyle='#f87171'; }
+        else if(a.state===State.R){ ctx.fillStyle='#34d399'; }
+        else { ctx.fillStyle='#475569'; }
+        ctx.beginPath(); ctx.arc(a.x,a.y,r,0,Math.PI*2); ctx.fill();
+
+        // Highlight selected agent with a faint ring
+        if(a === selectedAgent){
+          ctx.strokeStyle='rgba(250, 204, 21, 0.8)';
+          ctx.lineWidth=1.5;
+          ctx.beginPath(); ctx.arc(a.x,a.y,r+3,0,Math.PI*2); ctx.stroke();
+        }
+      }
+    }
+
+    function loop(now){
+      if(running){
+        let dt = (now-lastT)/1000; dt = Math.min(dt, 0.05); // clamp big jumps
+        const fixed = 1/60; // integrate in fixed steps for stability
+        let acc = dt;
+        while(acc>0){
+          const stepDt = Math.min(fixed, acc);
+          step(stepDt);
+          acc -= stepDt;
+        }
+        pushHistory(now/1000);
+        draw();
+        drawChart();
+        updateInspector(); // live perception/error for selected agent
+      }
+      lastT = now; requestAnimationFrame(loop);
+    }
+
+    // --- Agent inspector UI ---
+    const agentHint = document.getElementById('agentHint');
+    const agentDetails = document.getElementById('agentDetails');
+    let selectedAgent = null;
+
+    function stateName(s){
+      if(s===State.S) return 'Susceptible';
+      if(s===State.I) return 'Infected';
+      if(s===State.R) return 'Recovered';
+      if(s===State.D) return 'Dead';
+      return 'Unknown';
+    }
+
+    function updateInspector(){
+      if(!selectedAgent || !agents.includes(selectedAgent)){
+        selectedAgent = null;
+        agentDetails.style.display='none';
+        agentHint.style.display='block';
+        return;
+      }
+      agentHint.style.display='none';
+      agentDetails.style.display='block';
+
+      const a = selectedAgent;
+      const perc = a.lastPerception || 0;
+      const err = a.lastError || 0;
+
+      agentDetails.innerHTML = `
+        <div><span class="row-label">Health state:</span> ${stateName(a.state)}</div>
+        <div><span class="row-label">Reference distance:</span>
+          <span class="mono">${a.refDist.toFixed(1)} px</span>
+        </div>
+        <div><span class="row-label">Control gain:</span>
+          <span class="mono">${a.gain.toFixed(2)}</span>
+        </div>
+        <div><span class="row-label">Perceptual noise:</span>
+          <span class="mono">${a.noise.toFixed(2)} px</span>
+        </div>
+        <div><span class="row-label">Mobility factor:</span>
+          <span class="mono">${a.mobility.toFixed(2)}</span>
+        </div>
+        <hr style="border:none;border-top:1px solid #1f2937;margin:6px 0;">
+        <div><span class="row-label">Current perception (nearest distance):</span>
+          <span class="mono">${perc.toFixed(1)} px</span>
+        </div>
+        <div><span class="row-label">Error (ref - perception):</span>
+          <span class="mono">${err.toFixed(1)} px</span>
+        </div>
+      `;
+    }
+
+    canvas.addEventListener('click', (ev)=>{
+      const rect = canvas.getBoundingClientRect();
+      const x = ev.clientX - rect.left;
+      const y = ev.clientY - rect.top;
+
+      // Find nearest agent within threshold
+      let best = null;
+      let bestD2 = 9*9; // threshold^2 (9px)
+      for(const a of agents){
+        const dx = a.x - x;
+        const dy = a.y - y;
+        const d2 = dx*dx + dy*dy;
+        if(d2 < bestD2){
+          bestD2 = d2;
+          best = a;
+        }
+      }
+      selectedAgent = best;
+      updateInspector();
+    });
+
+    // --- UI wiring ---
+    for(const [key,el] of Object.entries(UI)){
+      if(el.tagName==='INPUT' && el.type==='range'){
+        el.addEventListener('input',()=>{
+          if(key==='pop'){ params.N=+el.value; addOrRemoveAgents(params.N); }
+          if(key==='speed'){ params.speed=+el.value; }
+          if(key==='radius'){ params.radius=+el.value; }
+          if(key==='beta'){ params.beta=+el.value; }
+          if(key==='gamma'){ params.gamma=+el.value; }
+          if(key==='mu'){ params.mu=+el.value; }
+          if(key==='prevalence'){ params.targetPrev=+el.value/100; seedPrevalence(params.targetPrev); }
+          syncLabels();
+        });
+      }
+    }
+
+    UI.playPause.addEventListener('click',()=>{
+      running=!running; UI.playPause.textContent = running ? 'Pause' : 'Play';
+    });
+
+    UI.seed.addEventListener('click',()=> seedPrevalence(params.targetPrev));
+
+    UI.reset.addEventListener('click',()=>{
+      history.S.length=history.I.length=history.R.length=history.D.length=history.t.length=0;
+      initAgents();
+      countStates();
+    });
+
+    UI.clearDead.addEventListener('click',()=>{
+      agents = agents.filter(a=>a.state!==State.D);
+      params.N = agents.length;
+      UI.pop.value = params.N;
+      syncLabels();
+      if(selectedAgent && !agents.includes(selectedAgent)){
+        selectedAgent = null;
+        updateInspector();
+      }
+    });
+
+    // --- Boot ---
+    resize();
+    syncLabels();
+    initAgents();
+    countStates();
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>
