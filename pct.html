@@ -1,0 +1,451 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PCT Demo – Controller vs Environmental Perturbations</title>
+  <style>
+    :root {
+      --bg: #0f1222;
+      --panel: #171a2e;
+      --ink: #e7ecff;
+      --muted: #9aa3c7;
+      --accent: #6aa1ff;
+      --accent2: #8ef;
+      --accent3: #ffb86c;
+      --ok: #4ade80;
+      --warn: #f59e0b;
+      --bad: #ef4444;
+      --shadow: 0 20px 50px rgba(0,0,0,.4);
+      --radius: 16px;
+    }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial;
+      color: var(--ink);
+      background: radial-gradient(1200px 1200px at 20% 10%, #121635 0%, var(--bg) 60%);
+      overflow: hidden;
+    }
+    .wrap {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      grid-auto-rows: 100vh;
+    }
+    .panel {
+      padding: 18px 18px 12px 18px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.08)), var(--panel);
+      box-shadow: var(--shadow);
+      border-right: 1px solid rgba(255,255,255,0.06);
+    }
+    h1 {
+      font-size: 18px;
+      line-height: 1.2;
+      margin: 8px 0 14px 0;
+      letter-spacing: 0.3px;
+      font-weight: 650;
+    }
+    p, label, small { color: var(--muted); }
+    .sub { font-size: 12px; margin: 2px 0 12px 0; }
+    .row { margin: 10px 0 14px 0; }
+    .row > label { display: flex; justify-content: space-between; align-items: center; }
+    .row input[type="range"] { width: 100%; }
+    .kv { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; }
+    .badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: rgba(255,255,255,0.06); color: var(--muted); }
+    .btnbar { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+    button {
+      background: rgba(255,255,255,0.06);
+      color: var(--ink);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform .06s ease, background .2s ease, border-color .2s ease;
+    }
+    button:hover { transform: translateY(-1px); background: rgba(255,255,255,0.10); }
+    button:active { transform: translateY(0); }
+
+    .canvas-wrap { position: relative; }
+    #stage { display: block; width: 100%; height: 100vh; }
+
+    /* HUD */
+    .hud { position: absolute; left: 12px; bottom: 12px; right: 12px; display: grid; grid-template-columns: 1fr 240px; gap: 12px; align-items: end; pointer-events: none; }
+    .meters { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .meter { background: rgba(255,255,255,0.06); border-radius: 10px; padding: 8px; }
+    .meter .label { font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+    .bar { height: 8px; background: rgba(255,255,255,0.08); border-radius: 8px; overflow: hidden; }
+    .bar > div { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent2), var(--accent)); }
+    .spark {
+      background: rgba(255,255,255,0.06);
+      border-radius: 10px;
+      padding: 8px;
+    }
+    canvas#sparkline { width: 100%; height: 64px; display: block; }
+
+    .legend { position: absolute; top: 10px; right: 12px; background: rgba(0,0,0,0.25); padding: 8px 10px; border-radius: 10px; font-size: 12px; }
+    .legend div { margin: 2px 0; }
+    .chip { display: inline-block; width: 8px; height: 8px; border-radius: 999px; margin-right: 6px; vertical-align: middle; background: var(--accent); }
+    .chip.perception { background: var(--accent); }
+    .chip.reference { background: var(--ok); }
+    .chip.disturbance { background: var(--warn); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <aside class="panel">
+      <h1>Perceptual Control (PCT) – Live Demo</h1>
+      <p class="sub">The system controls its <b>perception</b> (blue orb) to match a <b>reference</b> (green cross) while an environment adds 
+        <b>disturbances</b> (wind/impulses). The controller (PID) continuously adjusts output to keep perception on target.</p>
+
+      <div class="row">
+        <div class="kv"><label>K<sub>p</sub> (proportional)</label><span class="badge" id="kpv">1.5</span></div>
+        <input id="kp" type="range" min="0" max="6" step="0.05" value="1.5" />
+      </div>
+      <div class="row">
+        <div class="kv"><label>K<sub>i</sub> (integral)</label><span class="badge" id="kiv">0.4</span></div>
+        <input id="ki" type="range" min="0" max="2" step="0.01" value="0.4" />
+      </div>
+      <div class="row">
+        <div class="kv"><label>K<sub>d</sub> (derivative)</label><span class="badge" id="kdv">0.6</span></div>
+        <input id="kd" type="range" min="0" max="4" step="0.05" value="0.6" />
+      </div>
+
+      <hr style="border-color: rgba(255,255,255,0.08); border-width: 0 0 1px; margin: 14px 0;" />
+
+      <div class="row">
+        <div class="kv"><label>Disturbance amplitude</label><span class="badge" id="distv">1.0</span></div>
+        <input id="dist" type="range" min="0" max="4" step="0.05" value="1.0" />
+      </div>
+      <div class="row">
+        <div class="kv"><label>Friction (environment)</label><span class="badge" id="fricv">0.08</span></div>
+        <input id="fric" type="range" min="0" max="0.5" step="0.005" value="0.08" />
+      </div>
+
+      <div class="row">
+        <label><input id="autoRef" type="checkbox" checked /> Auto-reference orbit</label>
+        <small>Uncheck to drag the green crosshair anywhere.</small>
+      </div>
+
+      <div class="row">
+        <label><input id="impulses" type="checkbox" checked /> Random gust impulses</label>
+        <small>Occasional strong environmental kicks.</small>
+      </div>
+
+      <div class="btnbar">
+        <button id="reset">Reset</button>
+        <button id="pause">Pause</button>
+      </div>
+
+      <div class="row" style="margin-top: 16px;">
+        <small>Click/drag on the right canvas to move the reference (when Auto-reference is off). Click to add a local disturbance gust.</small>
+      </div>
+
+      <div style="position:absolute; bottom: 14px; left: 18px; right: 18px; font-size: 12px; color: var(--muted);">
+        <div>Tip: Increase disturbance and toggle impulses to see the controller fight back. Tune Kp/Ki/Kd for stability vs overshoot.</div>
+      </div>
+    </aside>
+
+    <main class="canvas-wrap">
+      <canvas id="stage"></canvas>
+      <div class="legend">
+        <div><span class="chip perception"></span> Perception (state)</div>
+        <div><span class="chip reference" style="background: var(--ok);"></span> Reference (goal)</div>
+        <div><span class="chip disturbance" style="background: var(--warn);"></span> Disturbance</div>
+      </div>
+      <div class="hud">
+        <div class="meters">
+          <div class="meter"><div class="label">|error|</div><div class="bar"><div id="errBar"></div></div></div>
+          <div class="meter"><div class="label">|u| (control)</div><div class="bar"><div id="uBar"></div></div></div>
+          <div class="meter"><div class="label">|d| (disturbance)</div><div class="bar"><div id="dBar"></div></div></div>
+          <div class="meter"><div class="label">speed</div><div class="bar"><div id="vBar"></div></div></div>
+        </div>
+        <div class="spark"><canvas id="sparkline" width="400" height="64"></canvas></div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // --- Utilities ---------------------------------------------------------
+    const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+    const lerp = (a,b,t) => a + (b-a)*t;
+
+    // --- Canvas setup ------------------------------------------------------
+    const canvas = document.getElementById('stage');
+    const ctx = canvas.getContext('2d');
+    function resize() {
+      canvas.width = canvas.clientWidth;
+      canvas.height = canvas.clientHeight;
+    }
+    window.addEventListener('resize', resize); resize();
+
+    // --- State -------------------------------------------------------------
+    const state = {
+      // physical state of the controlled object (perception)
+      p: { x: 0, y: 0 }, // position
+      v: { x: 0, y: 0 }, // velocity
+      // reference target
+      r: { x: canvas.width * 0.5, y: canvas.height * 0.5 },
+      // environmental disturbance (wind-like)
+      d: { x: 0, y: 0 },
+      // controller output (force)
+      u: { x: 0, y: 0 },
+      // parameters
+      Kp: 1.5, Ki: 0.4, Kd: 0.6,
+      friction: 0.08,
+      distAmp: 1.0,
+      integral: { x: 0, y: 0 },
+      prevError: { x: 0, y: 0 },
+      lastT: performance.now(),
+      paused: false,
+      autoRef: true,
+      impulses: true,
+      t: 0
+    };
+
+    // Initialize position near center
+    state.p.x = canvas.width * 0.1 + Math.random()*40;
+    state.p.y = canvas.height * 0.8 + Math.random()*40;
+
+    // --- Controls ----------------------------------------------------------
+    const q = s => document.getElementById(s);
+    const kp = q('kp'), ki = q('ki'), kd = q('kd');
+    const kpv = q('kpv'), kiv = q('kiv'), kdv = q('kdv');
+    const fric = q('fric'), fricv = q('fricv');
+    const dist = q('dist'), distv = q('distv');
+    const autoRef = q('autoRef');
+    const impulses = q('impulses');
+    const resetBtn = q('reset');
+    const pauseBtn = q('pause');
+
+    const errBar = q('errBar'), uBar = q('uBar'), dBar = q('dBar'), vBar = q('vBar');
+
+    function syncLabels(){
+      kpv.textContent = (+kp.value).toFixed(2);
+      kiv.textContent = (+ki.value).toFixed(2);
+      kdv.textContent = (+kd.value).toFixed(2);
+      fricv.textContent = (+fric.value).toFixed(3);
+      distv.textContent = (+dist.value).toFixed(2);
+    }
+    syncLabels();
+
+    function readParams(){
+      state.Kp = +kp.value; state.Ki = +ki.value; state.Kd = +kd.value;
+      state.friction = +fric.value; state.distAmp = +dist.value;
+      state.autoRef = autoRef.checked; state.impulses = impulses.checked;
+    }
+
+    [kp,ki,kd,fric,dist,autoRef,impulses].forEach(el => el.addEventListener('input', ()=>{ syncLabels(); readParams(); }));
+
+    resetBtn.addEventListener('click', () => {
+      state.p.x = canvas.width*0.15; state.p.y = canvas.height*0.8;
+      state.v.x = 0; state.v.y = 0;
+      state.integral.x = 0; state.integral.y = 0;
+      state.prevError.x = 0; state.prevError.y = 0;
+    });
+
+    pauseBtn.addEventListener('click', ()=>{
+      state.paused = !state.paused;
+      pauseBtn.textContent = state.paused ? 'Resume' : 'Pause';
+    });
+
+    // --- Interaction: drag reference, click to inject gusts ---------------
+    let dragging = false;
+    canvas.addEventListener('pointerdown', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left, y = e.clientY - rect.top;
+      if (!state.autoRef) { state.r.x = x; state.r.y = y; dragging = true; }
+      // Local impulse disturbance (gust) at click point
+      state.d.x += (Math.random()*2-1) * 300 * state.distAmp;
+      state.d.y += (Math.random()*2-1) * 300 * state.distAmp;
+    });
+    canvas.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      const rect = canvas.getBoundingClientRect();
+      state.r.x = e.clientX - rect.left; state.r.y = e.clientY - rect.top;
+    });
+    window.addEventListener('pointerup', ()=> dragging = false);
+
+    // --- PID Controller ----------------------------------------------------
+    function pidStep(dt){
+      // error between reference and perception
+      const ex = state.r.x - state.p.x;
+      const ey = state.r.y - state.p.y;
+      // integrate error (anti-windup clamp)
+      const clampI = 600;
+      state.integral.x = clamp(state.integral.x + ex * dt, -clampI, clampI);
+      state.integral.y = clamp(state.integral.y + ey * dt, -clampI, clampI);
+      // derivative (based on error change)
+      const dx = (ex - state.prevError.x) / dt;
+      const dy = (ey - state.prevError.y) / dt;
+      state.prevError.x = ex; state.prevError.y = ey;
+      // control signal
+      state.u.x = state.Kp*ex + state.Ki*state.integral.x + state.Kd*dx;
+      state.u.y = state.Kp*ey + state.Ki*state.integral.y + state.Kd*dy;
+    }
+
+    // --- Environment dynamics ---------------------------------------------
+    function environmentStep(dt){
+      // Wind evolves as an Ornstein–Uhlenbeck-like process
+      const relax = 0.9;
+      state.d.x = relax*state.d.x + (Math.random()*2-1)*50*state.distAmp;
+      state.d.y = relax*state.d.y + (Math.random()*2-1)*50*state.distAmp;
+
+      // Occasional impulse gusts
+      if (state.impulses && Math.random() < 0.01) {
+        state.d.x += (Math.random()*2-1) * 800 * state.distAmp;
+        state.d.y += (Math.random()*2-1) * 800 * state.distAmp;
+      }
+
+      // Auto reference: orbiting trajectory
+      if (state.autoRef){
+        const cx = canvas.width*0.5, cy = canvas.height*0.5;
+        const rad = Math.min(canvas.width, canvas.height)*0.28;
+        state.r.x = cx + rad * Math.cos(state.t*0.6);
+        state.r.y = cy + rad * Math.sin(state.t*0.4 + 0.7);
+      }
+    }
+
+    // --- Physics integrator ------------------------------------------------
+    function physicsStep(dt){
+      // Acceleration = control + disturbance - friction*velocity
+      const ax = state.u.x + state.d.x - state.friction*state.v.x;
+      const ay = state.u.y + state.d.y - state.friction*state.v.y;
+      state.v.x += ax * dt; state.v.y += ay * dt;
+      state.p.x += state.v.x * dt; state.p.y += state.v.y * dt;
+
+      // soft walls
+      const pad = 24; const kWall = 40;
+      if (state.p.x < pad) state.u.x += kWall*(pad - state.p.x);
+      if (state.p.x > canvas.width - pad) state.u.x -= kWall*(state.p.x - (canvas.width - pad));
+      if (state.p.y < pad) state.u.y += kWall*(pad - state.p.y);
+      if (state.p.y > canvas.height - pad) state.u.y -= kWall*(state.p.y - (canvas.height - pad));
+
+      // decay disturbances slowly (so control must continually work)
+      state.d.x *= 0.98; state.d.y *= 0.98;
+    }
+
+    // --- Rendering ---------------------------------------------------------
+    function draw(){
+      const w = canvas.width, h = canvas.height;
+      // background
+      const g = ctx.createLinearGradient(0,0,0,h);
+      g.addColorStop(0, 'rgba(255,255,255,0.02)');
+      g.addColorStop(1, 'rgba(0,0,0,0.25)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0,0,w,h);
+
+      // grid
+      ctx.save();
+      ctx.globalAlpha = 0.18;
+      ctx.strokeStyle = '#ffffff22';
+      ctx.lineWidth = 1;
+      const step = 60;
+      ctx.beginPath();
+      for(let x=0; x<=w; x+=step){ ctx.moveTo(x,0); ctx.lineTo(x,h); }
+      for(let y=0; y<=h; y+=step){ ctx.moveTo(0,y); ctx.lineTo(w,y); }
+      ctx.stroke();
+      ctx.restore();
+
+      // reference crosshair
+      ctx.save();
+      ctx.strokeStyle = 'rgba(74, 222, 128, 0.95)'; // green
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(state.r.x, state.r.y, 12, 0, Math.PI*2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(state.r.x-16, state.r.y); ctx.lineTo(state.r.x+16, state.r.y);
+      ctx.moveTo(state.r.x, state.r.y-16); ctx.lineTo(state.r.x, state.r.y+16);
+      ctx.stroke();
+      ctx.restore();
+
+      // disturbance vector arrow
+      ctx.save();
+      ctx.translate(24,24);
+      const dx = state.d.x*0.02, dy = state.d.y*0.02;
+      ctx.strokeStyle = 'rgba(245, 158, 11, 0.95)'; // amber
+      ctx.fillStyle = 'rgba(245, 158, 11, 0.95)';
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(dx,dy); ctx.stroke();
+      const ang = Math.atan2(dy,dx);
+      const ah = 8; const aw = 5;
+      ctx.beginPath();
+      ctx.moveTo(dx,dy);
+      ctx.lineTo(dx - ah*Math.cos(ang) + aw*Math.sin(ang), dy - ah*Math.sin(ang) - aw*Math.cos(ang));
+      ctx.lineTo(dx - ah*Math.cos(ang) - aw*Math.sin(ang), dy - ah*Math.sin(ang) + aw*Math.cos(ang));
+      ctx.closePath(); ctx.fill();
+      ctx.restore();
+
+      // perception orb
+      ctx.save();
+      const r = 12;
+      const grad = ctx.createRadialGradient(state.p.x-r*0.4, state.p.y-r*0.4, r*0.2, state.p.x, state.p.y, r*1.4);
+      grad.addColorStop(0, 'rgba(142, 238, 255, 1)');
+      grad.addColorStop(1, 'rgba(80, 140, 255, 0.15)');
+      ctx.fillStyle = grad;
+      ctx.beginPath(); ctx.arc(state.p.x, state.p.y, r, 0, Math.PI*2); ctx.fill();
+      ctx.strokeStyle = 'rgba(106, 161, 255, 0.9)'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.restore();
+
+      // error line
+      ctx.save();
+      ctx.strokeStyle = 'rgba(142,238,255,0.35)';
+      ctx.setLineDash([6,6]);
+      ctx.beginPath();
+      ctx.moveTo(state.p.x, state.p.y);
+      ctx.lineTo(state.r.x, state.r.y);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // --- HUD: bars & sparkline --------------------------------------------
+    const spark = document.getElementById('sparkline');
+    const sctx = spark.getContext('2d');
+    const errHist = new Array(200).fill(0);
+
+    function hudUpdate(){
+      const err = Math.hypot(state.r.x - state.p.x, state.r.y - state.p.y);
+      const uMag = Math.hypot(state.u.x, state.u.y);
+      const dMag = Math.hypot(state.d.x, state.d.y);
+      const vMag = Math.hypot(state.v.x, state.v.y);
+      const clampPct = v => (100 * clamp(v, 0, 1)).toFixed(1) + '%';
+      errBar.style.width = clampPct(err / 300);
+      uBar.style.width = clampPct(uMag / 1000);
+      dBar.style.width = clampPct(dMag / 1000);
+      vBar.style.width = clampPct(vMag / 1500);
+
+      // sparkline of error
+      errHist.push(err); if (errHist.length > 400) errHist.shift();
+      const W = spark.width, H = spark.height;
+      sctx.clearRect(0,0,W,H);
+      // axis baseline
+      sctx.globalAlpha = 0.25; sctx.strokeStyle = '#ffffff'; sctx.lineWidth = 1; sctx.beginPath(); sctx.moveTo(0,H-1); sctx.lineTo(W,H-1); sctx.stroke(); sctx.globalAlpha = 1;
+      // plot
+      sctx.beginPath(); sctx.lineWidth = 2; sctx.strokeStyle = '#8EEEFF';
+      for (let i=0;i<errHist.length;i++){
+        const x = i * (W/(errHist.length-1));
+        const y = H - clamp(errHist[i] / 300, 0, 1) * (H-4) - 2;
+        if (i===0) sctx.moveTo(x,y); else sctx.lineTo(x,y);
+      }
+      sctx.stroke();
+    }
+
+    // --- Main loop ---------------------------------------------------------
+    function step(now){
+      const dt = Math.min(0.05, (now - state.lastT)/1000); // clamp dt
+      state.lastT = now; if (state.paused) { requestAnimationFrame(step); return; }
+      readParams();
+      state.t += dt;
+      environmentStep(dt);
+      pidStep(dt);
+      physicsStep(dt);
+      draw();
+      hudUpdate();
+      requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  </script>
+</body>
+</html>
