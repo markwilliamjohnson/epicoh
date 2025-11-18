@@ -1,0 +1,767 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Perceptual Control Theory – Interactive Loop</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #020617;
+      --accent: #38bdf8;
+      --accent-soft: rgba(56, 189, 248, 0.15);
+      --border: #1e293b;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --danger: #fb7185;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #1e293b 0, #020617 55%, #000 100%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+      padding: 16px;
+    }
+
+    .app {
+      max-width: 1100px;
+      width: 100%;
+      background: radial-gradient(circle at top left, #0b1120 0, #020617 50%, #000 100%);
+      border-radius: 24px;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      box-shadow:
+        0 24px 60px rgba(15, 23, 42, 0.9),
+        0 0 0 1px rgba(15, 23, 42, 0.8);
+      padding: 20px 22px;
+      display: grid;
+      grid-template-columns: minmax(260px, 310px) minmax(0, 1fr);
+      gap: 18px;
+    }
+
+    @media (max-width: 800px) {
+      .app {
+        grid-template-columns: 1fr;
+        max-height: none;
+      }
+    }
+
+    .left {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .right {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: 320px;
+    }
+
+    h1 {
+      font-size: 1.3rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 4px;
+    }
+
+    .tag {
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: var(--muted);
+      line-height: 1.3;
+      margin-bottom: 6px;
+    }
+
+    .card {
+      background: radial-gradient(circle at top left, #020617 0, #020617 35%, #020617 100%);
+      border-radius: 18px;
+      border: 1px solid rgba(30, 64, 175, 0.4);
+      padding: 12px 12px 10px;
+    }
+
+    .card + .card {
+      margin-top: 4px;
+    }
+
+    .card-title {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .chip {
+      font-size: 0.7rem;
+      padding: 2px 6px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      color: var(--muted);
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .control-group label {
+      font-size: 0.78rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--muted);
+    }
+
+    .control-group span.value {
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+      margin-left: 8px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      -webkit-appearance: none;
+      height: 4px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.9);
+      outline: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #e0f2fe 0, #38bdf8 40%, #0369a1 100%);
+      box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.25);
+      cursor: pointer;
+      border: none;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #e0f2fe 0, #38bdf8 40%, #0369a1 100%);
+      box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.25);
+      cursor: pointer;
+      border: none;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      flex: 1 1 30%;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 0.8rem;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.9));
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition:
+        background 0.15s ease,
+        transform 0.08s ease,
+        box-shadow 0.15s ease,
+        border-color 0.15s ease;
+      white-space: nowrap;
+    }
+
+    button.primary {
+      border-color: rgba(56, 189, 248, 0.9);
+      background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.22), rgba(15, 23, 42, 0.9));
+    }
+
+    button:active {
+      transform: translateY(1px) scale(0.99);
+      box-shadow: 0 0 0 0 rgba(15, 23, 42, 0.7);
+    }
+
+    button:hover {
+      background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.14), rgba(15, 23, 42, 0.9));
+      border-color: rgba(129, 140, 248, 0.9);
+    }
+
+    button.danger {
+      border-color: rgba(248, 113, 113, 0.9);
+      background: radial-gradient(circle at top left, rgba(248, 113, 113, 0.24), rgba(15, 23, 42, 0.9));
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .metric {
+      border-radius: 12px;
+      padding: 6px 8px;
+      background: linear-gradient(
+        145deg,
+        rgba(15, 23, 42, 0.9),
+        rgba(15, 23, 42, 0.8)
+      );
+      border: 1px solid rgba(30, 64, 175, 0.8);
+    }
+
+    .metric-label {
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
+
+    .metric-value {
+      font-size: 0.9rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .metric-value.bad {
+      color: var(--danger);
+    }
+
+    .legend {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-bottom: 4px;
+      flex-wrap: wrap;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .dot.ref { background: #facc15; }
+    .dot.perc { background: #22c55e; }
+    .dot.env { background: #38bdf8; }
+    .dot.dist { background: #fb7185; }
+
+    canvas {
+      border-radius: 18px;
+      background: radial-gradient(circle at top, #020617 0, #020617 60%, #000 100%);
+      border: 1px solid rgba(30, 64, 175, 0.8);
+    }
+
+    .explanation {
+      font-size: 0.76rem;
+      color: var(--muted);
+      line-height: 1.4;
+      margin-top: 4px;
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+      font-size: 0.7rem;
+    }
+
+    .pill {
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      color: var(--muted);
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="left">
+    <div>
+      <h1>
+        Perceptual Control Loop
+        <span class="tag">PCT Demo</span>
+      </h1>
+      <p class="subtitle">
+        The controller adjusts its output to keep the <strong>perception</strong> close to a
+        desired <strong>reference</strong>, despite disturbances. Use the sliders to explore
+        when control is stable or unstable.
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        Controller &amp; Environment
+        <span class="chip">loop parameters</span>
+      </div>
+
+      <div class="control-group">
+        <label>
+          Reference (target perception)
+          <span class="value" id="refValue">0.50</span>
+        </label>
+        <input type="range" id="refSlider" min="0" max="1" step="0.01" value="0.5">
+      </div>
+
+      <div class="control-group">
+        <label>
+          Controller gain
+          <span class="value" id="gainValue">3.0</span>
+        </label>
+        <input type="range" id="gainSlider" min="0.1" max="8" step="0.1" value="3">
+      </div>
+
+      <div class="control-group">
+        <label>
+          Environment responsiveness (1/τ)
+          <span class="value" id="tauValue">1.0</span>
+        </label>
+        <input type="range" id="tauSlider" min="0.2" max="3" step="0.1" value="1">
+      </div>
+
+      <div class="control-group">
+        <label>
+          Output → world gain
+          <span class="value" id="envGainValue">1.0</span>
+        </label>
+        <input type="range" id="envGainSlider" min="0.2" max="3" step="0.1" value="1">
+      </div>
+
+      <div class="control-group">
+        <label>
+          Sensor delay (steps)
+          <span class="value" id="delayValue">0</span>
+        </label>
+        <input type="range" id="delaySlider" min="0" max="20" step="1" value="0">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        Disturbance &amp; Noise
+        <span class="chip">challenge the control system</span>
+      </div>
+
+      <div class="control-group">
+        <label>
+          Disturbance amplitude
+          <span class="value" id="distAmpValue">0.60</span>
+        </label>
+        <input type="range" id="distAmpSlider" min="0" max="1.2" step="0.05" value="0.6">
+      </div>
+
+      <div class="control-group">
+        <label>
+          Sensor noise
+          <span class="value" id="noiseValue">0.00</span>
+        </label>
+        <input type="range" id="noiseSlider" min="0" max="0.2" step="0.01" value="0">
+      </div>
+
+      <div class="buttons">
+        <button id="startBtn" class="primary">▶ Run</button>
+        <button id="pauseBtn">⏸ Pause</button>
+        <button id="resetBtn" class="danger">⟲ Reset</button>
+      </div>
+
+      <div class="metrics">
+        <div class="metric">
+          <div class="metric-label">Avg |Error|</div>
+          <div class="metric-value" id="errMetric">0.000</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Stability hint</div>
+          <div class="metric-value" id="stabMetric">Stable</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Oscillation</div>
+          <div class="metric-value" id="oscMetric">Low</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pill-row">
+      <span class="pill">Perception = sensed world state</span>
+      <span class="pill">Output = action on the world</span>
+      <span class="pill">Reference = desired perception</span>
+    </div>
+  </div>
+
+  <div class="right">
+    <div class="legend">
+      <span class="legend-item"><span class="dot ref"></span>Reference</span>
+      <span class="legend-item"><span class="dot perc"></span>Perception</span>
+      <span class="legend-item"><span class="dot env"></span>World variable</span>
+      <span class="legend-item"><span class="dot dist"></span>Disturbance</span>
+    </div>
+    <canvas id="plot" width="640" height="360"></canvas>
+    <p class="explanation">
+      This is a simple <strong>negative feedback loop</strong>:
+      the controller compares the <em>reference</em> to the delayed, noisy
+      <em>perception</em>, generating an <em>output</em> that acts on the
+      environment. The graph shows how well the world variable (and thus perception)
+      is kept near the reference while a sinusoidal disturbance pushes it around.
+      Increase gain or delay to see overshoot and oscillations; reduce gain or
+      disturbance for smooth control.
+    </p>
+  </div>
+</div>
+
+<script>
+  // ========= DOM ELEMENTS =========
+  const refSlider = document.getElementById('refSlider');
+  const gainSlider = document.getElementById('gainSlider');
+  const tauSlider = document.getElementById('tauSlider');
+  const envGainSlider = document.getElementById('envGainSlider');
+  const delaySlider = document.getElementById('delaySlider');
+  const distAmpSlider = document.getElementById('distAmpSlider');
+  const noiseSlider = document.getElementById('noiseSlider');
+
+  const refValue = document.getElementById('refValue');
+  const gainValue = document.getElementById('gainValue');
+  const tauValue = document.getElementById('tauValue');
+  const envGainValue = document.getElementById('envGainValue');
+  const delayValue = document.getElementById('delayValue');
+  const distAmpValue = document.getElementById('distAmpValue');
+  const noiseValue = document.getElementById('noiseValue');
+
+  const startBtn = document.getElementById('startBtn');
+  const pauseBtn = document.getElementById('pauseBtn');
+  const resetBtn = document.getElementById('resetBtn');
+
+  const errMetric = document.getElementById('errMetric');
+  const stabMetric = document.getElementById('stabMetric');
+  const oscMetric = document.getElementById('oscMetric');
+
+  const canvas = document.getElementById('plot');
+  const ctx = canvas.getContext('2d');
+
+  // ========= SIMULATION STATE =========
+  const MAX_POINTS = 500;
+  const dt = 0.03; // simulation time step (seconds)
+
+  let t = 0;
+  let world = 0.0;       // environmental variable (controlled quantity)
+  let output = 0.0;      // controller output (action)
+  let perception = 0.0;  // perceived value (world + noise, possibly delayed)
+
+  let history = [];      // each element: { t, ref, world, perception, dist }
+
+  // Simple circular buffer for delayed perception
+  const delayBuffer = [];
+  let running = false;
+  let lastTimestamp = null;
+
+  // ========= HELPERS =========
+  function updateLabel(el, value, decimals = 2) {
+    el.textContent = Number(value).toFixed(decimals);
+  }
+
+  function readParams() {
+    return {
+      ref: parseFloat(refSlider.value),
+      gain: parseFloat(gainSlider.value),
+      envGain: parseFloat(envGainSlider.value),
+      tauInv: parseFloat(tauSlider.value), // 1 / tau
+      delaySteps: parseInt(delaySlider.value, 10),
+      distAmp: parseFloat(distAmpSlider.value),
+      noiseAmp: parseFloat(noiseSlider.value),
+    };
+  }
+
+  function resetSimulation() {
+    t = 0;
+    world = 0;
+    output = 0;
+    perception = 0;
+    history = [];
+    delayBuffer.length = 0;
+    lastTimestamp = null;
+    updateMetrics();
+    draw();
+  }
+
+  // ========= METRIC CALCULATION =========
+  function updateMetrics() {
+    if (history.length < 5) {
+      errMetric.textContent = '0.000';
+      stabMetric.textContent = '—';
+      oscMetric.textContent = '—';
+      return;
+    }
+
+    const params = readParams();
+    const recent = history.slice(-Math.min(history.length, 200));
+    let errSum = 0;
+    let zeroCrossings = 0;
+
+    for (let i = 0; i < recent.length; i++) {
+      const h = recent[i];
+      const err = h.ref - h.perception;
+      errSum += Math.abs(err);
+
+      if (i > 0) {
+        const prevErr = recent[i - 1].ref - recent[i - 1].perception;
+        if (err * prevErr < 0) zeroCrossings++;
+      }
+    }
+
+    const avgErr = errSum / recent.length;
+    errMetric.textContent = avgErr.toFixed(3);
+
+    // Rough heuristic for stability vs oscillation
+    const gain = params.gain * params.envGain;
+    const delay = params.delaySteps;
+    const zcRate = zeroCrossings / recent.length;
+
+    let stabilityText = 'Stable';
+    let oscText = 'Low';
+    let oscClass = '';
+
+    if (gain > 6 || (gain > 4 && delay > 8)) {
+      stabilityText = 'Unstable';
+      oscText = 'High';
+      oscClass = 'bad';
+    } else if (gain > 3 || delay > 5 || zcRate > 0.2) {
+      stabilityText = 'Marginal';
+      oscText = 'Medium';
+    }
+
+    stabMetric.textContent = stabilityText;
+    oscMetric.textContent = oscText;
+    oscMetric.className = 'metric-value' + (oscClass ? ' ' + oscClass : '');
+  }
+
+  // ========= DRAWING =========
+  function drawAxes() {
+    const w = canvas.width;
+    const h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+
+    // Background grid
+    ctx.save();
+    ctx.strokeStyle = 'rgba(15,23,42,0.8)';
+    ctx.lineWidth = 1;
+
+    const gridX = 10;
+    const gridY = 6;
+
+    for (let i = 0; i <= gridX; i++) {
+      const x = (i / gridX) * w;
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, h);
+      ctx.stroke();
+    }
+
+    for (let j = 0; j <= gridY; j++) {
+      const y = (j / gridY) * h;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(w, y);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // Zero line (center)
+    ctx.save();
+    ctx.strokeStyle = 'rgba(51,65,85,0.9)';
+    ctx.lineWidth = 1.5;
+    const midY = h * 0.5;
+    ctx.beginPath();
+    ctx.moveTo(0, midY);
+    ctx.lineTo(w, midY);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawSeries(series, color, lineWidth) {
+    if (series.length < 2) return;
+
+    const w = canvas.width;
+    const h = canvas.height;
+    const maxPoints = series.length;
+
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lineWidth;
+    ctx.beginPath();
+
+    for (let i = 0; i < maxPoints; i++) {
+      const p = series[i];
+
+      const x = (i / (maxPoints - 1)) * w;
+      // Map value range [-1.2, 1.2] → [h, 0]
+      const v = Math.max(-1.2, Math.min(1.2, p.value));
+      const y = h - ((v + 1.2) / 2.4) * h;
+
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function draw() {
+    drawAxes();
+
+    if (history.length < 2) return;
+
+    const recent = history.slice(-MAX_POINTS);
+
+    const refSeries = recent.map(p => ({ value: p.ref }));
+    const percSeries = recent.map(p => ({ value: p.perception }));
+    const worldSeries = recent.map(p => ({ value: p.world }));
+    const distSeries = recent.map(p => ({ value: p.dist }));
+
+    // Reference: yellow
+    drawSeries(refSeries, '#facc15', 1.3);
+    // World variable: cyan
+    drawSeries(worldSeries, '#38bdf8', 1.5);
+    // Perception: green
+    drawSeries(percSeries, '#22c55e', 1.5);
+    // Disturbance: pink
+    drawSeries(distSeries, 'rgba(248, 113, 113, 0.9)', 1.0);
+  }
+
+  // ========= SIMULATION STEP =========
+  function stepSimulation() {
+    const params = readParams();
+
+    // Disturbance: smooth sinusoid
+    const dist = params.distAmp * Math.sin(2 * Math.PI * 0.25 * t); // 0.25 Hz
+
+    // Perceptual delay: push current world into buffer
+    delayBuffer.push(world);
+    let sensedWorld = world;
+    if (delayBuffer.length > params.delaySteps) {
+      sensedWorld = delayBuffer.shift();
+    }
+
+    // Add sensor noise
+    const noise = (Math.random() * 2 - 1) * params.noiseAmp;
+    perception = sensedWorld + noise;
+
+    // Error = reference - perception
+    const error = params.ref - perception;
+
+    // Controller: simple integral controller
+    const controllerGain = params.gain;
+    output += controllerGain * error * dt;
+
+    // Environment dynamics: first-order lag
+    const tauInv = params.tauInv; // 1 / tau
+    const envTarget = params.envGain * output + dist;
+    world += (envTarget - world) * tauInv * dt;
+
+    // Store history
+    history.push({
+      t,
+      ref: params.ref,
+      world,
+      perception,
+      dist
+    });
+    if (history.length > MAX_POINTS) history.shift();
+
+    t += dt;
+
+    updateMetrics();
+    draw();
+  }
+
+  // ========= ANIMATION LOOP =========
+  function loop(timestamp) {
+    if (!running) return;
+
+    if (!lastTimestamp) lastTimestamp = timestamp;
+    const elapsedMs = timestamp - lastTimestamp;
+    lastTimestamp = timestamp;
+
+    // Run simulation with fixed dt steps
+    let accumulator = elapsedMs / 1000;
+    while (accumulator > dt) {
+      stepSimulation();
+      accumulator -= dt;
+    }
+
+    requestAnimationFrame(loop);
+  }
+
+  // ========= EVENT HANDLERS =========
+  function bindSlider(slider, label, decimals = 2) {
+    updateLabel(label, slider.value, decimals);
+    slider.addEventListener('input', () => {
+      updateLabel(label, slider.value, decimals);
+    });
+  }
+
+  bindSlider(refSlider, refValue, 2);
+  bindSlider(gainSlider, gainValue, 1);
+  bindSlider(tauSlider, tauValue, 1);
+  bindSlider(envGainSlider, envGainValue, 1);
+  bindSlider(delaySlider, delayValue, 0);
+  bindSlider(distAmpSlider, distAmpValue, 2);
+  bindSlider(noiseSlider, noiseValue, 2);
+
+  startBtn.addEventListener('click', () => {
+    if (!running) {
+      running = true;
+      lastTimestamp = null;
+      requestAnimationFrame(loop);
+    }
+  });
+
+  pauseBtn.addEventListener('click', () => {
+    running = false;
+  });
+
+  resetBtn.addEventListener('click', () => {
+    running = false;
+    resetSimulation();
+  });
+
+  // ========= INITIAL RENDER =========
+  resetSimulation();
+</script>
+</body>
+</html>
