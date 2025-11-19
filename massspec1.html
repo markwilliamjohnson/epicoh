@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Mass Spectrometry Energy Diagram – n-C7H16⁺•</title>
+  <style>
+    :root {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #222;
+      background: #f5f5f7;
+    }
+
+    body {
+      margin: 0;
+      padding: 1.5rem;
+    }
+
+    h1 {
+      margin-top: 0;
+      font-size: 1.7rem;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(260px, 320px) minmax(420px, 1fr);
+      gap: 1.5rem;
+      align-items: start;
+    }
+
+    .panel {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.07);
+      padding: 1rem 1.2rem;
+    }
+
+    .panel h2 {
+      font-size: 1.2rem;
+      margin-top: 0;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 0.6rem;
+      font-size: 0.92rem;
+    }
+
+    label span {
+      display: block;
+      margin-bottom: 0.15rem;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      padding: 0.3rem 0.4rem;
+      border-radius: 6px;
+      border: 1px solid #d0d0dd;
+      font-size: 0.9rem;
+      box-sizing: border-box;
+    }
+
+    .radio-row {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 0.2rem;
+    }
+
+    .radio-row label {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      margin-bottom: 0;
+    }
+
+    canvas {
+      width: 100%;
+      max-width: 780px;
+      border-radius: 8px;
+      background: #fafafa;
+    }
+
+    .legend {
+      margin-top: 0.4rem;
+      font-size: 0.85rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.8rem;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .legend-swatch {
+      width: 14px;
+      height: 8px;
+      border-radius: 4px;
+    }
+
+    .explanation {
+      margin-top: 0.5rem;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .numbers {
+      font-size: 0.9rem;
+      margin-top: 0.4rem;
+      padding: 0.4rem 0.6rem;
+      border-radius: 8px;
+      background: #f4f6ff;
+    }
+
+    .numbers span {
+      display: block;
+      margin-bottom: 0.1rem;
+    }
+
+    code {
+      background: #f0f0f0;
+      padding: 0.05rem 0.2rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+    }
+
+    @media (max-width: 800px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<h1>Energy Diagram for Fragmentation of n-C₇H₁₆⁺• (Mass Spectrometry)</h1>
+<p style="max-width: 780px; font-size:0.94rem;">
+Adjust the thermochemical parameters to see how they control the energy diagram
+for the ionisation of n-C₇H₁₆ and its fragmentation into n-C₃H₇⁺ / n-C₄H₉⁺
+according to Stevenson’s rule.
+</p>
+
+<div class="layout">
+  <!-- Controls -->
+  <section class="panel">
+    <h2>Parameters</h2>
+    <label>
+      <span>Ionisation energy of n-C₇H₁₆, IE(parent) / eV</span>
+      <input type="number" id="ieParent" step="0.1" value="9.6" />
+    </label>
+
+    <label>
+      <span>C₃–C₄ bond dissociation energy D<sub>C–C</sub> in n-C₇H₁₆ / kJ·mol⁻¹</span>
+      <input type="number" id="bondD" step="1" value="348" />
+    </label>
+
+    <label>
+      <span>Ionisation energy of n-C₃H₇· (radical) / eV</span>
+      <input type="number" id="ieC3" step="0.1" value="8.5" />
+    </label>
+
+    <label>
+      <span>Ionisation energy of n-C₄H₉· (radical) / eV</span>
+      <input type="number" id="ieC4" step="0.1" value="8.0" />
+    </label>
+
+    <label>
+      <span>Which fragment ion are we looking at?</span>
+      <div class="radio-row">
+        <label>
+          <input type="radio" name="chargedFragment" value="C3" />
+          n-C₃H₇⁺ (m/z 43)
+        </label>
+        <label>
+          <input type="radio" name="chargedFragment" value="C4" checked />
+          n-C₄H₉⁺ (m/z 57)
+        </label>
+      </div>
+    </label>
+
+    <div class="numbers" id="numbersBox"></div>
+  </section>
+
+  <!-- Diagram + explanation -->
+  <section class="panel">
+    <h2>Energy Diagram</h2>
+    <canvas id="energyCanvas" width="780" height="420"></canvas>
+    <div class="legend">
+      <span class="legend-item">
+        <span class="legend-swatch" style="background:#555;"></span> n-C₇H₁₆ (neutral)
+      </span>
+      <span class="legend-item">
+        <span class="legend-swatch" style="background:#0066cc;"></span> n-C₇H₁₆⁺• (molecular ion)
+      </span>
+      <span class="legend-item">
+        <span class="legend-swatch" style="background:#e5533b;"></span> Fragment-ion channel
+      </span>
+      <span class="legend-item">
+        <span class="legend-swatch" style="background:#999;"></span> Radical pair &amp; fragment IE levels
+      </span>
+    </div>
+
+    <div class="explanation" id="explanationBox"></div>
+  </section>
+</div>
+
+<script>
+  // Physical constant for converting kJ mol-1 → eV
+  const KJMOL_TO_EV = 1 / 96.485; // ≈0.01036 eV per kJ/mol
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const inputs = document.querySelectorAll('input');
+    inputs.forEach(el => el.addEventListener('input', updateAll));
+    updateAll(); // initial draw
+  });
+
+  function getCurrentParams() {
+    const ieParent = parseFloat(document.getElementById('ieParent').value) || 0;
+    const DkJ = parseFloat(document.getElementById('bondD').value) || 0;
+    const ieC3 = parseFloat(document.getElementById('ieC3').value) || 0;
+    const ieC4 = parseFloat(document.getElementById('ieC4').value) || 0;
+    const charged = document.querySelector('input[name="chargedFragment"]:checked').value;
+
+    const D_eV = DkJ * KJMOL_TO_EV;
+    const ieFrag = charged === 'C3' ? ieC3 : ieC4;
+
+    // Stevenson’s rule: E0 = D + IE(fragment) − IE(parent)
+    const E0 = D_eV + ieFrag - ieParent;
+
+    return { ieParent, DkJ, D_eV, ieC3, ieC4, charged, ieFrag, E0 };
+  }
+
+  function updateAll() {
+    const params = getCurrentParams();
+    drawDiagram(params);
+    updateExplanation(params);
+    updateNumbers(params);
+  }
+
+  function drawDiagram(p) {
+    const canvas = document.getElementById('energyCanvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width;
+    const H = canvas.height;
+
+    ctx.clearRect(0, 0, W, H);
+
+    const marginLeft = 70;
+    const marginRight = 30;
+    const marginTop = 30;
+    const marginBottom = 55;
+
+    // Find max energy to scale y-axis
+    const fragC3 = p.D_eV + p.ieC3;
+    const fragC4 = p.D_eV + p.ieC4;
+    const chosenFragEnergy = p.charged === 'C3' ? fragC3 : fragC4;
+    const maxEnergy = Math.max(
+      p.ieParent,
+      p.D_eV,
+      fragC3,
+      fragC4,
+      chosenFragEnergy,
+      p.ieParent + Math.max(p.E0, 0)
+    ) * 1.15 + 0.5;
+
+    const plotHeight = H - marginTop - marginBottom;
+    const plotWidth = W - marginLeft - marginRight;
+    const xNeutral = marginLeft + plotWidth * 0.10;
+    const xParentIon = marginLeft + plotWidth * 0.45;
+    const xFrag = marginLeft + plotWidth * 0.85;
+
+    const yFromEnergy = (E) =>
+      H - marginBottom - (E / maxEnergy) * plotHeight;
+
+    // Axes
+    ctx.strokeStyle = "#000";
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(marginLeft, marginTop - 10);
+    ctx.lineTo(marginLeft, H - marginBottom);
+    ctx.lineTo(W - marginRight, H - marginBottom);
+    ctx.stroke();
+
+    // Axis labels
+    ctx.font = "14px system-ui";
+    ctx.fillStyle = "#000";
+    ctx.textAlign = "center";
+    ctx.fillText("Reaction coordinate", marginLeft + plotWidth / 2, H - 18);
+    ctx.save();
+    ctx.translate(22, marginTop + plotHeight / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText("Energy / eV", 0, 0);
+    ctx.restore();
+
+    // Helper to draw a simple "well" (parabolic-ish potential curve)
+    function drawWell(xCenter, minEnergy, color) {
+      const minY = yFromEnergy(minEnergy);
+      const leftX = xCenter - 70;
+      const rightX = xCenter + 70;
+      const highY = yFromEnergy(maxEnergy * 0.95);
+
+      ctx.beginPath();
+      ctx.moveTo(leftX, highY);
+      ctx.quadraticCurveTo(xCenter - 20, minY - 70, xCenter, minY);
+      ctx.quadraticCurveTo(xCenter + 20, minY + 70, rightX, highY);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    // Neutral n-C7H16 (minimum set to 0 eV)
+    drawWell(xNeutral, 0, "#555");
+
+    // Molecular ion well
+    drawWell(xParentIon, p.ieParent, "#0066cc");
+
+    // Fragment-ion wells for both possibilities (only one will be highlighted)
+    drawWell(xFrag, fragC3, p.charged === "C3" ? "#e5533b" : "#cccccc");
+    drawWell(xFrag + 6, fragC4 + 0.1, p.charged === "C4" ? "#e5533b" : "#cccccc");
+
+    // Horizontal reference levels
+    ctx.setLineDash([5, 4]);
+    ctx.strokeStyle = "#999";
+    ctx.lineWidth = 1;
+
+    // Radical pair n-C3H7· + n-C4H9·
+    ctx.beginPath();
+    ctx.moveTo(marginLeft, yFromEnergy(p.D_eV));
+    ctx.lineTo(W - marginRight, yFromEnergy(p.D_eV));
+    ctx.stroke();
+
+    // Charged-fragment asymptotes
+    ctx.beginPath();
+    ctx.moveTo(marginLeft, yFromEnergy(fragC3));
+    ctx.lineTo(W - marginRight, yFromEnergy(fragC3));
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(marginLeft, yFromEnergy(fragC4));
+    ctx.lineTo(W - marginRight, yFromEnergy(fragC4));
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Labels for levels
+    ctx.fillStyle = "#333";
+    ctx.font = "12px system-ui";
+    ctx.textAlign = "left";
+    ctx.fillText("n-C₇H₁₆ (neutral)", xNeutral - 65, yFromEnergy(0) + 14);
+    ctx.fillText("n-C₇H₁₆⁺•", xParentIon - 40, yFromEnergy(p.ieParent) - 12);
+    ctx.fillText("n-C₃H₇· + n-C₄H₉·", marginLeft + 6, yFromEnergy(p.D_eV) - 4);
+    ctx.fillText("n-C₃H₇⁺ + n-C₄H₉·", marginLeft + 6, yFromEnergy(fragC3) - 4);
+    ctx.fillText("n-C₃H₇· + n-C₄H₉⁺", marginLeft + 6, yFromEnergy(fragC4) - 4);
+
+    // Arrow helper
+    function drawArrow(x1, y1, x2, y2, color) {
+      const headLength = 8;
+      const dx = x2 - x1;
+      const dy = y2 - y1;
+      const angle = Math.atan2(dy, dx);
+
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = 1.6;
+
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(
+        x2 - headLength * Math.cos(angle - Math.PI / 6),
+        y2 - headLength * Math.sin(angle - Math.PI / 6)
+      );
+      ctx.lineTo(
+        x2 - headLength * Math.cos(angle + Math.PI / 6),
+        y2 - headLength * Math.sin(angle + Math.PI / 6)
+      );
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // IE of parent: vertical arrow from neutral minimum up to parent-ion minimum
+    const xIE = (xNeutral + xParentIon) / 2;
+    drawArrow(xIE, yFromEnergy(0), xIE, yFromEnergy(p.ieParent), "#0066cc");
+    ctx.fillStyle = "#0066cc";
+    ctx.textAlign = "center";
+    ctx.fillText("IE(n-C₇H₁₆)", xIE, yFromEnergy(p.ieParent) - 6);
+
+    // E0 arrow: from parent-ion min to chosen fragment level
+    const fragEnergyChosen = chosenFragEnergy;
+    const xE0 = (xParentIon + xFrag) / 2;
+    const yParent = yFromEnergy(p.ieParent);
+    const yFragChosen = yFromEnergy(fragEnergyChosen);
+
+    ctx.fillStyle = "#8d3abf";
+    if (p.E0 >= 0) {
+      drawArrow(xE0, yParent, xE0, yFragChosen, "#8d3abf");
+    } else {
+      // Arrow downward if E0 < 0
+      drawArrow(xE0, yParent, xE0, yFragChosen, "#8d3abf");
+    }
+    const E0labelY = (yParent + yFragChosen) / 2;
+    ctx.textAlign = "center";
+    ctx.fillText("E₀ (threshold for fragment)", xE0, E0labelY - 6);
+  }
+
+  function updateNumbers(p) {
+    const box = document.getElementById("numbersBox");
+    const fragLabel = p.charged === "C3" ? "n-C₃H₇⁺" : "n-C₄H₉⁺";
+    const fragEnergy = p.D_eV + p.ieFrag;
+
+    box.innerHTML = `
+      <span><strong>Bond energy D<sub>C–C</sub>:</strong>
+        ${p.DkJ.toFixed(1)} kJ·mol⁻¹ ≈ ${p.D_eV.toFixed(2)} eV</span>
+      <span><strong>Energy of radical pair n-C₃H₇· + n-C₄H₉·:</strong>
+        ${p.D_eV.toFixed(2)} eV above neutral</span>
+      <span><strong>Asymptotic energy of ${fragLabel} channel:</strong>
+        ${fragEnergy.toFixed(2)} eV above neutral</span>
+      <span><strong>Critical energy E₀ (from n-C₇H₁₆⁺• minimum):</strong>
+        ${p.E0.toFixed(2)} eV</span>
+    `;
+  }
+
+  function updateExplanation(p) {
+    const box = document.getElementById("explanationBox");
+    const fragLabel = p.charged === "C3"
+      ? "n-C₃H₇⁺ + n-C₄H₉·"
+      : "n-C₃H₇· + n-C₄H₉⁺";
+    const neutralFragLabel = p.charged === "C3" ? "n-C₃H₇·" : "n-C₄H₉·";
+
+    const signText = p.E0 >= 0
+      ? `The fragmentation is endothermic with respect to the minimum of the molecular ion: extra energy of <strong>${p.E0.toFixed(2)} eV</strong> must be supplied.`
+      : `The fragmentation is exothermic by <strong>${Math.abs(p.E0).toFixed(2)} eV</strong> from the molecular-ion minimum. In reality, a small positive kinetic shift is still needed for an observable rate.`;
+
+    box.innerHTML = `
+      <p>
+        The left grey well is the neutral n-C₇H₁₆ ground state, which we choose as
+        our zero of energy. The blue well is the molecular ion n-C₇H₁₆⁺•, lying
+        ${p.ieParent.toFixed(2)} eV above the neutral. The vertical blue arrow
+        between the two wells is the ionisation energy
+        <code>IE(n-C₇H₁₆)</code>.
+      </p>
+
+      <p>
+        The dashed grey line labelled n-C₃H₇· + n-C₄H₉· is the energy of homolytic
+        cleavage of the C₃–C₄ bond in neutral n-C₇H₁₆. Its height is the bond
+        dissociation energy:
+      </p>
+
+      <p style="margin-left:0.7rem;">
+        D<sub>C–C</sub> = ${p.DkJ.toFixed(1)} kJ·mol⁻¹
+        ≈ ${p.D_eV.toFixed(2)} eV.
+      </p>
+
+      <p>
+        From this radical pair we can ionise the chosen fragment radical
+        ${neutralFragLabel}, whose ionisation energy is
+        <code>IE(${neutralFragLabel}) = ${p.ieFrag.toFixed(2)} eV</code>.
+        This gives the asymptotic energy of the ${fragLabel} channel:
+      </p>
+
+      <p style="margin-left:0.7rem;">
+        E(fragment channel) = D<sub>C–C</sub> + IE(${neutralFragLabel})
+        = ${p.D_eV.toFixed(2)} + ${p.ieFrag.toFixed(2)}
+        = ${ (p.D_eV + p.ieFrag).toFixed(2) } eV above the neutral.
+      </p>
+
+      <p>
+        Stevenson’s rule relates the threshold energy E₀ for forming this fragment
+        ion directly from the neutral molecule:
+      </p>
+
+      <p style="margin-left:0.7rem;">
+        E₀ = D<sub>C–C</sub> + IE(${neutralFragLabel}) − IE(n-C₇H₁₆)
+        = ${p.D_eV.toFixed(2)} + ${p.ieFrag.toFixed(2)} − ${p.ieParent.toFixed(2)}
+        = <strong>${p.E0.toFixed(2)} eV</strong>.
+      </p>
+
+      <p>
+        In the diagram this E₀ is the purple arrow from the minimum of the
+        molecular-ion well up to the asymptote of the ${fragLabel} channel.
+        ${signText}
+      </p>
+
+      <p>
+        In a full Wahrhaftig diagram you would combine this energy diagram with
+        (i) a P(E) distribution of internal energies of the precursor ion and
+        (ii) plots of the unimolecular rate constants k(E) for each fragmentation
+        channel. The present picture supplies the thermochemical part: it shows
+        where the various thresholds lie, which then controls where k(E) starts
+        to rise and which fragments dominate at a given internal energy.
+      </p>
+    `;
+  }
+</script>
+
+</body>
+</html>
