@@ -1,0 +1,1525 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>AI Collaboration Lab – Cross-Role Learning Journey</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #050816;
+      --card: #111827;
+      --accent: #38bdf8;
+      --accent-soft: rgba(56, 189, 248, 0.16);
+      --text-main: #e5e7eb;
+      --text-muted: #9ca3af;
+      --border-soft: rgba(148, 163, 184, 0.5);
+      --radius-xl: 18px;
+      --shadow-soft: 0 18px 45px rgba(0, 0, 0, 0.55);
+      --transition-fast: 0.18s ease-out;
+      --transition-med: 0.25s ease-out;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top left, #1d3557 0, #050816 45%);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .app-shell {
+      max-width: 1080px;
+      width: 100%;
+      margin: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    header.app-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 14px 18px;
+      background: linear-gradient(120deg, rgba(15, 23, 42, 0.95), rgba(15, 23, 42, 0.2));
+      border-radius: 16px;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.9);
+      backdrop-filter: blur(14px);
+    }
+
+    .title-block {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .title-block h1 {
+      font-size: 1.35rem;
+      letter-spacing: 0.03em;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .title-pill {
+      font-size: 0.7rem;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(156, 163, 175, 0.7);
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+    }
+
+    .title-block p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      max-width: 620px;
+    }
+
+    .role-selector-block {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      align-items: flex-end;
+      min-width: 210px;
+    }
+
+    .role-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+    }
+
+    .role-select {
+      background: #020617;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      padding: 6px 10px;
+      color: #e5e7eb;
+      font-size: 0.85rem;
+      outline: none;
+    }
+
+    .role-note {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      max-width: 260px;
+      text-align: right;
+    }
+
+    .main-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 0.35fr) minmax(0, 0.65fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    /* Sidebar timeline */
+    .sidebar {
+      background: rgba(15, 23, 42, 0.92);
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border-soft);
+      box-shadow: var(--shadow-soft);
+      padding: 16px 14px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .sidebar h2 {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--text-muted);
+      margin-left: 4px;
+    }
+
+    .timeline {
+      margin-top: 2px;
+      position: relative;
+    }
+
+    .timeline::before {
+      content: "";
+      position: absolute;
+      top: 6px;
+      left: 13px;
+      bottom: 6px;
+      border-left: 1px dashed rgba(148, 163, 184, 0.5);
+    }
+
+    .timeline-item {
+      position: relative;
+      padding: 8px 10px 10px 32px;
+      border-radius: 999px;
+      cursor: pointer;
+      margin: 4px 0;
+      transition: background var(--transition-fast), transform var(--transition-fast),
+        border-color var(--transition-fast), box-shadow var(--transition-fast);
+      border: 1px solid transparent;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      width: 100%;
+      text-align: left;
+      min-height: 78px; /* consistent size */
+      font-size: 0.82rem;
+    }
+
+    .timeline-item:hover {
+      background: rgba(15, 23, 42, 0.9);
+      transform: translateY(-1px);
+      border-color: rgba(148, 163, 184, 0.7);
+      box-shadow: 0 10px 22px rgba(15, 23, 42, 0.9);
+    }
+
+    .timeline-item.active {
+      background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.16), rgba(15, 23, 42, 0.98));
+      border-color: rgba(148, 163, 184, 0.9);
+      box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.9), 0 0 0 1px rgba(148, 163, 184, 0.8);
+    }
+
+    .timeline-dot {
+      position: absolute;
+      left: 7px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      border: 2px solid transparent;
+      background: #020617;
+      box-sizing: border-box;
+    }
+
+    .timeline-week {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--text-muted);
+    }
+
+    .timeline-label {
+      font-weight: 500;
+      color: #e5e7eb;
+    }
+
+    .timeline-area {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    .sidebar-note {
+      margin-top: 4px;
+      padding: 10px 10px;
+      border-radius: 12px;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .sidebar-note strong {
+      color: #e5e7eb;
+      font-weight: 600;
+    }
+
+    /* Content panel */
+    .content-card {
+      background: radial-gradient(circle at top, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.98));
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border-soft);
+      box-shadow: var(--shadow-soft);
+      padding: 18px 18px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .content-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(
+        circle at 0% 0%,
+        rgba(56, 189, 248, 0.12),
+        transparent 55%
+      );
+      opacity: 0.7;
+      pointer-events: none;
+    }
+
+    .content-inner {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .stage-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .stage-title-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .badge {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      padding: 3px 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      color: var(--text-muted);
+      background: rgba(15, 23, 42, 0.92);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .badge-pill {
+      background: linear-gradient(135deg, var(--accent-soft), rgba(15, 23, 42, 0.96));
+      border-color: rgba(56, 189, 248, 0.8);
+      color: #e0f2fe;
+      box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.9);
+    }
+
+    .badge span.emoji {
+      font-size: 0.95rem;
+    }
+
+    .stage-name {
+      font-size: 1.1rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .area-pill {
+      font-size: 0.78rem;
+      padding: 5px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      background: rgba(15, 23, 42, 0.96);
+      color: var(--text-muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .area-pill strong {
+      color: #e5e7eb;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-size: 0.74rem;
+    }
+
+    .role-pill {
+      margin-top: 4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      background: rgba(15, 23, 42, 0.96);
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .role-pill strong {
+      color: #e5e7eb;
+    }
+
+    .stage-summary {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .stage-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 2px;
+    }
+
+    .mini-tag {
+      font-size: 0.7rem;
+      padding: 3px 7px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--text-muted);
+    }
+
+    .questions-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 2px;
+    }
+
+    .question-column {
+      background: rgba(15, 23, 42, 0.96);
+      border-radius: 12px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      padding: 9px 9px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-height: 110px;
+    }
+
+    .question-column h3 {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .question-column h3 span.emoji {
+      font-size: 0.95rem;
+    }
+
+    .question-column ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 0.83rem;
+      color: #e5e7eb;
+    }
+
+    .question-column li {
+      position: relative;
+      padding-left: 12px;
+      line-height: 1.4;
+    }
+
+    .question-column li::before {
+      content: "•";
+      position: absolute;
+      left: 1px;
+      top: 0;
+      color: var(--accent);
+      font-size: 0.8rem;
+    }
+
+    .footer-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 6px;
+      flex-wrap: wrap;
+    }
+
+    .progress-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .progress-bar {
+      position: relative;
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 1);
+      overflow: hidden;
+      border: 1px solid rgba(15, 23, 42, 0.9);
+    }
+
+    .progress-bar-fill {
+      position: absolute;
+      inset: 0;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent), #4ade80);
+      box-shadow: 0 0 18px rgba(56, 189, 248, 0.7);
+      transition: width var(--transition-med);
+    }
+
+    .progress-label {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    button.nav-btn {
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      background: rgba(15, 23, 42, 0.98);
+      color: #e5e7eb;
+      border-radius: 999px;
+      font-size: 0.83rem;
+      padding: 6px 11px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      transition: background var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast),
+        border-color var(--transition-fast);
+    }
+
+    button.nav-btn.primary {
+      background: linear-gradient(135deg, var(--accent), #4ade80);
+      color: #020617;
+      border-color: transparent;
+      box-shadow: 0 14px 30px rgba(56, 189, 248, 0.45);
+      font-weight: 600;
+    }
+
+    button.nav-btn:disabled {
+      opacity: 0.5;
+      cursor: default;
+      box-shadow: none;
+      transform: none;
+    }
+
+    button.nav-btn:not(:disabled):hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.75);
+      background: rgba(15, 23, 42, 1);
+    }
+
+    button.nav-btn.primary:not(:disabled):hover {
+      box-shadow: 0 16px 35px rgba(56, 189, 248, 0.55);
+    }
+
+    .key-message {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      max-width: 380px;
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+    }
+
+    .key-message span.emoji {
+      margin-top: 1px;
+    }
+
+    /* Simple fade animation when stage changes */
+    .fade-in {
+      animation: fadeInUp 0.25s ease-out;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(4px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Responsive */
+    @media (max-width: 880px) {
+      header.app-header {
+        border-radius: 16px;
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .role-selector-block {
+        align-items: flex-start;
+      }
+
+      .role-note {
+        text-align: left;
+      }
+
+      .main-layout {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 14px;
+      }
+
+      .content-card {
+        padding: 14px 12px 12px;
+      }
+
+      .questions-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .sidebar {
+        padding: 14px 10px 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      <div class="title-block">
+        <h1>
+          AI Collaboration Lab
+          <span class="title-pill">6-week Cross-Role Journey</span>
+        </h1>
+        <p>
+          A lab-style programme for data specialists, software developers, data owners, managers and
+          non-technical staff. Together you explore requirements, problem spaces, and hackathon solution
+          spaces around AI in pharma – with a focus on coordination, communication, and sustained innovation.
+        </p>
+      </div>
+
+      <div class="role-selector-block">
+        <div class="role-label">View this journey as...</div>
+        <select id="roleSelect" class="role-select">
+          <!-- Filled by JS -->
+        </select>
+        <div class="role-note" id="roleNote">
+          <!-- Filled by JS -->
+        </div>
+      </div>
+    </header>
+
+    <main class="main-layout">
+      <!-- Sidebar: Journey timeline -->
+      <aside class="sidebar" aria-label="Learning journey stages">
+        <h2>Lab Timeline</h2>
+        <div class="timeline" id="timeline"></div>
+        <div class="sidebar-note">
+          <strong>What makes this a lab?</strong><br />
+          The lab is a shared space where <em>“What if?” questions</em>, hackathon ideas, and organisational
+          constraints are explored together. The real outcome is not a single prototype, but ongoing
+          cross-fertilisation between roles and a plan for sustained innovation.
+        </div>
+      </aside>
+
+      <!-- Main content: Stage details -->
+      <section class="content-card" aria-live="polite">
+        <div class="content-inner" id="content">
+          <!-- Filled by JavaScript -->
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    // Different learner roles
+    const roles = [
+      {
+        id: "data-specialist",
+        label: "Data specialist / data scientist",
+        short: "data specialist",
+        description:
+          "You focus on data quality, modelling, and analytics. The lab helps you connect technical work to organisational questions and other roles."
+      },
+      {
+        id: "software-dev",
+        label: "Software developer / engineer",
+        short: "software developer",
+        description:
+          "You build tools and platforms. The lab supports you in turning 'what if?' ideas into sustainable systems that integrate with existing workflows."
+      },
+      {
+        id: "data-owner",
+        label: "Data owner / domain expert",
+        short: "data owner",
+        description:
+          "You understand the meaning, provenance, and use of data. The lab helps you articulate requirements and constraints that shape AI solutions."
+      },
+      {
+        id: "manager",
+        label: "Manager / leader",
+        short: "manager",
+        description:
+          "You steer strategy, resources, and risk. The lab helps you connect technical options to organisational priorities and portfolio decisions."
+      },
+      {
+        id: "non-technical",
+        label: "Non-technical / other stakeholder",
+        short: "non-technical stakeholder",
+        description:
+          "You bring operational, clinical, or support perspectives. The lab helps you join AI conversations without needing deep technical detail."
+      }
+    ];
+
+    // Simple colour palette for timeline stages
+    const stageColors = [
+      "#38bdf8",
+      "#22c55e",
+      "#a855f7",
+      "#f97316",
+      "#eab308",
+      "#06b6d4"
+    ];
+
+    // Helper to create elements
+    function el(tag, className, text) {
+      const e = document.createElement(tag);
+      if (className) e.className = className;
+      if (text) e.textContent = text;
+      return e;
+    }
+
+    // Replace placeholder with role short label
+    function personalizeText(text, role) {
+      if (!text) return "";
+      if (!role) return text;
+      return text.replace(/{{role}}/g, role.short);
+    }
+
+    // Stages of the lab journey
+    const stages = [
+      {
+        id: 0,
+        weekLabel: "Week 1",
+        name: "Requirements Lab: From Needs to “What if?”",
+        areaPillar: "Requirements & AREA – Anticipation (seeds)",
+        icon: "🧪",
+        summary:
+          "The lab begins with requirements analysis. Mixed groups surface challenges and opportunities around AI in the company. These are turned into formalised laboratory objectives expressed as shared “What if?” questions. The key is that {{role}} and others can see their own concerns reflected in these questions.",
+        tags: [
+          "Requirements analysis",
+          "Shared ‘What if?’ questions",
+          "Cross-role dialogue"
+        ],
+        questions: {
+          learning: {
+            base: [
+              "What are the most pressing data, workflow, or decision problems we could explore in this lab?",
+              "How can we phrase our challenges as clear, testable ‘What if?’ questions?",
+              "Which ‘What if?’ questions matter across roles – data, software, domain, and management – rather than for one team alone?"
+            ],
+            byRole: {
+              "data-specialist": [
+                "Which data gaps or uncertainties do I need other stakeholders to acknowledge in our ‘What if?’ questions?"
+              ],
+              "software-dev": [
+                "What technical constraints (APIs, security, legacy systems) should be visible in our ‘What if?’ questions so we don’t over-promise?"
+              ],
+              "data-owner": [
+                "How do I express my knowledge of data provenance and meaning so that it shapes which ‘What if?’ questions are realistic?"
+              ],
+              "manager": [
+                "Which ‘What if?’ questions clearly align with our strategic goals and risk appetite?"
+              ],
+              "non-technical": [
+                "How do I contribute practical examples so the ‘What if?’ questions reflect real work, not only abstract technology?"
+              ]
+            }
+          },
+          insights: {
+            base: [
+              "Different roles often describe the same issue in different language; agreeing on shared ‘What if?’ questions reveals common ground.",
+              "Formalising questions exposes assumptions about data, ethics, and feasibility that were previously implicit.",
+              "Seeing all the ‘What if?’ questions together begins to show patterns and clusters – an early view of the problem space."
+            ],
+            byRole: {
+              "data-specialist": [
+                "Some questions are not about building a model yet – they are about understanding data realities across teams."
+              ],
+              "software-dev": [
+                "Some requirements point to the need for shared platforms and tooling, not just one-off features."
+              ],
+              "data-owner": [
+                "My decision to release or restrict certain data directly shapes which ‘What if?’ questions can be tackled."
+              ],
+              "manager": [
+                "A small number of well-chosen ‘What if?’ questions can anchor many separate initiatives into a coherent portfolio."
+              ],
+              "non-technical": [
+                "My everyday pain points help others understand why certain ‘What if?’ questions are urgent."
+              ]
+            }
+          },
+          options: {
+            base: [
+              "Group related ‘What if?’ questions into themes that could later become hackathon problem statements.",
+              "Identify which questions clearly require cross-role collaboration and which are more local.",
+              "Capture uncertainties and open questions that will need university students’ creativity in the hackathon."
+            ],
+            byRole: {
+              "data-specialist": [
+                "Flag ‘What if?’ questions that require new data collection or careful validation plans."
+              ],
+              "software-dev": [
+                "Note which questions would benefit from shared services or reusable components across teams."
+              ],
+              "data-owner": [
+                "Highlight data governance or consent issues that need to be built into any later solution."
+              ],
+              "manager": [
+                "Prioritise ‘What if?’ questions based on expected impact, risk, and visibility to leadership."
+              ],
+              "non-technical": [
+                "Prepare short stories or scenarios that illustrate each ‘What if?’ question from a real-world perspective."
+              ]
+            }
+          }
+        }
+      },
+      {
+        id: 1,
+        weekLabel: "Week 2",
+        name: "Problem Space Identification: Mapping Possibilities",
+        areaPillar: "AREA – Anticipation",
+        icon: "🧭",
+        summary:
+          "Week 2 is about problem space identification: exploring different ways to approach the ‘What if?’ questions. Rather than jumping to solutions, the lab maps technical and organisational paths, making visible how problems could be framed for the upcoming hackathon with university students.",
+        tags: [
+          "Problem space mapping",
+          "Anticipation",
+          "Approach specifications"
+        ],
+        questions: {
+          learning: {
+            base: [
+              "What are different ways we could frame each ‘What if?’ question as a development problem or experiment?",
+              "Which assumptions about data, infrastructure, and organisation underpin each problem framing?",
+              "How could we specify these problem framings clearly enough for students in a hackathon to work on them?"
+            ],
+            byRole: {
+              "data-specialist": [
+                "Which problem framings are realistic given current data quality and statistical power?"
+              ],
+              "software-dev": [
+                "Where might architectural choices today block or enable future extensions across the organisation?"
+              ],
+              "data-owner": [
+                "How do different framings respect regulatory, privacy, and clinical constraints around my data?"
+              ],
+              "manager": [
+                "Which problem framings are aligned with our strategic time-horizons and resource constraints?"
+              ],
+              "non-technical": [
+                "Which framings are easy to explain to colleagues who will eventually use or be affected by these systems?"
+              ]
+            }
+          },
+          insights: {
+            base: [
+              "The same ‘What if?’ question can lead to multiple, very different projects depending on how the problem is framed.",
+              "Anticipation is not prediction; it is a structured way of exploring plausible futures and organisational consequences.",
+              "Problem spaces that link multiple ‘What if?’ questions can create shared infrastructure and avoid duplicated effort."
+            ],
+            byRole: {
+              "data-specialist": [
+                "Some problem framings invite simpler, interpretable methods; others demand more complex modelling with stronger governance."
+              ],
+              "software-dev": [
+                "Well-defined interfaces between problem spaces can make later integration of hackathon ideas much easier."
+              ],
+              "data-owner": [
+                "My insight into how data is produced and used helps filter out unrealistic problem framings early."
+              ],
+              "manager": [
+                "I can already see which parts of the problem space may require new roles, partnerships, or investment."
+              ],
+              "non-technical": [
+                "Being involved in problem space discussions means I can influence how work will actually change on the ground."
+              ]
+            }
+          },
+          options: {
+            base: [
+              "Draft concise problem briefs for the first hackathon, including context, success criteria, and constraints.",
+              "Cluster related problems into tracks (e.g. data quality, workflow automation, decision support).",
+              "Highlight cross-role questions (e.g. ownership, responsibility) that students should be encouraged to probe."
+            ],
+            byRole: {
+              "data-specialist": [
+                "Propose evaluation metrics and validation strategies for each problem brief."
+              ],
+              "software-dev": [
+                "Sketch candidate system architectures or integration patterns to include in hackathon briefs."
+              ],
+              "data-owner": [
+                "Mark which data sets can be safely shared with students and under what conditions."
+              ],
+              "manager": [
+                "Decide where to focus limited hackathon time for maximum learning and organisational impact."
+              ],
+              "non-technical": [
+                "Offer concrete use-cases and edge cases to embed into the problem statements."
+              ]
+            }
+          }
+        }
+      },
+      {
+        id: 2,
+        weekLabel: "Week 3",
+        name: "Hackathon I: Exploring Solution Spaces",
+        areaPillar: "AREA – Reflection & Engagement",
+        icon: "💡",
+        summary:
+          "The first hackathon, with university students, is a structured exploration of solution spaces. Students respond to the problem briefs, propose prototypes, and surface new ways of addressing the ‘What if?’ questions. Lab participants reflect on which solution spaces feel promising and how they might fit the organisation socio-technically.",
+        tags: [
+          "Hackathon I",
+          "Solution space exploration",
+          "Reflection & engagement"
+        ],
+        questions: {
+          learning: {
+            base: [
+              "What kinds of solution patterns do students propose for our problem briefs?",
+              "Which ideas challenge our assumptions about how work has to be organised today?",
+              "How can we describe the emerging solution spaces in ways that are understandable across roles?"
+            ],
+            byRole: {
+              "data-specialist": [
+                "Which solution concepts raise questions about data availability, model robustness, or bias that I need to explore?"
+              ],
+              "software-dev": [
+                "Which prototypes hint at reusable components or patterns we could bring into our architecture?"
+              ],
+              "data-owner": [
+                "Which ideas respect the realities of how data is generated, curated, and interpreted in our organisation?"
+              ],
+              "manager": [
+                "Which solution spaces appear scalable and sustainable in our organisational context, rather than being one-off experiments?"
+              ],
+              "non-technical": [
+                "Which ideas could realistically help my day-to-day work and that of my colleagues?"
+              ]
+            }
+          },
+          insights: {
+            base: [
+              "Students often surface solution spaces we had not considered, precisely because they are not locked into existing routines.",
+              "Some solution spaces only make sense if several roles coordinate their practices, not just if a new tool exists.",
+              "Reflection on solution spaces surfaces values: what we are willing to change, and what must remain stable."
+            ],
+            byRole: {
+              "data-specialist": [
+                "Some proposals could dramatically change how we think about data reuse and sharing across teams."
+              ],
+              "software-dev": [
+                "The most interesting ideas may require incremental technical steps, not a big-bang rewrite."
+              ],
+              "data-owner": [
+                "I can see where misunderstandings about the meaning or quality of data might mislead solution design."
+              ],
+              "manager": [
+                "The hackathon gives me a preview of the organisational change implications of different solution spaces."
+              ],
+              "non-technical": [
+                "I realise I can ask questions about usability and workflow, not just sit back and watch the 'experts'."
+              ]
+            }
+          },
+          options: {
+            base: [
+              "Select and describe a small set of solution spaces that feel promising for the organisation.",
+              "Document why certain attractive ideas are not currently feasible – and what would need to change.",
+              "Prepare communication materials that explain the chosen solution spaces to the wider company."
+            ],
+            byRole: {
+              "data-specialist": [
+                "Outline the data and analytics work required if a chosen solution space were pursued."
+              ],
+              "software-dev": [
+                "Sketch how chosen solution spaces could plug into existing systems and interfaces."
+              ],
+              "data-owner": [
+                "Clarify how data stewardship responsibilities would look under each chosen solution space."
+              ],
+              "manager": [
+                "Indicate which solution spaces might move to pilot, which stay as concepts, and which are parked."
+              ],
+              "non-technical": [
+                "Help ensure that the language used to describe solution spaces is accessible to frontline staff."
+              ]
+            }
+          }
+        }
+      },
+      {
+        id: 3,
+        weekLabel: "Week 4",
+        name: "Engagement Lab: Organisational Modelling & Constraints",
+        areaPillar: "AREA – Engagement",
+        icon: "🏗️",
+        summary:
+          "Week 4 focuses on organisational engagement. Participants consider the organisation’s constraints – regulatory, technical, cultural, and resource-based – in the light of the hackathon solution spaces. Simple models of the organisation and possible solutions are developed so that collaboration and coordination can become more self-sustaining.",
+        tags: [
+          "Organisational modelling",
+          "Constraints & enablers",
+          "Sociotechnical design"
+        ],
+        questions: {
+          learning: {
+            base: [
+              "What organisational constraints and enablers affect each chosen solution space?",
+              "How do existing structures, teams, and processes need to adapt for these solutions to be viable?",
+              "Where do multiple solution spaces depend on the same organisational capabilities or infrastructure?"
+            ],
+            byRole: {
+              "data-specialist": [
+                "Which governance and monitoring practices must be in place if we operationalise these solutions?"
+              ],
+              "software-dev": [
+                "What shared platforms, APIs, or standards would allow multiple solution spaces to coexist sustainably?"
+              ],
+              "data-owner": [
+                "How can I ensure that data responsibilities and risks are clearly assigned as solutions scale?"
+              ],
+              "manager": [
+                "Which parts of the organisation must be involved early to avoid later resistance or bottlenecks?"
+              ],
+              "non-technical": [
+                "What changes in roles, training, or workload would these solutions imply for people like me?"
+              ]
+            }
+          },
+          insights: {
+            base: [
+              "Some constraints are negotiable (e.g. processes); others are fixed (e.g. regulation) and must shape design from the start.",
+              "Organisational models reveal where coordination is fragile – handovers, decision points, and data flows between teams.",
+              "Engagement is not just presenting ideas; it is jointly reshaping the organisational context in which solutions live."
+            ],
+            byRole: {
+              "data-specialist": [
+                "Robust solutions require ongoing access to feedback and performance data from operations."
+              ],
+              "software-dev": [
+                "A small number of integration decisions can either enable or block many solution spaces at once."
+              ],
+              "data-owner": [
+                "Clear agreement on data use across projects prevents conflict and duplication later."
+              ],
+              "manager": [
+                "I can see which organisational constraints are actually design choices that we could change over time."
+              ],
+              "non-technical": [
+                "My practical knowledge of how work really happens is essential for realistic organisational models."
+              ]
+            }
+          },
+          options: {
+            base: [
+              "Create simple maps showing how chosen solution spaces interact with teams, systems, and governance.",
+              "Identify ‘no-go’ areas where constraints are non-negotiable, and ‘design space’ where creativity is welcome.",
+              "Draft questions about constraints and enablers to bring into the second hackathon."
+            ],
+            byRole: {
+              "data-specialist": [
+                "Propose ways to monitor and review model performance that fit existing organisational rhythms."
+              ],
+              "software-dev": [
+                "Define minimal technical building blocks that could support several solution spaces simultaneously."
+              ],
+              "data-owner": [
+                "Set out conditions under which data could be repurposed or combined across solution spaces."
+              ],
+              "manager": [
+                "Clarify which organisational changes I am prepared to sponsor if we commit to a solution path."
+              ],
+              "non-technical": [
+                "Suggest practical steps (training, documentation, coaching) that would help colleagues adapt."
+              ]
+            }
+          }
+        }
+      },
+      {
+        id: 4,
+        weekLabel: "Week 5",
+        name: "Matching Solution Spaces to Organisational Challenges",
+        areaPillar: "From Engagement to Action",
+        icon: "🧩",
+        summary:
+          "Week 5 prepares for the second hackathon. Participants match the previously identified solution spaces to concrete organisational challenges, given the constraints and models developed in Week 4. The goal is to specify focused, realistic challenges that invite students to refine and prototype solutions.",
+        tags: [
+          "Challenge formulation",
+          "Portfolio thinking",
+          "Hackathon II preparation"
+        ],
+        questions: {
+          learning: {
+            base: [
+              "Which solution spaces are best matched to our most important organisational challenges right now?",
+              "How do we express these matches as clear, motivating challenges for the second hackathon?",
+              "Where can we design challenges that encourage synergy between solution spaces rather than competition?"
+            ],
+            byRole: {
+              "data-specialist": [
+                "Which challenges require deeper analytics or novel methods, and which could rely on simpler, robust approaches?"
+              ],
+              "software-dev": [
+                "How can challenges highlight integration, maintainability, and security as first-class concerns?"
+              ],
+              "data-owner": [
+                "Which challenges depend heavily on my data, and what safeguards must be stated up front?"
+              ],
+              "manager": [
+                "Which challenges, if addressed, would clearly demonstrate value to leadership and support future investment?"
+              ],
+              "non-technical": [
+                "Which challenges speak directly to the realities of clinical, operational, or support work?"
+              ]
+            }
+          },
+          insights: {
+            base: [
+              "Not every attractive solution space needs to move forward now; timing and organisational readiness matter.",
+              "Combining multiple solution spaces into one challenge can support more joined-up technical work.",
+              "Preparing good challenges is itself a learning exercise in coordination across roles."
+            ],
+            byRole: {
+              "data-specialist": [
+                "I can shape challenges so they highlight responsible data use and realistic performance expectations."
+              ],
+              "software-dev": [
+                "Well-formulated challenges can surface hidden technical risks early, before significant build effort."
+              ],
+              "data-owner": [
+                "Issues of consent, provenance, and interpretability should be visible within the challenge descriptions."
+              ],
+              "manager": [
+                "I can ensure that challenges align with the decisions I and other leaders will actually have to make."
+              ],
+              "non-technical": [
+                "I can help make challenges human-centred, rooted in patient and staff experience."
+              ]
+            }
+          },
+          options: {
+            base: [
+              "Draft a small set of well-scoped challenges for Hackathon II, each linked to specific organisational outcomes.",
+              "Highlight where cross-role collaboration inside the hackathon (and afterwards) will be essential.",
+              "Agree how to evaluate hackathon outputs in terms of both technical quality and organisational fit."
+            ],
+            byRole: {
+              "data-specialist": [
+                "Define what good evidence looks like for each challenge from a data perspective."
+              ],
+              "software-dev": [
+                "Specify non-functional requirements (performance, security, maintainability) within challenge briefs."
+              ],
+              "data-owner": [
+                "Provide example data schemas or synthetic data that respect real-world constraints."
+              ],
+              "manager": [
+                "Clarify decision points: what we might commit to if a challenge is successfully addressed."
+              ],
+              "non-technical": [
+                "Offer to be part of feedback panels for hackathon teams, bringing lived experience into the evaluation."
+              ]
+            }
+          }
+        }
+      },
+      {
+        id: 5,
+        weekLabel: "Week 6",
+        name: "Hackathon II & Sustaining Innovation",
+        areaPillar: "AREA – Action & Ongoing Engagement",
+        icon: "🚀",
+        summary:
+          "The second hackathon focuses on implementing and stress-testing solutions to the ‘What if?’ questions, now framed by organisational constraints and priorities. Afterwards, participants articulate a plan for sustained continuation of innovation: how cross-role collaboration around AI will continue beyond the lab.",
+        tags: [
+          "Hackathon II",
+          "Implementation-oriented exploration",
+          "Sustained innovation"
+        ],
+        questions: {
+          learning: {
+            base: [
+              "How do hackathon solutions respond to both the original ‘What if?’ questions and the constraints we identified?",
+              "What have we learned about how different roles can collaborate effectively around AI projects?",
+              "Which practices from the lab (e.g. shared questions, hackathons, modelling) should become part of normal organisational life?"
+            ],
+            byRole: {
+              "data-specialist": [
+                "What would I need in place (data access, tooling, time) to move preferred solutions towards production?"
+              ],
+              "software-dev": [
+                "How can I turn promising hackathon prototypes into maintainable, secure, and integrated systems?"
+              ],
+              "data-owner": [
+                "How will ongoing data governance, quality, and documentation be supported as solutions evolve?"
+              ],
+              "manager": [
+                "How do I embed AI initiatives into governance and budgeting so innovation is sustained, not episodic?"
+              ],
+              "non-technical": [
+                "What ongoing support do I and my colleagues need to work confidently alongside new AI-enabled tools?"
+              ]
+            }
+          },
+          insights: {
+            base: [
+              "Sustained innovation is less about one ‘hero’ solution and more about creating repeatable ways of working together.",
+              "Hackathons are most powerful when they are embedded in an ongoing cycle of questioning, modelling, and reflection.",
+              "Cross-role understanding built in the lab can reduce friction and misunderstandings in future AI projects."
+            ],
+            byRole: {
+              "data-specialist": [
+                "My expertise is most valuable when it is connected to decision-making and feedback, not only model building."
+              ],
+              "software-dev": [
+                "Good engineering practices are a key part of responsible and sustainable AI in the organisation."
+              ],
+              "data-owner": [
+                "My ongoing stewardship of data is central to keeping AI initiatives safe and meaningful."
+              ],
+              "manager": [
+                "Investing in coordination mechanisms (forums, roles, processes) is as important as investing in technology itself."
+              ],
+              "non-technical": [
+                "My questions and concerns are legitimate inputs to AI design, not obstacles to be ‘worked around’."
+              ]
+            }
+          },
+          options: {
+            base: [
+              "Agree on a small number of next-step projects or pilots emerging from the lab.",
+              "Design simple coordination forums (e.g. quarterly AI reviews, cross-role working groups) to continue the conversation.",
+              "Capture and share stories from the lab that illustrate successful cross-role collaboration."
+            ],
+            byRole: {
+              "data-specialist": [
+                "Propose lightweight monitoring and evaluation plans for any pilots or follow-on projects."
+              ],
+              "software-dev": [
+                "Outline a roadmap for technical hardening of the most promising hackathon outputs."
+              ],
+              "data-owner": [
+                "Document how data will be used, and how people can raise questions or concerns as projects progress."
+              ],
+              "manager": [
+                "Set expectations for how AI initiatives will be reviewed, prioritised, and aligned with strategy over time."
+              ],
+              "non-technical": [
+                "Offer to participate in future labs or feedback sessions as AI tools are introduced or changed."
+              ]
+            }
+          }
+        }
+      }
+    ];
+
+    const timelineContainer = document.getElementById("timeline");
+    const contentContainer = document.getElementById("content");
+    const roleSelect = document.getElementById("roleSelect");
+    const roleNote = document.getElementById("roleNote");
+
+    let currentIndex = 0;
+    let currentRoleId = roles[0].id;
+
+    function renderRoleSelector() {
+      roleSelect.innerHTML = "";
+      roles.forEach((role) => {
+        const opt = document.createElement("option");
+        opt.value = role.id;
+        opt.textContent = role.label;
+        roleSelect.appendChild(opt);
+      });
+      roleSelect.value = currentRoleId;
+      const role = roles.find((r) => r.id === currentRoleId);
+      if (role) roleNote.textContent = role.description;
+
+      roleSelect.addEventListener("change", (e) => {
+        currentRoleId = e.target.value;
+        const r = roles.find((x) => x.id === currentRoleId);
+        if (r) roleNote.textContent = r.description;
+        renderStage();
+      });
+    }
+
+    function renderTimeline() {
+      timelineContainer.innerHTML = "";
+      stages.forEach((stage, index) => {
+        const item = el("button", "timeline-item");
+        item.type = "button";
+        item.setAttribute("data-index", index);
+
+        const dot = el("div", "timeline-dot");
+        dot.dataset.color = stageColors[index % stageColors.length];
+
+        const week = el("div", "timeline-week", stage.weekLabel);
+        const label = el("div", "timeline-label", stage.name);
+        const area = el("div", "timeline-area", stage.areaPillar);
+
+        item.appendChild(dot);
+        item.appendChild(week);
+        item.appendChild(label);
+        item.appendChild(area);
+
+        item.addEventListener("click", () => {
+          goToStage(index);
+        });
+
+        // background tint
+        const color = stageColors[index % stageColors.length];
+        item.style.backgroundImage = `linear-gradient(90deg, ${color}12, rgba(15,23,42,0.96))`;
+
+        timelineContainer.appendChild(item);
+      });
+      updateTimelineActive();
+    }
+
+    function updateTimelineActive() {
+      const items = timelineContainer.querySelectorAll(".timeline-item");
+      items.forEach((item, idx) => {
+        const dot = item.querySelector(".timeline-dot");
+        const color = dot.dataset.color || "#38bdf8";
+
+        if (idx === currentIndex) {
+          item.classList.add("active");
+          item.setAttribute("aria-current", "step");
+          dot.style.borderColor = color;
+          dot.style.backgroundColor = color;
+          dot.style.boxShadow = `0 0 0 4px ${color}33`;
+        } else {
+          item.classList.remove("active");
+          item.removeAttribute("aria-current");
+          dot.style.borderColor = color;
+          dot.style.backgroundColor = "#020617";
+          dot.style.boxShadow = "none";
+        }
+      });
+    }
+
+    function getCurrentRole() {
+      return roles.find((r) => r.id === currentRoleId) || roles[0];
+    }
+
+    function renderStage() {
+      const stage = stages[currentIndex];
+      const role = getCurrentRole();
+      contentContainer.innerHTML = "";
+
+      const wrapper = el("div", "stage fade-in");
+
+      // Header row
+      const headerRow = el("div", "stage-header-row");
+
+      const titleGroup = el("div", "stage-title-group");
+      const badgeRow = el("div", "badge-row");
+
+      const weekBadge = el("div", "badge badge-pill", `${stage.weekLabel}`);
+      const weekIcon = el("span", "emoji", stage.icon);
+      weekBadge.insertBefore(weekIcon, weekBadge.firstChild);
+
+      const typeBadge = el("div", "badge", stage.areaPillar);
+
+      badgeRow.appendChild(weekBadge);
+      badgeRow.appendChild(typeBadge);
+
+      const stageName = el("div", "stage-name", stage.name);
+      titleGroup.appendChild(badgeRow);
+      titleGroup.appendChild(stageName);
+
+      const areaPill = el("div", "area-pill");
+      const areaEmoji = el("span", "emoji", "⚙️");
+      const areaLabel = el("strong", "", "Lab focus");
+      const areaText = el("span", "", stage.areaPillar);
+      areaPill.appendChild(areaEmoji);
+      areaPill.appendChild(areaLabel);
+      areaPill.appendChild(areaText);
+
+      headerRow.appendChild(titleGroup);
+      headerRow.appendChild(areaPill);
+
+      // Summary text
+      const summary = el(
+        "p",
+        "stage-summary",
+        personalizeText(stage.summary, role)
+      );
+
+      // Role pill
+      const rolePill = el("div", "role-pill");
+      const roleEmoji = el("span", "emoji", "👤");
+      const roleLabel = el("strong", "", "Perspective:");
+      const roleText = el(
+        "span",
+        "",
+        `You are viewing this as a ${role.short}.`
+      );
+      rolePill.appendChild(roleEmoji);
+      rolePill.appendChild(roleLabel);
+      rolePill.appendChild(roleText);
+
+      // Tags row
+      const tagsRow = el("div", "stage-tags");
+      stage.tags.forEach((t) => {
+        tagsRow.appendChild(el("span", "mini-tag", t));
+      });
+
+      wrapper.appendChild(headerRow);
+      wrapper.appendChild(summary);
+      wrapper.appendChild(rolePill);
+      wrapper.appendChild(tagsRow);
+
+      // Questions grid
+      const grid = el("div", "questions-grid");
+      const q = stage.questions;
+
+      const columns = [
+        {
+          title: "What I'm learning now",
+          emoji: "📚",
+          key: "learning"
+        },
+        {
+          title: "New things I hadn't considered",
+          emoji: "💡",
+          key: "insights"
+        },
+        {
+          title: "Options for future development",
+          emoji: "🚀",
+          key: "options"
+        }
+      ];
+
+      columns.forEach((col) => {
+        const colCfg = q[col.key];
+        const baseItems = colCfg.base || [];
+        const roleItems = (colCfg.byRole && colCfg.byRole[role.id]) || [];
+        const items = [...baseItems, ...roleItems];
+
+        const colDiv = el("div", "question-column");
+        const h3 = el("h3");
+        const e = el("span", "emoji", col.emoji);
+        const t = document.createTextNode(col.title);
+        h3.appendChild(e);
+        h3.appendChild(t);
+
+        const ul = el("ul");
+        items.forEach((txt) => {
+          const li = el("li");
+          li.textContent = personalizeText(txt, role);
+          ul.appendChild(li);
+        });
+
+        colDiv.appendChild(h3);
+        colDiv.appendChild(ul);
+        grid.appendChild(colDiv);
+      });
+
+      // Footer row with navigation and key message
+      const footer = el("div", "footer-row");
+
+      const progressWrapper = el("div", "progress-wrapper");
+      const progressBar = el("div", "progress-bar");
+      const progressFill = el("div", "progress-bar-fill");
+      const progressLabel = el(
+        "div",
+        "progress-label",
+        `Stage ${currentIndex + 1} of ${stages.length} • ${stage.weekLabel}`
+      );
+      progressBar.appendChild(progressFill);
+      progressWrapper.appendChild(progressBar);
+      progressWrapper.appendChild(progressLabel);
+
+      const percent =
+        (currentIndex / (stages.length - 1 || 1)) * 100;
+      requestAnimationFrame(() => {
+        progressFill.style.width = `${percent}%`;
+      });
+
+      const controls = el("div", "controls");
+
+      const prevBtn = el("button", "nav-btn");
+      prevBtn.type = "button";
+      prevBtn.innerHTML = "◀ Previous";
+      prevBtn.disabled = currentIndex === 0;
+      prevBtn.addEventListener("click", () => {
+        goToStage(currentIndex - 1);
+      });
+
+      const nextBtn = el("button", "nav-btn primary");
+      nextBtn.type = "button";
+      nextBtn.innerHTML =
+        currentIndex === stages.length - 1 ? "Finish Lab ✔" : "Next Stage ▶";
+      nextBtn.disabled = false;
+      nextBtn.addEventListener("click", () => {
+        if (currentIndex < stages.length - 1) {
+          goToStage(currentIndex + 1);
+        }
+      });
+
+      controls.appendChild(prevBtn);
+      controls.appendChild(nextBtn);
+
+      const keyMsg = el("div", "key-message");
+      const msgEmoji = el("span", "emoji", "🧠");
+      const msgText = document.createTextNode(
+        "This lab is about cross-fertilisation: connecting ‘What if?’ questions, hackathon ideas, and organisational realities so that technical work and organisational decisions move forward together."
+      );
+      keyMsg.appendChild(msgEmoji);
+      keyMsg.appendChild(msgText);
+
+      footer.appendChild(progressWrapper);
+      footer.appendChild(controls);
+      footer.appendChild(keyMsg);
+
+      wrapper.appendChild(grid);
+      wrapper.appendChild(footer);
+
+      contentContainer.appendChild(wrapper);
+    }
+
+    function goToStage(index) {
+      if (index < 0 || index >= stages.length || index === currentIndex) return;
+      currentIndex = index;
+      updateTimelineActive();
+      renderStage();
+    }
+
+    // Initialise app
+    renderRoleSelector();
+    renderTimeline();
+    renderStage();
+  </script>
+</body>
+</html>
