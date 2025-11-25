@@ -1,0 +1,1353 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Epidemiology Regression (Excel-style)</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card-bg: #ffffff;
+      --accent: #2563eb;
+      --accent-soft: #e0ebff;
+      --border: #d4d4d8;
+      --text-main: #111827;
+      --text-muted: #6b7280;
+      --danger: #b91c1c;
+      --shadow-soft: 0 18px 40px rgba(15, 23, 42, 0.08);
+      --radius-lg: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: radial-gradient(circle at top left, #e0ecff, #f5f7fb 55%);
+      color: var(--text-main);
+    }
+
+    .app-shell {
+      max-width: 1100px;
+      margin: 32px auto 40px;
+      padding: 0 16px;
+    }
+
+    header {
+      margin-bottom: 24px;
+    }
+
+    header h1 {
+      font-size: 1.8rem;
+      margin: 0 0 4px;
+      letter-spacing: 0.01em;
+    }
+
+    header p {
+      margin: 0;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.3fr);
+      gap: 20px;
+      align-items: flex-start;
+    }
+
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-soft);
+      padding: 18px 18px 20px;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+    }
+
+    .card h2 {
+      margin: 0 0 8px;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-radius: 999px;
+      padding: 2px 10px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .pill span {
+      background: var(--accent);
+      color: white;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      padding: 1px 7px;
+    }
+
+    .data-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .data-header h2 {
+      margin: 0;
+    }
+
+    .data-header .hint {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .btn {
+      border-radius: 999px;
+      border: none;
+      padding: 7px 14px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 8px 18px rgba(37, 99, 235, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 22px rgba(37, 99, 235, 0.4);
+    }
+
+    .btn-ghost {
+      background: rgba(148, 163, 184, 0.08);
+      color: var(--text-muted);
+    }
+
+    .btn-ghost:hover {
+      background: rgba(148, 163, 184, 0.2);
+    }
+
+    .var-names {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+      font-size: 0.85rem;
+    }
+
+    .var-names label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #f3f4f6;
+      border-radius: 999px;
+      padding: 4px 10px;
+    }
+
+    .var-names input {
+      border-radius: 999px;
+      border: 1px solid #d4d4d8;
+      padding: 2px 8px;
+      font-size: 0.85rem;
+      min-width: 70px;
+    }
+
+    .var-names input:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 1px;
+    }
+
+    .sheet-wrapper {
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      background: #f9fafb;
+    }
+
+    .sheet {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 0.85rem;
+    }
+
+    .sheet th,
+    .sheet td {
+      border: 1px solid #e5e7eb;
+      padding: 4px 6px;
+      text-align: right;
+    }
+
+    .sheet th {
+      background: #f3f4f6;
+      font-weight: 600;
+      text-align: center;
+      color: #374151;
+    }
+
+    .sheet td.row-label {
+      background: #f9fafb;
+      text-align: center;
+      color: #6b7280;
+      font-weight: 500;
+      width: 36px;
+    }
+
+    .sheet input[type="number"] {
+      width: 100%;
+      border: none;
+      background: transparent;
+      text-align: right;
+      font-size: 0.85rem;
+      padding: 0;
+      outline: none;
+    }
+
+    .sheet input[type="number"]:focus {
+      background: #eef2ff;
+    }
+
+    .sheet tfoot td {
+      background: #f3f4f6;
+      font-weight: 500;
+    }
+
+    /* Steps */
+    .steps-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .steps-header small {
+      color: var(--text-muted);
+      font-size: 0.78rem;
+    }
+
+    .step-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .step-btn {
+      border-radius: 999px;
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
+      color: #4b5563;
+      padding: 4px 10px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease, transform 0.1s ease;
+    }
+
+    .step-btn span {
+      background: #e5e7eb;
+      border-radius: 999px;
+      padding: 1px 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .step-btn.active {
+      background: var(--accent);
+      color: #f9fafb;
+      border-color: var(--accent);
+      box-shadow: 0 10px 20px rgba(37, 99, 235, 0.3);
+      transform: translateY(-1px);
+    }
+
+    .step-btn.active span {
+      background: rgba(15, 23, 42, 0.18);
+      color: #e5ebff;
+    }
+
+    .step-body {
+      border-radius: 14px;
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
+      padding: 12px 14px;
+      max-height: 520px;
+      overflow: auto;
+    }
+
+    .step-body h3 {
+      margin-top: 0;
+      margin-bottom: 6px;
+      font-size: 1rem;
+    }
+
+    .tagline {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 6px;
+      margin-bottom: 10px;
+      font-size: 0.8rem;
+    }
+
+    .metric {
+      background: #ffffff;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+      padding: 6px 8px;
+    }
+
+    .metric-label {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      margin-bottom: 2px;
+    }
+
+    .metric-value {
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .excel-tip {
+      font-size: 0.78rem;
+      background: #ecfdf3;
+      border-radius: 10px;
+      border: 1px solid #bbf7d0;
+      padding: 6px 8px;
+      margin: 8px 0;
+    }
+
+    .excel-tip strong {
+      font-weight: 600;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      background: rgba(15, 23, 42, 0.04);
+      padding: 1px 4px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+    }
+
+    .ask-box {
+      margin-top: 8px;
+      padding: 6px 8px;
+      border-radius: 10px;
+      background: #eef2ff;
+      border: 1px dashed #a5b4fc;
+      font-size: 0.78rem;
+    }
+
+    .ask-box strong {
+      font-size: 0.8rem;
+    }
+
+    .ask-box ul {
+      padding-left: 18px;
+      margin: 4px 0 0;
+    }
+
+    .ask-box li {
+      margin-bottom: 2px;
+    }
+
+    .detail-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.78rem;
+      margin: 8px 0;
+      background: #fff;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .detail-table th,
+    .detail-table td {
+      border: 1px solid #e5e7eb;
+      padding: 4px 6px;
+      text-align: right;
+    }
+
+    .detail-table th {
+      background: #f3f4f6;
+      text-align: center;
+      font-weight: 600;
+      color: #4b5563;
+    }
+
+    .detail-table td.label {
+      text-align: left;
+      font-weight: 500;
+      background: #f9fafb;
+    }
+
+    .note {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .error {
+      color: var(--danger);
+      font-size: 0.85rem;
+      margin-top: 4px;
+    }
+
+    .chart-wrapper {
+      margin-top: 6px;
+      background: #ffffff;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+      padding: 6px;
+    }
+
+    .chart-wrapper canvas {
+      width: 100%;
+      height: 180px;
+      display: block;
+    }
+
+    /* Excel-style explanation cards (Step 2) */
+    .excel-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 8px;
+      margin: 10px 0;
+    }
+
+    .excel-card {
+      background: #ffffff;
+      border-radius: 12px;
+      border: 1px solid #e5e7eb;
+      padding: 6px 8px;
+      font-size: 0.78rem;
+    }
+
+    .excel-card-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+
+    .excel-col-pill {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      background: #f3f4f6;
+      border: 1px solid #d4d4d8;
+      text-align: center;
+      line-height: 18px;
+      font-weight: 600;
+      font-size: 0.78rem;
+      color: #374151;
+    }
+
+    .excel-card-title {
+      font-weight: 600;
+      font-size: 0.78rem;
+    }
+
+    .formula-bar {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: #f9fafb;
+      border-radius: 6px;
+      border: 1px solid #e5e7eb;
+      padding: 3px 4px;
+      margin: 4px 0;
+    }
+
+    .formula-label {
+      font-size: 0.7rem;
+      color: #6b7280;
+      padding: 1px 4px;
+      border-radius: 4px;
+      background: #e5e7eb;
+    }
+
+    .cell-ref {
+      font-weight: 600;
+      color: #4b5563;
+      font-size: 0.75rem;
+    }
+
+    .formula-bar code {
+      background: transparent;
+      padding: 0;
+    }
+
+    .excel-card p {
+      margin: 4px 0 0;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header>
+      <h1>Regression for Epidemiology (Excel-style, step by step)</h1>
+      <p>
+        Use an epidemiological example: relate an exposure (e.g. air pollution) to an outcome
+        (e.g. asthma emergency visits). Edit the data and see how an Excel-style regression unfolds.
+      </p>
+    </header>
+
+    <div class="layout">
+      <!-- DATA / SHEET PANEL -->
+      <section class="card">
+        <div class="data-header">
+          <h2>
+            <span class="pill">
+              <span>1</span> Data
+            </span>
+            Exposure–outcome table
+          </h2>
+          <button class="btn btn-primary" id="exampleBtn">
+            ⟳ Load epi example
+          </button>
+        </div>
+        <div class="data-header">
+          <div class="hint">
+            Think of each column as an Excel column (A = exposure, B = outcome). You can overwrite any cell to experiment.
+          </div>
+        </div>
+
+        <div class="var-names">
+          <label>
+            Exposure (X):
+            <input type="text" id="xName" value="PM₂.₅ (µg/m³)" />
+          </label>
+          <label>
+            Outcome (Y):
+            <input type="text" id="yName" value="Asthma ER visits per 10,000 children" />
+          </label>
+        </div>
+
+        <div class="sheet-wrapper">
+          <table class="sheet" id="dataTable">
+            <thead>
+              <tr>
+                <th></th>
+                <th id="xHeader">A: Exposure (PM₂.₅ (µg/m³))</th>
+                <th id="yHeader">B: Outcome (Asthma ER visits per 10,000 children)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Rows generated by JS -->
+            </tbody>
+          </table>
+        </div>
+        <div id="dataInfo" class="note"></div>
+      </section>
+
+      <!-- ANALYSIS / STEPS PANEL -->
+      <section class="card">
+        <div class="steps-header">
+          <h2>
+            <span class="pill">
+              <span>2</span> Regression
+            </span>
+            Step-by-step Excel analysis
+          </h2>
+          <small>Follow the logic an epidemiologist might use in a spreadsheet.</small>
+        </div>
+
+        <div class="step-buttons">
+          <button class="step-btn active" data-step="1">
+            <span>1</span> Inspect exposure–outcome pattern
+          </button>
+          <button class="step-btn" data-step="2">
+            <span>2</span> Build Excel-style regression table
+          </button>
+          <button class="step-btn" data-step="3">
+            <span>3</span> Slope &amp; intercept (effect estimate)
+          </button>
+          <button class="step-btn" data-step="4">
+            <span>4</span> Fit quality (R² &amp; residuals)
+          </button>
+          <button class="step-btn" data-step="5">
+            <span>5</span> Interpretation &amp; causality in epi
+          </button>
+        </div>
+
+        <div class="step-body" id="stepContent">
+          <!-- Filled by JS -->
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    // --------- Helpers ----------
+    function fmt(num, digits = 3) {
+      if (num === null || num === undefined || Number.isNaN(num)) return "–";
+      return Number(num).toFixed(digits);
+    }
+
+    function parseCell(value) {
+      const n = parseFloat(value);
+      return Number.isFinite(n) ? n : null;
+    }
+
+    function getData() {
+      const rows = document.querySelectorAll("#dataTable tbody tr");
+      const x = [];
+      const y = [];
+      rows.forEach((row) => {
+        const xVal = parseCell(row.querySelector('input[data-col="x"]').value);
+        const yVal = parseCell(row.querySelector('input[data-col="y"]').value);
+        if (xVal !== null && yVal !== null) {
+          x.push(xVal);
+          y.push(yVal);
+        }
+      });
+      return { x, y };
+    }
+
+    function computeRegression(x, y) {
+      const n = x.length;
+      if (n < 2) return null;
+
+      const sumX = x.reduce((a, b) => a + b, 0);
+      const sumY = y.reduce((a, b) => a + b, 0);
+      const meanX = sumX / n;
+      const meanY = sumY / n;
+
+      const devX = [];
+      const devY = [];
+      const devX2 = [];
+      const prodXY = [];
+      let ssx = 0;
+      let ssy = 0;
+      let sxy = 0;
+
+      for (let i = 0; i < n; i++) {
+        const dx = x[i] - meanX;
+        const dy = y[i] - meanY;
+        const dx2 = dx * dx;
+        const p = dx * dy;
+
+        devX.push(dx);
+        devY.push(dy);
+        devX2.push(dx2);
+        prodXY.push(p);
+
+        ssx += dx2;
+        ssy += dy * dy;
+        sxy += p;
+      }
+
+      if (ssx === 0) {
+        return null;
+      }
+
+      const slope = sxy / ssx;
+      const intercept = meanY - slope * meanX;
+
+      const yHat = [];
+      const residuals = [];
+      let sse = 0;
+      let sst = 0;
+
+      for (let i = 0; i < n; i++) {
+        const yh = intercept + slope * x[i];
+        const res = y[i] - yh;
+        yHat.push(yh);
+        residuals.push(res);
+        sse += res * res;
+        const dev = y[i] - meanY;
+        sst += dev * dev;
+      }
+
+      const r2 = sst === 0 ? null : 1 - sse / sst;
+      const r = ssx === 0 || ssy === 0 ? null : sxy / Math.sqrt(ssx * ssy);
+
+      return {
+        n,
+        meanX,
+        meanY,
+        ssx,
+        ssy,
+        sxy,
+        slope,
+        intercept,
+        yHat,
+        residuals,
+        sse,
+        sst,
+        r2,
+        r,
+        devX,
+        devY,
+        devX2,
+        prodXY
+      };
+    }
+
+    function renderDataInfo(reg) {
+      const infoEl = document.getElementById("dataInfo");
+      const { x, y } = getData();
+      if (x.length === 0) {
+        infoEl.textContent = "Enter numeric exposure and outcome values in at least two rows to run a regression.";
+        return;
+      }
+      if (x.length < 2) {
+        infoEl.textContent = "You currently have only one complete pair of values. Add at least one more row.";
+        return;
+      }
+      if (!reg) {
+        infoEl.textContent = "All exposure (X) values are identical. Regression cannot estimate an effect when there is no variation in exposure (SSx = 0).";
+        return;
+      }
+      infoEl.textContent = `Using ${reg.n} complete rows. Edit exposures/outcomes to see how the regression line and formulas change.`;
+    }
+
+    // Helper to build Excel-like ranges based on n usable rows
+    function excelRange(colLetter, n) {
+      // Data start in row 2
+      const startRow = 2;
+      const endRow = n + 1;
+      return `$${colLetter}$${startRow}:$${colLetter}$${endRow}`;
+    }
+
+    // --------- Chart (scatter) ----------
+    function drawScatter(canvas, x, y, slope, intercept) {
+      const ctx = canvas.getContext("2d");
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      if (x.length === 0) {
+        ctx.fillStyle = "#6b7280";
+        ctx.font = "12px system-ui";
+        ctx.fillText("Add at least two data points to see the scatter plot.", 10, 20);
+        return;
+      }
+
+      const minX = Math.min(...x);
+      const maxX = Math.max(...x);
+      const minY = Math.min(...y);
+      const maxY = Math.max(...y);
+
+      const padding = 28;
+      const innerW = w - 2 * padding;
+      const innerH = h - 2 * padding;
+
+      function scaleX(v) {
+        if (maxX === minX) return padding + innerW / 2;
+        return padding + ((v - minX) / (maxX - minX)) * innerW;
+      }
+
+      function scaleY(v) {
+        if (maxY === minY) return padding + innerH / 2;
+        return h - padding - ((v - minY) / (maxY - minY)) * innerH;
+      }
+
+      // Axes
+      ctx.strokeStyle = "#e5e7eb";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(padding, padding);
+      ctx.lineTo(padding, h - padding);
+      ctx.lineTo(w - padding, h - padding);
+      ctx.stroke();
+
+      // Points
+      ctx.fillStyle = "#2563eb";
+      for (let i = 0; i < x.length; i++) {
+        const px = scaleX(x[i]);
+        const py = scaleY(y[i]);
+        ctx.beginPath();
+        ctx.arc(px, py, 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Regression line
+      if (typeof slope === "number" && typeof intercept === "number") {
+        const x1 = minX;
+        const x2 = maxX;
+        const y1 = intercept + slope * x1;
+        const y2 = intercept + slope * x2;
+
+        ctx.strokeStyle = "#111827";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(scaleX(x1), scaleY(y1));
+        ctx.lineTo(scaleX(x2), scaleY(y2));
+        ctx.stroke();
+      }
+
+      ctx.fillStyle = "#9ca3af";
+      ctx.font = "10px system-ui";
+      ctx.fillText("Exposure (X)", w - padding + 4, h - padding + 2);
+      ctx.fillText("Outcome (Y)", padding - 10, padding - 6);
+    }
+
+    // --------- Step Rendering ----------
+    function renderStep(step) {
+      const content = document.getElementById("stepContent");
+      const xName = document.getElementById("xName").value || "Exposure";
+      const yName = document.getElementById("yName").value || "Outcome";
+      const { x, y } = getData();
+      const reg = computeRegression(x, y);
+
+      renderDataInfo(reg);
+
+      if (!reg) {
+        content.innerHTML = `
+          <h3>Not enough variation yet</h3>
+          <p class="tagline">
+            To run a meaningful regression, you need at least two rows where both exposure and outcome are numeric,
+            and the exposure values must not all be identical.
+          </p>
+          <div class="excel-tip">
+            <strong>Excel tip:</strong> Make sure you have at least two numeric entries in each column (no text, blanks, or errors),
+            then try <code>=SLOPE(B2:B?, A2:A?)</code> and <code>=INTERCEPT(B2:B?, A2:A?)</code>.
+          </div>
+        `;
+        return;
+      }
+
+      const {
+        n, meanX, meanY, slope, intercept, sse, sst, r2, r,
+        devX, devY, devX2, prodXY, ssx, sxy
+      } = reg;
+
+      // For Excel formulas
+      const rangeX = excelRange("A", n);
+      const rangeY = excelRange("B", n);
+
+      if (step === 1) {
+        content.innerHTML = `
+          <h3>Step 1 – Inspect the exposure–outcome pattern</h3>
+          <p class="tagline">
+            Start as an epidemiologist would: look at the pattern of (${xName}, ${yName}) pairs.
+            Does higher exposure tend to go with worse outcomes?
+          </p>
+
+          <div class="metrics-grid">
+            <div class="metric">
+              <div class="metric-label">Number of usable rows</div>
+              <div class="metric-value">${n}</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Mean exposure (X̄)</div>
+              <div class="metric-value">${fmt(meanX)}</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Mean outcome (Ȳ)</div>
+              <div class="metric-value">${fmt(meanY)}</div>
+            </div>
+          </div>
+
+          <div class="chart-wrapper">
+            <canvas id="scatterCanvas"></canvas>
+          </div>
+
+          <div class="excel-tip">
+            <strong>Excel tip:</strong> Select columns A and B and insert a
+            <em>Scatter (X, Y)</em> chart (<strong>Insert → Scatter</strong>).
+            That chart is your basic exposure–response plot.
+          </div>
+
+          <div class="ask-box">
+            <strong>Ask yourself:</strong>
+            <ul>
+              <li>Does ${yName} generally increase as ${xName} increases?</li>
+              <li>Is the relationship roughly straight-line (linear), or clearly curved?</li>
+              <li>Are there any obvious outlying communities/measurements?</li>
+            </ul>
+          </div>
+        `;
+
+        const canvas = document.getElementById("scatterCanvas");
+        canvas.width = canvas.clientWidth || 400;
+        canvas.height = 200;
+        drawScatter(canvas, x, y, slope, intercept);
+      }
+
+      if (step === 2) {
+        const maxRows = Math.min(n, 8);
+        let rowsHtml = "";
+        for (let i = 0; i < maxRows; i++) {
+          rowsHtml += `
+            <tr>
+              <td>${i + 1}</td>
+              <td>${fmt(x[i])}</td>
+              <td>${fmt(y[i])}</td>
+              <td>${fmt(devX[i])}</td>
+              <td>${fmt(devY[i])}</td>
+              <td>${fmt(devX2[i])}</td>
+              <td>${fmt(prodXY[i])}</td>
+            </tr>
+          `;
+        }
+
+        const meanXFormula = `=AVERAGE(${rangeX})`;
+        const meanYFormula = `=AVERAGE(${rangeY})`;
+
+        const devXFormula = `=A2 - $H$1`;
+        const devYFormula = `=B2 - $H$2`;
+        const devX2Formula = `=C2^2`;
+        const prodFormula = `=C2*D2`;
+
+        content.innerHTML = `
+          <h3>Step 2 – Build the regression calculation table (Excel-style)</h3>
+          <p class="tagline">
+            Now we construct the extra columns you’d typically add in Excel to compute a simple linear regression.
+            Each column has a clear purpose in the epidemiological effect estimate.
+          </p>
+
+          <table class="detail-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>A: Exposure (X)</th>
+                <th>B: Outcome (Y)</th>
+                <th>C: X − X̄</th>
+                <th>D: Y − Ȳ</th>
+                <th>E: (X − X̄)²</th>
+                <th>F: (X − X̄)(Y − Ȳ)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td class="label">Σ</td>
+                <td>${fmt(x.reduce((a,b)=>a+b,0))}</td>
+                <td>${fmt(y.reduce((a,b)=>a+b,0))}</td>
+                <td>0</td>
+                <td>0</td>
+                <td>${fmt(devX2.reduce((a,b)=>a+b,0))}</td>
+                <td>${fmt(prodXY.reduce((a,b)=>a+b,0))}</td>
+              </tr>
+            </tfoot>
+          </table>
+
+          <p class="tagline">
+            Below is a graphical, Excel-like guide to which formulas go into which cells, and why
+            they matter for estimating the exposure effect.
+          </p>
+
+          <div class="excel-cards">
+            <!-- Card 1: Means -->
+            <div class="excel-card">
+              <div class="excel-card-header">
+                <div class="excel-col-pill">H</div>
+                <div class="excel-card-title">Store means for X and Y</div>
+              </div>
+              <p>
+                In Excel, it’s convenient to store the mean exposure and mean outcome in fixed cells,
+                then reference them.
+              </p>
+              <div class="formula-bar">
+                <span class="formula-label">Cell</span>
+                <span class="cell-ref">H1</span>
+                <span class="formula-label">Formula</span>
+                <code>${meanXFormula}</code>
+              </div>
+              <p>H1 holds the mean exposure X̄.</p>
+
+              <div class="formula-bar">
+                <span class="formula-label">Cell</span>
+                <span class="cell-ref">H2</span>
+                <span class="formula-label">Formula</span>
+                <code>${meanYFormula}</code>
+              </div>
+              <p>H2 holds the mean outcome Ȳ.</p>
+            </div>
+
+            <!-- Card 2: Deviations X − X̄ -->
+            <div class="excel-card">
+              <div class="excel-card-header">
+                <div class="excel-col-pill">C</div>
+                <div class="excel-card-title">Deviation of exposure: X − X̄</div>
+              </div>
+              <p>
+                This column tells you, for each observation, how far exposure is above/below the mean.
+                Positive values are higher-than-average exposure.
+              </p>
+              <div class="formula-bar">
+                <span class="formula-label">Cell</span>
+                <span class="cell-ref">C2</span>
+                <span class="formula-label">Formula</span>
+                <code>${devXFormula}</code>
+              </div>
+              <p>
+                Then fill this formula down to C${n+1}. Using <code>$H$1</code> anchors the mean so it doesn’t
+                change when you copy the formula.
+              </p>
+            </div>
+
+            <!-- Card 3: Deviations Y − Ȳ -->
+            <div class="excel-card">
+              <div class="excel-card-header">
+                <div class="excel-col-pill">D</div>
+                <div class="excel-card-title">Deviation of outcome: Y − Ȳ</div>
+              </div>
+              <p>
+                This column shows how far each outcome is from the mean. This is the variability we’re trying to
+                explain using exposure.
+              </p>
+              <div class="formula-bar">
+                <span class="formula-label">Cell</span>
+                <span class="cell-ref">D2</span>
+                <span class="formula-label">Formula</span>
+                <code>${devYFormula}</code>
+              </div>
+              <p>
+                Fill down to D${n+1}. Again, <code>$H$2</code> locks the mean outcome cell.
+              </p>
+            </div>
+
+            <!-- Card 4: Squared deviations and cross-products -->
+            <div class="excel-card">
+              <div class="excel-card-header">
+                <div class="excel-col-pill">E</div>
+                <div class="excel-card-title">(X − X̄)² and (X − X̄)(Y − Ȳ)</div>
+              </div>
+              <p>
+                These columns feed directly into the regression formula.
+              </p>
+              <div class="formula-bar">
+                <span class="formula-label">Cell</span>
+                <span class="cell-ref">E2</span>
+                <span class="formula-label">Formula</span>
+                <code>${devX2Formula}</code>
+              </div>
+              <p>
+                E2 is the squared deviation in exposure. Fill down to E${n+1}, then sum E2:E${n+1}
+                at the bottom to get Σ(X − X̄)², which is the variability in exposure.
+              </p>
+
+              <div class="formula-bar">
+                <span class="formula-label">Cell</span>
+                <span class="cell-ref">F2</span>
+                <span class="formula-label">Formula</span>
+                <code>${prodFormula}</code>
+              </div>
+              <p>
+                F2 is the cross-product of deviations. Fill down to F${n+1}, then sum F2:F${n+1}
+                to get Σ(X − X̄)(Y − Ȳ), which measures how exposure and outcome move together.
+              </p>
+            </div>
+          </div>
+
+          <div class="excel-tip">
+            <strong>Why these columns?</strong><br/>
+            • Σ(X − X̄)² tells you how much variation there is in exposure.<br/>
+            • Σ(X − X̄)(Y − Ȳ) tells you how much exposure and outcome co-vary.<br/>
+            • The regression slope is <code>b₁ = Σ(X − X̄)(Y − Ȳ) / Σ(X − X̄)²</code>.
+          </div>
+
+          <div class="ask-box">
+            <strong>Experiment &amp; ask yourself:</strong>
+            <ul>
+              <li>Change a high-exposure row to even higher exposure. How does Σ(X − X̄)² change?</li>
+              <li>Change an outcome so that it no longer increases with exposure. What happens to Σ(X − X̄)(Y − Ȳ)?</li>
+              <li>Watch later steps to see how these changes alter the estimated effect of exposure.</li>
+            </ul>
+          </div>
+        `;
+      }
+
+      if (step === 3) {
+        content.innerHTML = `
+          <h3>Step 3 – Calculate the regression line (effect of exposure)</h3>
+          <p class="tagline">
+            Now we turn those columns into an epidemiological “effect estimate” – the change in ${yName}
+            per unit change in ${xName}.
+          </p>
+
+          <div class="metrics-grid">
+            <div class="metric">
+              <div class="metric-label">Slope (b₁: effect per unit X)</div>
+              <div class="metric-value">${fmt(slope)}</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Intercept (b₀)</div>
+              <div class="metric-value">${fmt(intercept)}</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Regression equation</div>
+              <div class="metric-value">
+                ${yName} = ${fmt(intercept)} + ${fmt(slope)} × ${xName}
+              </div>
+            </div>
+          </div>
+
+          <table class="detail-table">
+            <tbody>
+              <tr>
+                <td class="label">Formula for slope (b₁)</td>
+                <td>
+                  <code>b₁ = Σ[(X − X̄)(Y − Ȳ)] ÷ Σ[(X − X̄)²]</code><br/>
+                  With your data: b₁ = ${fmt(sxy)} ÷ ${fmt(ssx)} = ${fmt(slope)}.
+                </td>
+              </tr>
+              <tr>
+                <td class="label">Excel way</td>
+                <td>
+                  Using the raw columns A (X) and B (Y):<br/>
+                  • <code>=SLOPE(${rangeY}, ${rangeX})</code> → slope b₁<br/>
+                  • <code>=INTERCEPT(${rangeY}, ${rangeX})</code> → intercept b₀
+                </td>
+              </tr>
+              <tr>
+                <td class="label">Formula for intercept (b₀)</td>
+                <td>
+                  <code>b₀ = Ȳ − b₁·X̄</code><br/>
+                  With your data: b₀ = ${fmt(meanY)} − ${fmt(slope)} × ${fmt(meanX)} = ${fmt(intercept)}.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="ask-box">
+            <strong>Interpret epidemiologically:</strong>
+            <ul>
+              <li>Is b₁ positive? That would suggest higher ${xName} is associated with higher ${yName}.</li>
+              <li>How big is b₁ in the original units? Is a 1-unit increase in exposure realistic and important?</li>
+              <li>Does b₀ (predicted outcome at zero exposure) make sense, or is zero exposure outside the observed range?</li>
+            </ul>
+          </div>
+        `;
+      }
+
+      if (step === 4) {
+        const mse = reg.n > 2 ? sse / (reg.n - 2) : null;
+        content.innerHTML = `
+          <h3>Step 4 – How well does exposure explain the outcome? (R²)</h3>
+          <p class="tagline">
+            Now we ask: how much of the variability in ${yName} across units (e.g. communities, time points) 
+            is explained by differences in ${xName} in this simple model?
+          </p>
+
+          <div class="metrics-grid">
+            <div class="metric">
+              <div class="metric-label">R² (fraction of variance explained)</div>
+              <div class="metric-value">${fmt(r2)}</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Correlation (r)</div>
+              <div class="metric-value">${fmt(r)}</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Sum of squared residuals (SSE)</div>
+              <div class="metric-value">${fmt(sse)}</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Total sum of squares (SST)</div>
+              <div class="metric-value">${fmt(sst)}</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Mean square error (MSE)</div>
+              <div class="metric-value">${fmt(mse)}</div>
+            </div>
+          </div>
+
+          <table class="detail-table">
+            <tbody>
+              <tr>
+                <td class="label">Definition of R²</td>
+                <td>
+                  <code>R² = 1 − SSE / SST</code><br/>
+                  • SST: total variability in ${yName} about its mean.<br/>
+                  • SSE: variability left over after fitting the exposure effect.
+                </td>
+              </tr>
+              <tr>
+                <td class="label">Excel functions</td>
+                <td>
+                  • <code>=RSQ(${rangeY}, ${rangeX})</code> gives R² directly.<br/>
+                  • <code>=CORREL(${rangeY}, ${rangeX})</code> gives r, and R² = r² for simple linear regression.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="ask-box">
+            <strong>Ask yourself as an epidemiologist:</strong>
+            <ul>
+              <li>Is R² high? If not, exposure may explain only a small fraction of the outcome variability.</li>
+              <li>Do some data points have consistently large residuals (model under- or over-predicts)?</li>
+              <li>Could unmeasured confounders be responsible for residual patterns (e.g. socioeconomic status, smoking)?</li>
+            </ul>
+          </div>
+        `;
+      }
+
+      if (step === 5) {
+        const r2Pct = r2 !== null ? (r2 * 100).toFixed(1) : "–";
+        content.innerHTML = `
+          <h3>Step 5 – Interpretation &amp; causality in epidemiology</h3>
+          <p class="tagline">
+            Regression provides an effect estimate (slope) and a measure of fit (R²),
+            but causality in epidemiology requires much more than a good line.
+          </p>
+
+          <table class="detail-table">
+            <tbody>
+              <tr>
+                <td class="label">Slope as an effect estimate</td>
+                <td>
+                  Your slope is <strong>${fmt(slope)}</strong>.
+                  Interpreted literally: a 1-unit increase in ${xName}
+                  is associated with an average change of about
+                  <strong>${fmt(slope)}</strong> units in ${yName}.
+                </td>
+              </tr>
+              <tr>
+                <td class="label">Baseline outcome (intercept)</td>
+                <td>
+                  The intercept is <strong>${fmt(intercept)}</strong>, the predicted ${yName}
+                  at ${xName} = 0. This may or may not correspond to a realistic epidemiological situation
+                  (e.g. true zero pollution).
+                </td>
+              </tr>
+              <tr>
+                <td class="label">Explained variation</td>
+                <td>
+                  R² ≈ <strong>${r2Pct}%</strong> means roughly ${r2Pct}% of the variability in ${yName}
+                  across your units is accounted for by the linear relationship with ${xName} in this model.
+                </td>
+              </tr>
+              <tr>
+                <td class="label">Why this is not automatically causal</td>
+                <td>
+                  Even with a clear exposure–outcome gradient, epidemiologists still ask:
+                  <ul>
+                    <li><strong>Temporality:</strong> Did exposure clearly occur before the outcome?</li>
+                    <li><strong>Confounding:</strong> Have key confounders (age, SES, smoking, etc.) been controlled?</li>
+                    <li><strong>Bias:</strong> Could measurement error, selection bias, or ecological fallacy explain the pattern?</li>
+                    <li><strong>Biological plausibility &amp; coherence:</strong> Does the effect size and direction fit with prior evidence?</li>
+                  </ul>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="ask-box">
+            <strong>Before calling this “causal”, ask:</strong>
+            <ul>
+              <li>If we intervened to reduce ${xName}, would we plausibly see the predicted change in ${yName}?</li>
+              <li>Would the effect still be there in a better-designed study (e.g. randomized, natural experiment, or well-adjusted cohort)?</li>
+              <li>Do sensitivity analyses give similar slopes under different modeling choices?</li>
+            </ul>
+          </div>
+
+          <p class="note">
+            Excel makes the mechanics of regression fast (SLOPE, INTERCEPT, RSQ), but rigorous causal
+            inference in epidemiology always depends on study design, confounding control, and critical thinking,
+            not just on the spreadsheet.
+          </p>
+        `;
+      }
+    }
+
+    // --------- Initialization ----------
+    function buildTable(rows = 10) {
+      const tbody = document.querySelector("#dataTable tbody");
+      tbody.innerHTML = "";
+      for (let i = 0; i < rows; i++) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td class="row-label">${i + 1}</td>
+          <td><input type="number" step="any" data-col="x" /></td>
+          <td><input type="number" step="any" data-col="y" /></td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+
+    function loadExample() {
+      // Example: communities with average PM2.5 and corresponding asthma ER visit rates
+      const exampleX = [8, 12, 15, 18, 22, 25, 30, 35, 40, 45];
+      const exampleY = [4, 6, 7, 8, 11, 12, 15, 18, 22, 25];
+
+      const rows = document.querySelectorAll("#dataTable tbody tr");
+      for (let i = 0; i < rows.length; i++) {
+        const xInput = rows[i].querySelector('input[data-col="x"]');
+        const yInput = rows[i].querySelector('input[data-col="y"]');
+        xInput.value = exampleX[i] !== undefined ? exampleX[i] : "";
+        yInput.value = exampleY[i] !== undefined ? exampleY[i] : "";
+      }
+      renderStep(currentStep);
+    }
+
+    let currentStep = 1;
+
+    document.addEventListener("DOMContentLoaded", () => {
+      buildTable(10);
+
+      document.getElementById("exampleBtn").addEventListener("click", loadExample);
+      loadExample(); // preload epi example
+
+      const stepButtons = document.querySelectorAll(".step-btn");
+      stepButtons.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          stepButtons.forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          currentStep = parseInt(btn.dataset.step, 10);
+          renderStep(currentStep);
+        });
+      });
+
+      function updateHeaders() {
+        const xName = document.getElementById("xName").value || "Exposure";
+        const yName = document.getElementById("yName").value || "Outcome";
+        document.getElementById("xHeader").textContent = `A: Exposure (${xName})`;
+        document.getElementById("yHeader").textContent = `B: Outcome (${yName})`;
+        renderStep(currentStep);
+      }
+
+      document.getElementById("xName").addEventListener("input", updateHeaders);
+      document.getElementById("yName").addEventListener("input", updateHeaders);
+
+      document.querySelector("#dataTable tbody").addEventListener("input", (e) => {
+        if (e.target.matches('input[type="number"]')) {
+          renderStep(currentStep);
+        }
+      });
+
+      renderStep(currentStep);
+    });
+  </script>
+</body>
+</html>
