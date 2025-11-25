@@ -1,0 +1,1322 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Multiple Regression in Epidemiology – Full Excel-style Sheet</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card-bg: #ffffff;
+      --accent: #2563eb;
+      --accent-soft: #e0ebff;
+      --border: #d4d4d8;
+      --text-main: #111827;
+      --text-muted: #6b7280;
+      --danger: #b91c1c;
+      --shadow-soft: 0 18px 40px rgba(15, 23, 42, 0.08);
+      --radius-lg: 18px;
+      --formula-bg: #fef9c3;
+      --formula-border: #facc15;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: radial-gradient(circle at top left, #e0ecff, #f5f7fb 55%);
+      color: var(--text-main);
+    }
+
+    .app-shell {
+      max-width: 1180px;
+      margin: 32px auto 40px;
+      padding: 0 16px;
+    }
+
+    header {
+      margin-bottom: 24px;
+    }
+
+    header h1 {
+      font-size: 1.8rem;
+      margin: 0 0 4px;
+      letter-spacing: 0.01em;
+    }
+
+    header p {
+      margin: 0;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.25fr) minmax(0, 1.4fr);
+      gap: 20px;
+      align-items: flex-start;
+    }
+
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-soft);
+      padding: 18px 18px 20px;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+    }
+
+    .card h2 {
+      margin: 0 0 8px;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-radius: 999px;
+      padding: 2px 10px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .pill span {
+      background: var(--accent);
+      color: white;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      padding: 1px 7px;
+    }
+
+    .data-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .data-header h2 {
+      margin: 0;
+    }
+
+    .data-header .hint {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .btn {
+      border-radius: 999px;
+      border: none;
+      padding: 7px 14px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 8px 18px rgba(37, 99, 235, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 22px rgba(37, 99, 235, 0.4);
+    }
+
+    .var-names {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+      font-size: 0.85rem;
+    }
+
+    .var-names label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #f3f4f6;
+      border-radius: 999px;
+      padding: 4px 10px;
+    }
+
+    .var-names input {
+      border-radius: 999px;
+      border: 1px solid #d4d4d8;
+      padding: 2px 8px;
+      font-size: 0.85rem;
+      min-width: 95px;
+    }
+
+    .var-names input:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 1px;
+    }
+
+    .sheet-wrapper {
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      background: #f9fafb;
+      margin-bottom: 8px;
+    }
+
+    .sheet {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 0.85rem;
+    }
+
+    .sheet th,
+    .sheet td {
+      border: 1px solid #e5e7eb;
+      padding: 4px 6px;
+      text-align: right;
+    }
+
+    .sheet th {
+      background: #f3f4f6;
+      font-weight: 600;
+      text-align: center;
+      color: #374151;
+    }
+
+    .sheet td.row-label {
+      background: #f9fafb;
+      text-align: center;
+      color: #6b7280;
+      font-weight: 500;
+      width: 32px;
+    }
+
+    .sheet input[type="number"] {
+      width: 100%;
+      border: none;
+      background: transparent;
+      text-align: right;
+      font-size: 0.85rem;
+      padding: 0;
+      outline: none;
+    }
+
+    .sheet input[type="number"]:focus {
+      background: #eef2ff;
+    }
+
+    .note {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .steps-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .steps-header small {
+      color: var(--text-muted);
+      font-size: 0.78rem;
+    }
+
+    .step-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .step-btn {
+      border-radius: 999px;
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
+      color: #4b5563;
+      padding: 4px 10px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease, transform 0.1s ease;
+    }
+
+    .step-btn span {
+      background: #e5e7eb;
+      border-radius: 999px;
+      padding: 1px 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .step-btn.active {
+      background: var(--accent);
+      color: #f9fafb;
+      border-color: var(--accent);
+      box-shadow: 0 10px 20px rgba(37, 99, 235, 0.3);
+      transform: translateY(-1px);
+    }
+
+    .step-btn.active span {
+      background: rgba(15, 23, 42, 0.18);
+      color: #e5ebff;
+    }
+
+    .step-body {
+      border-radius: 14px;
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
+      padding: 12px 14px;
+      max-height: 540px;
+      overflow: auto;
+    }
+
+    .step-body h3 {
+      margin-top: 0;
+      margin-bottom: 6px;
+      font-size: 1rem;
+    }
+
+    .tagline {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 6px;
+      margin-bottom: 10px;
+      font-size: 0.8rem;
+    }
+
+    .metric {
+      background: #ffffff;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+      padding: 6px 8px;
+    }
+
+    .metric-label {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      margin-bottom: 2px;
+    }
+
+    .metric-value {
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .excel-tip {
+      font-size: 0.78rem;
+      background: #ecfdf3;
+      border-radius: 10px;
+      border: 1px solid #bbf7d0;
+      padding: 6px 8px;
+      margin: 8px 0;
+    }
+
+    .ask-box {
+      margin-top: 8px;
+      padding: 6px 8px;
+      border-radius: 10px;
+      background: #eef2ff;
+      border: 1px dashed #a5b4fc;
+      font-size: 0.78rem;
+    }
+
+    .ask-box ul {
+      padding-left: 18px;
+      margin: 4px 0 0;
+    }
+
+    .detail-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.78rem;
+      margin: 8px 0;
+      background: #fff;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .detail-table th,
+    .detail-table td {
+      border: 1px solid #e5e7eb;
+      padding: 4px 6px;
+      text-align: right;
+    }
+
+    .detail-table th {
+      background: #f3f4f6;
+      text-align: center;
+      font-weight: 600;
+      color: #4b5563;
+    }
+
+    .detail-table td.label {
+      text-align: left;
+      font-weight: 500;
+      background: #f9fafb;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      background: rgba(15, 23, 42, 0.04);
+      padding: 1px 4px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+    }
+
+    /* Excel "full sheet" visualization */
+    .excel-full-wrapper {
+      margin-top: 10px;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+      background: #ffffff;
+      overflow: auto;
+    }
+
+    .excel-full {
+      border-collapse: collapse;
+      font-size: 0.78rem;
+      min-width: 600px;
+    }
+
+    .excel-full th,
+    .excel-full td {
+      border: 1px solid #e5e7eb;
+      padding: 3px 4px;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    .excel-full th.col-header {
+      background: #f3f4f6;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .excel-full td.row-num {
+      background: #f3f4f6;
+      text-align: right;
+      font-weight: 600;
+      width: 26px;
+    }
+
+    .excel-full td.data-cell {
+      text-align: right;
+    }
+
+    .excel-full td.formula-cell {
+      background: var(--formula-bg);
+      border-color: var(--formula-border);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New";
+      font-size: 0.75rem;
+    }
+
+    .excel-full td.dimmed {
+      color: #9ca3af;
+      background: #f9fafb;
+    }
+
+    .excel-full-caption {
+      font-size: 0.76rem;
+      padding: 6px 8px;
+      color: #4b5563;
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <header>
+    <h1>Multiple Regression in Epidemiology (full Excel-style sheet)</h1>
+    <p>
+      Explore how several risk factors jointly relate to cancer incidence. The interface shows an
+      Excel-like sheet with data columns and highlighted formula cells where you’d enter the regression equations.
+    </p>
+  </header>
+
+  <div class="layout">
+    <!-- DATA PANEL -->
+    <section class="card">
+      <div class="data-header">
+        <h2>
+          <span class="pill">
+            <span>1</span> Data
+          </span>
+          Cancer risk factors
+        </h2>
+        <button class="btn btn-primary" id="exampleBtn">
+          ⟳ Load cancer risk example
+        </button>
+      </div>
+      <div class="data-header">
+        <div class="hint">
+          Columns A–C are predictors (risk/protective factors). Column D is the cancer outcome.
+          Edit any cell to experiment and watch the regression update.
+        </div>
+      </div>
+
+      <div class="var-names">
+        <label>
+          X₁ (A):
+          <input type="text" id="x1Name" value="Cigarettes per day" />
+        </label>
+        <label>
+          X₂ (B):
+          <input type="text" id="x2Name" value="Processed meat servings/week" />
+        </label>
+        <label>
+          X₃ (C):
+          <input type="text" id="x3Name" value="Physical activity (hours/week)" />
+        </label>
+        <label>
+          Y (D):
+          <input type="text" id="yName" value="Cancer cases per 100,000" />
+        </label>
+      </div>
+
+      <!-- Main editable sheet (A–D) -->
+      <div class="sheet-wrapper">
+        <table class="sheet" id="dataTable">
+          <thead>
+          <tr>
+            <th></th>
+            <th id="colAHeader">A: X₁ (Cigarettes per day)</th>
+            <th id="colBHeader">B: X₂ (Processed meat servings/week)</th>
+            <th id="colCHeader">C: X₃ (Physical activity (hours/week))</th>
+            <th id="colDHeader">D: Y (Cancer cases per 100,000)</th>
+          </tr>
+          </thead>
+          <tbody>
+          <!-- JS fills rows -->
+          </tbody>
+        </table>
+      </div>
+      <div id="dataInfo" class="note"></div>
+    </section>
+
+    <!-- STEP PANEL -->
+    <section class="card">
+      <div class="steps-header">
+        <h2>
+          <span class="pill">
+            <span>2</span> Multiple Regression
+          </span>
+          Step-by-step Excel analysis
+        </h2>
+        <small>Use the highlighted columns as a guide for where formulas go in a real spreadsheet.</small>
+      </div>
+
+      <div class="step-buttons">
+        <button class="step-btn active" data-step="1">
+          <span>1</span> Inspect risk-factor patterns
+        </button>
+        <button class="step-btn" data-step="2">
+          <span>2</span> Whole sheet with LINEST formulas
+        </button>
+        <button class="step-btn" data-step="3">
+          <span>3</span> Coefficients (effect estimates)
+        </button>
+        <button class="step-btn" data-step="4">
+          <span>4</span> Model fit (R², adj. R²)
+        </button>
+        <button class="step-btn" data-step="5">
+          <span>5</span> Epidemiological interpretation
+        </button>
+      </div>
+
+      <div class="step-body" id="stepContent">
+        <!-- JS -->
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+  // --------- Helpers ----------
+  function fmt(num, digits = 3) {
+    if (num === null || num === undefined || Number.isNaN(num)) return "–";
+    return Number(num).toFixed(digits);
+  }
+
+  function parseCell(value) {
+    const n = parseFloat(value);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function getData() {
+    const rows = document.querySelectorAll("#dataTable tbody tr");
+    const x1 = [], x2 = [], x3 = [], y = [];
+    rows.forEach(row => {
+      const v1 = parseCell(row.querySelector('input[data-col="x1"]').value);
+      const v2 = parseCell(row.querySelector('input[data-col="x2"]').value);
+      const v3 = parseCell(row.querySelector('input[data-col="x3"]').value);
+      const vy = parseCell(row.querySelector('input[data-col="y"]').value);
+      if (v1 !== null && v2 !== null && v3 !== null && vy !== null) {
+        x1.push(v1); x2.push(v2); x3.push(v3); y.push(vy);
+      }
+    });
+    return { x1, x2, x3, y };
+  }
+
+  function excelRange(colLetter, n) {
+    const startRow = 2;
+    const endRow = n + 1;
+    return `$${colLetter}$${startRow}:$${colLetter}$${endRow}`;
+  }
+
+  function excelRect(colStart, colEnd, n) {
+    const startRow = 2;
+    const endRow = n + 1;
+    return `$${colStart}$${startRow}:$${colEnd}$${endRow}`;
+  }
+
+  // Solve A * beta = b via Gaussian elimination
+  function solveSystem(A, b) {
+    const n = A.length;
+    const M = [];
+    for (let i = 0; i < n; i++) {
+      M[i] = A[i].slice();
+      M[i].push(b[i]);
+    }
+
+    for (let col = 0; col < n; col++) {
+      let pivotRow = col;
+      let maxAbs = Math.abs(M[col][col]);
+      for (let r = col + 1; r < n; r++) {
+        const val = Math.abs(M[r][col]);
+        if (val > maxAbs) {
+          maxAbs = val;
+          pivotRow = r;
+        }
+      }
+      if (maxAbs < 1e-12) return null;
+      if (pivotRow !== col) {
+        const tmp = M[col];
+        M[col] = M[pivotRow];
+        M[pivotRow] = tmp;
+      }
+      for (let r = col + 1; r < n; r++) {
+        const factor = M[r][col] / M[col][col];
+        for (let k = col; k <= n; k++) {
+          M[r][k] -= factor * M[col][k];
+        }
+      }
+    }
+
+    const x = new Array(n).fill(0);
+    for (let i = n - 1; i >= 0; i--) {
+      let sum = M[i][n];
+      for (let j = i + 1; j < n; j++) {
+        sum -= M[i][j] * x[j];
+      }
+      x[i] = sum / M[i][i];
+    }
+    return x;
+  }
+
+  function computeMultipleRegression(x1, x2, x3, y) {
+    const n = y.length;
+    if (n < 4) return null;
+
+    const mean = arr => arr.reduce((a, b) => a + b, 0) / arr.length;
+    const meanX1 = mean(x1);
+    const meanX2 = mean(x2);
+    const meanX3 = mean(x3);
+    const meanY  = mean(y);
+
+    const p = 4;
+    const XtX = Array.from({ length: p }, () => Array(p).fill(0));
+    const Xty = Array(p).fill(0);
+
+    for (let i = 0; i < n; i++) {
+      const row = [1, x1[i], x2[i], x3[i]];
+      for (let r = 0; r < p; r++) {
+        for (let c = 0; c < p; c++) {
+          XtX[r][c] += row[r] * row[c];
+        }
+        Xty[r] += row[r] * y[i];
+      }
+    }
+
+    const beta = solveSystem(XtX, Xty);
+    if (!beta) return null;
+
+    const [b0, b1, b2, b3] = beta;
+
+    const yHat = [];
+    const residuals = [];
+    let SSE = 0;
+    let SST = 0;
+    for (let i = 0; i < n; i++) {
+      const yh = b0 + b1 * x1[i] + b2 * x2[i] + b3 * x3[i];
+      yHat.push(yh);
+      const res = y[i] - yh;
+      residuals.push(res);
+      SSE += res * res;
+      const dev = y[i] - meanY;
+      SST += dev * dev;
+    }
+
+    const R2 = SST === 0 ? null : 1 - SSE / SST;
+    const dfResidual = n - p;
+    let R2adj = null;
+    if (R2 !== null && dfResidual > 0) {
+      R2adj = 1 - (SSE / dfResidual) / (SST / (n - 1));
+    }
+
+    return {
+      n,
+      meanX1, meanX2, meanX3, meanY,
+      b0, b1, b2, b3,
+      yHat, residuals,
+      SSE, SST, R2, R2adj
+    };
+  }
+
+  function renderDataInfo(reg) {
+    const infoEl = document.getElementById("dataInfo");
+    const { x1, x2, x3, y } = getData();
+    if (y.length === 0) {
+      infoEl.textContent = "Enter numeric values in all four columns (A–D) in at least four rows to fit a multiple regression.";
+      return;
+    }
+    if (y.length < 4) {
+      infoEl.textContent = "You currently have fewer than four complete rows. Add more rows with all predictors and the outcome.";
+      return;
+    }
+    if (!reg) {
+      infoEl.textContent = "The predictors are too collinear or there is not enough variation to fit a multiple regression (normal equations are singular).";
+      return;
+    }
+    infoEl.textContent = `Using ${reg.n} complete rows. Edit the risk factors and cancer outcome to see how the multiple regression changes.`;
+  }
+
+  function drawScatter(canvas, x, y, labelX, labelY) {
+    const ctx = canvas.getContext("2d");
+    const w = canvas.width;
+    const h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+
+    if (x.length === 0) {
+      ctx.fillStyle = "#6b7280";
+      ctx.font = "12px system-ui";
+      ctx.fillText("Add data to see a scatter plot.", 10, 20);
+      return;
+    }
+
+    const minX = Math.min(...x);
+    const maxX = Math.max(...x);
+    const minY = Math.min(...y);
+    const maxY = Math.max(...y);
+
+    const padding = 30;
+    const innerW = w - 2 * padding;
+    const innerH = h - 2 * padding;
+
+    function sx(v) {
+      if (maxX === minX) return padding + innerW / 2;
+      return padding + ((v - minX) / (maxX - minX)) * innerW;
+    }
+    function sy(v) {
+      if (maxY === minY) return padding + innerH / 2;
+      return h - padding - ((v - minY) / (maxY - minY)) * innerH;
+    }
+
+    ctx.strokeStyle = "#e5e7eb";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(padding, padding);
+    ctx.lineTo(padding, h - padding);
+    ctx.lineTo(w - padding, h - padding);
+    ctx.stroke();
+
+    ctx.fillStyle = "#2563eb";
+    for (let i = 0; i < x.length; i++) {
+      ctx.beginPath();
+      ctx.arc(sx(x[i]), sy(y[i]), 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.fillStyle = "#9ca3af";
+    ctx.font = "10px system-ui";
+    ctx.fillText(labelX, w - padding + 4, h - padding + 2);
+    ctx.fillText(labelY, padding - 10, padding - 8);
+  }
+
+  // --------- Full sheet with formulas (Step 2) ----------
+  function buildFullSheetHTML(reg, labels) {
+    const { x1Name, x2Name, x3Name, yName } = labels;
+    const n = reg.n;
+    const yRange = excelRange("D", n);
+    const xRect  = excelRect("A", "C", n);
+    const linestSimple = `=LINEST(${yRange}, ${xRect})`;
+    const linestStats  = `=LINEST(${yRange}, ${xRect}, TRUE, TRUE)`;
+
+    // We'll show rows 1–7 plus a symbolic row for "…", and the last data row.
+    // G1:J5 is the highlighted LINEST block.
+    const lastRowNum = n + 1;
+
+    return `
+      <div class="excel-full-wrapper">
+        <div class="excel-full-caption">
+          Excel-style sheet view. Data live in A–D. The <strong>highlighted cells G1:J5</strong>
+          are where you would enter the <code>LINEST</code> array formula and see the regression output.
+        </div>
+        <table class="excel-full">
+          <thead>
+            <tr>
+              <th></th>
+              <th class="col-header">A</th>
+              <th class="col-header">B</th>
+              <th class="col-header">C</th>
+              <th class="col-header">D</th>
+              <th class="col-header">E</th>
+              <th class="col-header">F</th>
+              <th class="col-header">G</th>
+              <th class="col-header">H</th>
+              <th class="col-header">I</th>
+              <th class="col-header">J</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Row 1: headers / labels -->
+            <tr>
+              <td class="row-num">1</td>
+              <td class="data-cell">${x1Name}</td>
+              <td class="data-cell">${x2Name}</td>
+              <td class="data-cell">${x3Name}</td>
+              <td class="data-cell">${yName}</td>
+              <td class="dimmed"></td>
+              <td class="dimmed"></td>
+              <td class="formula-cell">${linestSimple}</td>
+              <td class="formula-cell">← array into G1:J1</td>
+              <td class="formula-cell dimmed">…</td>
+              <td class="formula-cell dimmed">…</td>
+            </tr>
+
+            <!-- Row 2: first data row -->
+            <tr>
+              <td class="row-num">2</td>
+              <td class="data-cell">A2 (X₁ row 1)</td>
+              <td class="data-cell">B2 (X₂ row 1)</td>
+              <td class="data-cell">C2 (X₃ row 1)</td>
+              <td class="data-cell">D2 (Y row 1)</td>
+              <td class="dimmed"></td>
+              <td class="dimmed"></td>
+              <td class="formula-cell dimmed">b₃ (coef for X₃)</td>
+              <td class="formula-cell dimmed">b₂</td>
+              <td class="formula-cell dimmed">b₁</td>
+              <td class="formula-cell dimmed">b₀ (intercept)</td>
+            </tr>
+
+            <!-- Row 3: second data row (symbolic) -->
+            <tr>
+              <td class="row-num">3</td>
+              <td class="data-cell">A3</td>
+              <td class="data-cell">B3</td>
+              <td class="data-cell">C3</td>
+              <td class="data-cell">D3</td>
+              <td class="dimmed"></td>
+              <td class="dimmed"></td>
+              <td class="formula-cell dimmed"></td>
+              <td class="formula-cell dimmed"></td>
+              <td class="formula-cell dimmed"></td>
+              <td class="formula-cell dimmed"></td>
+            </tr>
+
+            <!-- Row 4: dots -->
+            <tr>
+              <td class="row-num">⋮</td>
+              <td class="data-cell dimmed">…</td>
+              <td class="data-cell dimmed">…</td>
+              <td class="data-cell dimmed">…</td>
+              <td class="data-cell dimmed">…</td>
+              <td class="dimmed">…</td>
+              <td class="dimmed">…</td>
+              <td class="formula-cell dimmed">…</td>
+              <td class="formula-cell dimmed">…</td>
+              <td class="formula-cell dimmed">…</td>
+              <td class="formula-cell dimmed">…</td>
+            </tr>
+
+            <!-- Row for last data row number -->
+            <tr>
+              <td class="row-num">${lastRowNum}</td>
+              <td class="data-cell">A${lastRowNum}</td>
+              <td class="data-cell">B${lastRowNum}</td>
+              <td class="data-cell">C${lastRowNum}</td>
+              <td class="data-cell">D${lastRowNum}</td>
+              <td class="dimmed"></td>
+              <td class="dimmed"></td>
+              <td class="formula-cell dimmed"></td>
+              <td class="formula-cell dimmed"></td>
+              <td class="formula-cell dimmed"></td>
+              <td class="formula-cell dimmed"></td>
+            </tr>
+
+            <!-- Blank row separator -->
+            <tr>
+              <td class="row-num"> </td>
+              <td class="dimmed"></td>
+              <td class="dimmed"></td>
+              <td class="dimmed"></td>
+              <td class="dimmed"></td>
+              <td class="dimmed"></td>
+              <td class="dimmed"></td>
+              <td class="dimmed"></td>
+              <td class="dimmed"></td>
+              <td class="dimmed"></td>
+              <td class="dimmed"></td>
+            </tr>
+
+            <!-- Row for full LINEST output (stats) -->
+            <tr>
+              <td class="row-num">1–5</td>
+              <td class="dimmed"></td>
+              <td class="dimmed"></td>
+              <td class="dimmed"></td>
+              <td class="dimmed"></td>
+              <td class="dimmed"></td>
+              <td class="dimmed"></td>
+              <td class="formula-cell">${linestStats}</td>
+              <td class="formula-cell">G1:J5 selected</td>
+              <td class="formula-cell dimmed">R² etc. appear here</td>
+              <td class="formula-cell dimmed"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  // --------- Step rendering ----------
+  let currentStep = 1;
+
+  function renderStep(step) {
+    const content = document.getElementById("stepContent");
+
+    const x1Name = document.getElementById("x1Name").value || "X₁";
+    const x2Name = document.getElementById("x2Name").value || "X₂";
+    const x3Name = document.getElementById("x3Name").value || "X₃";
+    const yName  = document.getElementById("yName").value  || "Y";
+
+    const { x1, x2, x3, y } = getData();
+    const reg = computeMultipleRegression(x1, x2, x3, y);
+    renderDataInfo(reg);
+
+    if (!reg) {
+      content.innerHTML = `
+        <h3>Not enough information yet</h3>
+        <p class="tagline">
+          For multiple regression you need at least four complete rows (for 3 predictors + intercept),
+          and the predictors must not be perfectly collinear.
+        </p>
+        <div class="excel-tip">
+          <strong>Excel tip:</strong> Once you have enough varied rows, select a 5×4 block (for full stats)
+          and enter <code>=LINEST(D2:D?, A2:C?, TRUE, TRUE)</code> as an array formula.
+        </div>
+      `;
+      return;
+    }
+
+    const { n, meanX1, meanX2, meanX3, meanY, b0, b1, b2, b3, SSE, SST, R2, R2adj } = reg;
+    const yRange = excelRange("D", n);
+    const xRect  = excelRect("A", "C", n);
+
+    if (step === 1) {
+      content.innerHTML = `
+        <h3>Step 1 – Inspect patterns in risk factors vs cancer</h3>
+        <p class="tagline">
+          Begin with quick descriptive checks: do communities with higher risk-factor levels tend
+          to have higher ${yName}? Is physical activity apparently protective?
+        </p>
+
+        <div class="metrics-grid">
+          <div class="metric">
+            <div class="metric-label">Usable rows</div>
+            <div class="metric-value">${n}</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Mean ${x1Name}</div>
+            <div class="metric-value">${fmt(meanX1)}</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Mean ${x2Name}</div>
+            <div class="metric-value">${fmt(meanX2)}</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Mean ${x3Name}</div>
+            <div class="metric-value">${fmt(meanX3)}</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Mean ${yName}</div>
+            <div class="metric-value">${fmt(meanY)}</div>
+          </div>
+        </div>
+
+        <div class="chart-wrapper">
+          <canvas id="scatterCanvas"></canvas>
+        </div>
+
+        <div class="excel-tip">
+          <strong>Excel tip:</strong> Insert three scatterplots – ${x1Name} vs ${yName},
+          ${x2Name} vs ${yName}, and ${x3Name} vs ${yName} – to visually inspect these patterns.
+        </div>
+
+        <div class="ask-box">
+          <strong>Ask yourself:</strong>
+          <ul>
+            <li>Does ${yName} generally increase with ${x1Name} and ${x2Name}?</li>
+            <li>Does ${x3Name} appear protective (higher activity → lower ${yName})?</li>
+            <li>Do the risk factors themselves appear to have independent variation?</li>
+          </ul>
+        </div>
+      `;
+
+      const canvas = document.getElementById("scatterCanvas");
+      canvas.width = canvas.clientWidth || 400;
+      canvas.height = 200;
+      drawScatter(canvas, x1, y, x1Name, yName);
+      return;
+    }
+
+    if (step === 2) {
+      content.innerHTML = `
+        <h3>Step 2 – Whole Excel-like sheet with highlighted formula area</h3>
+        <p class="tagline">
+          Below is how your Excel sheet might look. A–D contain the data you’ve entered.
+          The <strong>yellow G1:J5 block</strong> is where you enter <code>LINEST</code> to perform the
+          multiple regression directly in Excel.
+        </p>
+
+        <div class="excel-tip">
+          <strong>In Excel, you would:</strong><br/>
+          1. Put your predictors in A2:C${n+1} and the outcome in D2:D${n+1}.<br/>
+          2. Select a 1×4 range (e.g. G1:J1), type <code>=LINEST(${yRange}, ${xRect})</code>, then confirm as an array formula
+          to get just the coefficients.<br/>
+          3. Or select a 5×4 range (G1:J5), type <code>=LINEST(${yRange}, ${xRect}, TRUE, TRUE)</code> and confirm as an array
+          to get coefficients, standard errors, R² and more.
+        </div>
+
+        ${buildFullSheetHTML(reg, { x1Name, x2Name, x3Name, yName })}
+
+        <div class="ask-box">
+          <strong>Experiment and relate back to Excel:</strong>
+          <ul>
+            <li>Change the data in A–D (left panel). How would that alter the Y-range and X-range shown in the formulas?</li>
+            <li>Imagine copying column A into column B (perfect collinearity). What would that do to <code>LINEST</code>?</li>
+            <li>Explain to a student what each highlighted cell is doing in the regression calculation.</li>
+          </ul>
+        </div>
+      `;
+      return;
+    }
+
+    if (step === 3) {
+      content.innerHTML = `
+        <h3>Step 3 – Coefficients: adjusted effects of each risk factor</h3>
+        <p class="tagline">
+          The multiple regression equation combines all risk factors. Each coefficient is an adjusted association:
+          change in ${yName} per one-unit change in that risk factor, holding the others constant.
+        </p>
+
+        <div class="metrics-grid">
+          <div class="metric">
+            <div class="metric-label">Intercept (b₀)</div>
+            <div class="metric-value">${fmt(b0)}</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">b₁ (for ${x1Name})</div>
+            <div class="metric-value">${fmt(b1)}</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">b₂ (for ${x2Name})</div>
+            <div class="metric-value">${fmt(b2)}</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">b₃ (for ${x3Name})</div>
+            <div class="metric-value">${fmt(b3)}</div>
+          </div>
+        </div>
+
+        <table class="detail-table">
+          <tbody>
+            <tr>
+              <td class="label">Regression equation</td>
+              <td>
+                <code>
+                  ${yName} = ${fmt(b0)} + ${fmt(b1)}·(${x1Name})
+                  + ${fmt(b2)}·(${x2Name}) + ${fmt(b3)}·(${x3Name})
+                </code>
+              </td>
+            </tr>
+            <tr>
+              <td class="label">How Excel reports them</td>
+              <td>
+                With <code>=LINEST(${yRange}, ${xRect})</code> entered into G1:J1 as an array, Excel returns
+                [b₃, b₂, b₁, b₀] across G1:J1 – coefficients for ${x3Name}, ${x2Name}, ${x1Name}, and the intercept.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="ask-box">
+          <strong>Interpret epidemiologically:</strong>
+          <ul>
+            <li><strong>b₁:</strong> change in ${yName} per extra unit of ${x1Name}, at fixed ${x2Name} and ${x3Name}.</li>
+            <li><strong>b₂:</strong> change in ${yName} per extra unit of ${x2Name}, adjusted for smoking and activity.</li>
+            <li><strong>b₃:</strong> change in ${yName} per extra unit of ${x3Name}; negative suggests a protective association.</li>
+            <li><strong>b₀:</strong> predicted ${yName} when all X's are 0 (often extrapolated, not directly observed).</li>
+          </ul>
+        </div>
+      `;
+      return;
+    }
+
+    if (step === 4) {
+      content.innerHTML = `
+        <h3>Step 4 – Model fit: how much of cancer variation is explained?</h3>
+        <p class="tagline">
+          R² and adjusted R² summarise how well the three risk factors together account for variation in ${yName}.
+        </p>
+
+        <div class="metrics-grid">
+          <div class="metric">
+            <div class="metric-label">R²</div>
+            <div class="metric-value">${fmt(R2)}</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Adjusted R²</div>
+            <div class="metric-value">${fmt(R2adj)}</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">SSE (sum of squared residuals)</div>
+            <div class="metric-value">${fmt(SSE)}</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">SST (total sum of squares)</div>
+            <div class="metric-value">${fmt(SST)}</div>
+          </div>
+        </div>
+
+        <table class="detail-table">
+          <tbody>
+            <tr>
+              <td class="label">Definitions</td>
+              <td>
+                <ul style="padding-left:18px;margin:0;">
+                  <li><code>SST = Σ (Yᵢ − Ȳ)²</code> – total variability in ${yName}.</li>
+                  <li><code>SSE = Σ (Yᵢ − Ŷᵢ)²</code> – variability not explained by the model.</li>
+                  <li><code>R² = 1 − SSE/SST</code> – proportion of variance explained by the predictors.</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="label">Adjusted R²</td>
+              <td>
+                <code>R²ₐ = 1 − (SSE/(n − p)) / (SST/(n − 1))</code>,
+                where p = 4 (intercept + 3 predictors). It penalises adding predictors that don't really help.
+              </td>
+            </tr>
+            <tr>
+              <td class="label">Excel link</td>
+              <td>
+                With <code>=LINEST(${yRange}, ${xRect}, TRUE, TRUE)</code> in G1:J5, Excel reports R²
+                in the statistics rows of the output block.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="ask-box">
+          <strong>Ask yourself:</strong>
+          <ul>
+            <li>Is R² high enough to say these risk factors meaningfully capture variation in ${yName}?</li>
+            <li>Is adjusted R² much lower than R² (overfitting)?</li>
+            <li>Do you suspect non-linearity or interactions that this simple linear model is missing?</li>
+          </ul>
+        </div>
+      `;
+      return;
+    }
+
+    if (step === 5) {
+      const R2pct = R2 !== null ? (R2 * 100).toFixed(1) : "–";
+      content.innerHTML = `
+        <h3>Step 5 – Epidemiological interpretation &amp; causality</h3>
+        <p class="tagline">
+          Multiple regression gives adjusted associations, not automatic proof of causation. Use the coefficients and R²
+          as pieces of evidence in a broader causal argument.
+        </p>
+
+        <table class="detail-table">
+          <tbody>
+            <tr>
+              <td class="label">Adjusted effect of ${x1Name}</td>
+              <td>
+                b₁ = <strong>${fmt(b1)}</strong>:
+                change in ${yName} per unit increase in ${x1Name}, holding ${x2Name} and ${x3Name} constant.
+              </td>
+            </tr>
+            <tr>
+              <td class="label">Adjusted effect of ${x2Name}</td>
+              <td>
+                b₂ = <strong>${fmt(b2)}</strong>:
+                association between processed meat and ${yName}, adjusting for smoking and activity.
+              </td>
+            </tr>
+            <tr>
+              <td class="label">Adjusted effect of ${x3Name}</td>
+              <td>
+                b₃ = <strong>${fmt(b3)}</strong>:
+                association between physical activity and ${yName}, controlling for the other factors.
+                A negative value suggests a protective association.
+              </td>
+            </tr>
+            <tr>
+              <td class="label">Explained variation</td>
+              <td>
+                R² ≈ <strong>${R2pct}%</strong> – roughly this share of variation in ${yName}
+                is accounted for by the three risk factors in this model.
+              </td>
+            </tr>
+            <tr>
+              <td class="label">Why this is not automatically causal</td>
+              <td>
+                Even with adjustment and good fit, epidemiologists still ask:
+                <ul>
+                  <li><strong>Temporality:</strong> did exposure clearly precede cancer?</li>
+                  <li><strong>Residual confounding:</strong> are important factors (e.g. genetics, SES, other exposures) missing?</li>
+                  <li><strong>Bias:</strong> could selection, measurement error, or misclassification distort associations?</li>
+                  <li><strong>Plausibility &amp; coherence:</strong> do these effects align with biological mechanisms and prior evidence?</li>
+                </ul>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="ask-box">
+          <strong>Before claiming causality, ask:</strong>
+          <ul>
+            <li>Would an intervention on each factor plausibly change ${yName} by about the modelled amount?</li>
+            <li>Do different models (e.g. transformations, interaction terms) give similar core conclusions?</li>
+            <li>How sensitive are the results to outliers or influential observations?</li>
+          </ul>
+        </div>
+      `;
+    }
+  }
+
+  // --------- Init: build data table & example ---------
+  function buildTable(rows = 12) {
+    const tbody = document.querySelector("#dataTable tbody");
+    tbody.innerHTML = "";
+    for (let i = 0; i < rows; i++) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td class="row-label">${i + 1}</td>
+        <td><input type="number" step="any" data-col="x1" /></td>
+        <td><input type="number" step="any" data-col="x2" /></td>
+        <td><input type="number" step="any" data-col="x3" /></td>
+        <td><input type="number" step="any" data-col="y" /></td>
+      `;
+      tbody.appendChild(tr);
+    }
+  }
+
+  function loadExample() {
+    // Varied, not-collinear example
+    const exampleX1 = [0, 5, 12, 18, 25, 30, 10, 22, 35, 15, 28, 40];
+    const exampleX2 = [3, 6, 4,  8,  5, 11,  9,  2, 10,  7, 13,  4];
+    const exampleX3 = [7, 5, 6,  3,  4,  2,  8,  6,  3,  5,  4,  1];
+
+    const exampleY = exampleX1.map((x1, i) => {
+      const x2 = exampleX2[i];
+      const x3 = exampleX3[i];
+      const noise = [-4, 2, 0, -3, 5, 1, -2, 3, -1, 2, -3, 4][i];
+      return 50 + 1.2 * x1 + 2.0 * x2 - 1.5 * x3 + noise;
+    });
+
+    const rows = document.querySelectorAll("#dataTable tbody tr");
+    for (let i = 0; i < rows.length; i++) {
+      rows[i].querySelector('input[data-col="x1"]').value = exampleX1[i] ?? "";
+      rows[i].querySelector('input[data-col="x2"]').value = exampleX2[i] ?? "";
+      rows[i].querySelector('input[data-col="x3"]').value = exampleX3[i] ?? "";
+      rows[i].querySelector('input[data-col="y"]').value  = exampleY[i]  ?? "";
+    }
+    renderStep(currentStep);
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    buildTable(12);
+    document.getElementById("exampleBtn").addEventListener("click", loadExample);
+    loadExample();
+
+    const stepButtons = document.querySelectorAll(".step-btn");
+    stepButtons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        stepButtons.forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentStep = parseInt(btn.dataset.step, 10);
+        renderStep(currentStep);
+      });
+    });
+
+    function updateHeaders() {
+      const x1Name = document.getElementById("x1Name").value || "X₁";
+      const x2Name = document.getElementById("x2Name").value || "X₂";
+      const x3Name = document.getElementById("x3Name").value || "X₃";
+      const yName  = document.getElementById("yName").value  || "Y";
+      document.getElementById("colAHeader").textContent = `A: X₁ (${x1Name})`;
+      document.getElementById("colBHeader").textContent = `B: X₂ (${x2Name})`;
+      document.getElementById("colCHeader").textContent = `C: X₃ (${x3Name})`;
+      document.getElementById("colDHeader").textContent = `D: Y (${yName})`;
+      renderStep(currentStep);
+    }
+
+    document.getElementById("x1Name").addEventListener("input", updateHeaders);
+    document.getElementById("x2Name").addEventListener("input", updateHeaders);
+    document.getElementById("x3Name").addEventListener("input", updateHeaders);
+    document.getElementById("yName").addEventListener("input", updateHeaders);
+
+    document.querySelector("#dataTable tbody").addEventListener("input", e => {
+      if (e.target.matches('input[type="number"]')) {
+        renderStep(currentStep);
+      }
+    });
+
+    renderStep(currentStep);
+  });
+</script>
+</body>
+</html>
