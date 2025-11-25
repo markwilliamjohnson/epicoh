@@ -1,0 +1,859 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Risk Ratios & Odds Ratios Tutor</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f5f5f7;
+      color: #111827;
+    }
+
+    header {
+      background: #1e293b;
+      color: #f9fafb;
+      padding: 1rem 1.5rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.5rem;
+    }
+
+    header p {
+      margin: 0.25rem 0 0;
+      font-size: 0.9rem;
+      opacity: 0.9;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: minmax(260px, 1.1fr) minmax(420px, 1.4fr);
+      gap: 1rem;
+      padding: 1rem 1.5rem 1.5rem;
+    }
+
+    @media (max-width: 900px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 0.75rem;
+      padding: 1rem 1.25rem;
+      box-shadow: 0 1px 3px rgba(15,23,42,0.16);
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .card h2 {
+      margin: 0;
+      font-size: 1.15rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      padding: 0.15rem 0.55rem;
+      background: #e0f2fe;
+      color: #0369a1;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .step-title {
+      font-weight: 600;
+      font-size: 1.05rem;
+    }
+
+    .step-description {
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+
+    .formula-box,
+    .question-box,
+    .note-box {
+      border-radius: 0.5rem;
+      border: 1px dashed #cbd5f5;
+      background: #f8fafc;
+      padding: 0.6rem 0.75rem;
+      font-size: 0.85rem;
+    }
+
+    .formula-box h3,
+    .question-box h3,
+    .note-box h3 {
+      margin: 0 0 0.3rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .formula-list {
+      margin: 0.25rem 0 0;
+      padding-left: 1.1rem;
+    }
+
+    .formula-list li {
+      margin-bottom: 0.15rem;
+      font-family: "SF Mono", ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.8rem;
+    }
+
+    .question-text {
+      margin-bottom: 0.5rem;
+    }
+
+    textarea#reflection {
+      width: 100%;
+      min-height: 70px;
+      border-radius: 0.4rem;
+      border: 1px solid #cbd5e1;
+      padding: 0.4rem 0.5rem;
+      font-size: 0.85rem;
+      resize: vertical;
+      font-family: inherit;
+    }
+
+    .buttons {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 0.5rem;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      border-radius: 999px;
+      border: none;
+      padding: 0.35rem 0.95rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-weight: 500;
+    }
+
+    .btn-primary {
+      background: #2563eb;
+      color: #f9fafb;
+    }
+
+    .btn-primary:disabled {
+      background: #bfdbfe;
+      cursor: default;
+    }
+
+    .btn-secondary {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid #e5e7eb;
+      color: #4b5563;
+    }
+
+    .btn span.icon {
+      font-size: 0.95em;
+    }
+
+    .step-indicator {
+      font-size: 0.8rem;
+      color: #6b7280;
+    }
+
+    /* Spreadsheet styling */
+    .sheet-wrapper {
+      overflow-x: auto;
+      border-radius: 0.75rem;
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
+    }
+
+    table.sheet {
+      border-collapse: collapse;
+      min-width: 520px;
+      width: 100%;
+      font-size: 0.8rem;
+    }
+
+    table.sheet th,
+    table.sheet td {
+      border: 1px solid #e5e7eb;
+      padding: 0.35rem 0.4rem;
+      text-align: right;
+      min-width: 70px;
+      position: relative;
+    }
+
+    table.sheet th[scope="col"] {
+      background: #f3f4f6;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    table.sheet th[scope="row"] {
+      background: #f3f4f6;
+      font-weight: 600;
+      text-align: left;
+      width: 160px;
+      padding-left: 0.5rem;
+    }
+
+    .sheet-caption {
+      font-size: 0.8rem;
+      padding: 0.5rem 0.6rem;
+      color: #4b5563;
+    }
+
+    .cell-label {
+      position: absolute;
+      top: 2px;
+      left: 4px;
+      font-size: 0.55rem;
+      color: #9ca3af;
+      pointer-events: none;
+    }
+
+    .cell-content {
+      display: block;
+      padding-left: 0.35rem;
+    }
+
+    .highlight {
+      background: #fef3c7 !important;
+      box-shadow: inset 0 0 0 1px #f97316;
+      z-index: 1;
+    }
+
+    .readonly {
+      background-color: #f9fafb;
+    }
+
+    .numeric-editable {
+      background-color: #ffffff;
+    }
+
+    .numeric-editable .cell-content[contenteditable="true"] {
+      cursor: text;
+      min-height: 1.1em;
+    }
+
+    .numeric-editable .cell-content[contenteditable="true"]:focus {
+      outline: none;
+      background-color: #eff6ff;
+    }
+
+    .legend {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      font-size: 0.75rem;
+      color: #6b7280;
+      margin-top: 0.35rem;
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .legend-swatch {
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+      border: 1px solid #cbd5e1;
+    }
+
+    .legend-swatch.data {
+      background: #ffffff;
+    }
+
+    .legend-swatch.calc {
+      background: #e5e7eb;
+    }
+
+    .legend-swatch.hl {
+      background: #fed7aa;
+      border-color: #f97316;
+    }
+
+    .summary-box {
+      font-size: 0.8rem;
+      border-radius: 0.5rem;
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
+      padding: 0.5rem 0.6rem;
+      margin-top: 0.4rem;
+    }
+
+    .summary-box strong {
+      font-family: "SF Mono", ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1>Risk Ratios & Odds Ratios Tutor</h1>
+  <p>Interactive walkthrough of risk ratios (RR) and odds ratios (OR) using a 2×2 table with simulated data.</p>
+</header>
+
+<main>
+  <!-- Left: Step-by-step tutor -->
+  <section class="card" aria-label="Step by step instructions">
+    <div>
+      <div class="badge">Guided walkthrough</div>
+      <div class="step-title" id="step-title"></div>
+    </div>
+
+    <div class="step-description" id="step-description"></div>
+
+    <div class="formula-box" id="formula-box">
+      <h3>Spreadsheet formulas to try (Excel/Sheets)</h3>
+      <ul class="formula-list" id="formula-list"></ul>
+    </div>
+
+    <div class="question-box">
+      <h3>Think about this</h3>
+      <div id="question-text" class="question-text"></div>
+      <label for="reflection" style="font-size:0.8rem; display:block; margin-bottom:0.25rem;">
+        Jot down your thoughts (optional):
+      </label>
+      <textarea id="reflection" placeholder="Type your reasoning or hypotheses here..."></textarea>
+    </div>
+
+    <div class="note-box">
+      <h3>Explanation</h3>
+      <div id="explanation-text" style="font-size:0.85rem;"></div>
+    </div>
+
+    <div class="buttons">
+      <button class="btn btn-secondary" id="prev-btn">
+        <span class="icon">←</span> Previous
+      </button>
+      <div class="step-indicator" id="step-indicator"></div>
+      <div style="display:flex; gap:0.4rem;">
+        <button class="btn btn-ghost" id="recalc-btn" title="Recalculate using the current data">
+          Recalculate
+        </button>
+        <button class="btn btn-primary" id="next-btn">
+          Next <span class="icon">→</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Right: Spreadsheet-like 2x2 table -->
+  <section class="card" aria-label="Spreadsheet view">
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:0.5rem;">
+      <h2>
+        2×2 contingency table
+        <span style="font-size:0.8rem; font-weight:400; color:#6b7280;">(simulated cohort)</span>
+      </h2>
+      <button class="btn btn-ghost" id="new-data-btn" title="Generate a new synthetic dataset">
+        <span class="icon">🔄</span> New synthetic data
+      </button>
+    </div>
+
+    <p style="font-size:0.85rem; margin:0;">
+      We have a binary exposure and a binary outcome. Edit the counts of disease / no disease in the white cells,
+      then click <strong>Recalculate</strong> to see how the risk ratio and odds ratio change.
+    </p>
+
+    <div class="sheet-wrapper">
+      <div class="sheet-caption">
+        Exposure vs outcome 2×2 table (rows: outcome, columns: exposure status).
+      </div>
+      <table class="sheet" aria-label="Spreadsheet-like 2x2 table">
+        <thead>
+        <tr>
+          <th></th>
+          <th scope="col">A<br>(Exposed)</th>
+          <th scope="col">B<br>(Unexposed)</th>
+        </tr>
+        </thead>
+        <tbody>
+        <!-- Row 1: Excel-style header row for reference -->
+        <tr>
+          <th scope="row">Excel col labels</th>
+          <td class="readonly">
+            <span class="cell-label">B1</span>
+            <span class="cell-content">Exposed</span>
+          </td>
+          <td class="readonly">
+            <span class="cell-label">C1</span>
+            <span class="cell-content">Unexposed</span>
+          </td>
+        </tr>
+
+        <!-- Row 2: Disease yes -->
+        <tr>
+          <th scope="row">Outcome: disease</th>
+          <td data-cell="B2" class="numeric-editable">
+            <span class="cell-label">B2</span>
+            <span class="cell-content" contenteditable="true"></span>
+          </td>
+          <td data-cell="C2" class="numeric-editable">
+            <span class="cell-label">C2</span>
+            <span class="cell-content" contenteditable="true"></span>
+          </td>
+        </tr>
+
+        <!-- Row 3: Disease no -->
+        <tr>
+          <th scope="row">Outcome: no disease</th>
+          <td data-cell="B3" class="numeric-editable">
+            <span class="cell-label">B3</span>
+            <span class="cell-content" contenteditable="true"></span>
+          </td>
+          <td data-cell="C3" class="numeric-editable">
+            <span class="cell-label">C3</span>
+            <span class="cell-content" contenteditable="true"></span>
+          </td>
+        </tr>
+
+        <!-- Row 4: Totals -->
+        <tr>
+          <th scope="row">Total in each exposure group</th>
+          <td data-cell="B4" class="readonly">
+            <span class="cell-label">B4</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="C4" class="readonly">
+            <span class="cell-label">C4</span>
+            <span class="cell-content"></span>
+          </td>
+        </tr>
+
+        <!-- Row 5: Risks -->
+        <tr>
+          <th scope="row">Risk (attack rate)</th>
+          <td data-cell="B5" class="readonly">
+            <span class="cell-label">B5</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="C5" class="readonly">
+            <span class="cell-label">C5</span>
+            <span class="cell-content"></span>
+          </td>
+        </tr>
+
+        <!-- Row 6: Odds -->
+        <tr>
+          <th scope="row">Odds of disease</th>
+          <td data-cell="B6" class="readonly">
+            <span class="cell-label">B6</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="C6" class="readonly">
+            <span class="cell-label">C6</span>
+            <span class="cell-content"></span>
+          </td>
+        </tr>
+
+        <!-- Row 7: Risk ratio -->
+        <tr>
+          <th scope="row">Risk ratio (RR)</th>
+          <td data-cell="B7" class="readonly">
+            <span class="cell-label">B7</span>
+            <span class="cell-content"></span>
+          </td>
+          <td class="readonly">
+            <span class="cell-content"></span>
+          </td>
+        </tr>
+
+        <!-- Row 8: Odds ratio -->
+        <tr>
+          <th scope="row">Odds ratio (OR)</th>
+          <td data-cell="B8" class="readonly">
+            <span class="cell-label">B8</span>
+            <span class="cell-content"></span>
+          </td>
+          <td class="readonly">
+            <span class="cell-content"></span>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="legend">
+      <span><span class="legend-swatch data"></span> Editable data cells (counts)</span>
+      <span><span class="legend-swatch calc"></span> Calculated cells</span>
+      <span><span class="legend-swatch.hl"></span> Cells emphasised in this step</span>
+    </div>
+
+    <div class="summary-box" id="summary-box"></div>
+  </section>
+</main>
+
+<script>
+  (function () {
+    const cells = {};
+
+    // Base data (will be overwritten by synthetic generator)
+    let baseData = {
+      exposedCases: 35,
+      exposedNonCases: 165,
+      unexposedCases: 20,
+      unexposedNonCases: 180
+    };
+
+    // --- Helpers -------------------------------------------------------------
+
+    function cacheCells() {
+      document.querySelectorAll("[data-cell]").forEach(td => {
+        const id = td.getAttribute("data-cell");
+        cells[id] = td;
+      });
+    }
+
+    function formatNumber(value, digits) {
+      if (value === null || value === undefined || isNaN(value)) return "";
+      return value.toLocaleString(undefined, {
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits
+      });
+    }
+
+    function setCell(cellId, value, digits) {
+      const td = cells[cellId];
+      if (!td) return;
+      const content = td.querySelector(".cell-content");
+      if (typeof value === "number") {
+        if (digits !== undefined) {
+          content.textContent = formatNumber(value, digits);
+        } else {
+          content.textContent = value.toString();
+        }
+      } else {
+        content.textContent = value;
+      }
+    }
+
+    function getEditableNumber(cellId, fallback) {
+      const td = cells[cellId];
+      if (!td) return fallback;
+      const content = td.querySelector(".cell-content");
+      if (!content) return fallback;
+      const raw = content.textContent.replace(/,/g, "").trim();
+      if (raw === "") return fallback;
+      const val = parseFloat(raw);
+      if (isNaN(val) || val < 0) return fallback;
+      return val;
+    }
+
+    // --- Synthetic data generator -------------------------------------------
+
+    function generateSyntheticData() {
+      // Random-ish but reasonable epidemiological data
+      // Choose total group sizes
+      const totalExposed = 100 + Math.floor(Math.random() * 400);    // 100–499
+      const totalUnexposed = 100 + Math.floor(Math.random() * 400);
+
+      // Baseline risks
+      const baseRiskUnexposed = 0.05 + Math.random() * 0.10;         // 5–15%
+      const riskRatio = 0.6 + Math.random() * 1.6;                   // RR between ~0.6 and 2.2
+      const riskExposed = Math.max(0.001, Math.min(0.7, baseRiskUnexposed * riskRatio));
+
+      const unexposedCases = Math.round(totalUnexposed * baseRiskUnexposed);
+      const exposedCases = Math.round(totalExposed * riskExposed);
+
+      baseData = {
+        exposedCases: exposedCases,
+        exposedNonCases: totalExposed - exposedCases,
+        unexposedCases: unexposedCases,
+        unexposedNonCases: totalUnexposed - unexposedCases
+      };
+
+      // Write into editable cells
+      setCell("B2", baseData.exposedCases, 0);
+      setCell("B3", baseData.exposedNonCases, 0);
+      setCell("C2", baseData.unexposedCases, 0);
+      setCell("C3", baseData.unexposedNonCases, 0);
+    }
+
+    // --- Recalculation -------------------------------------------------------
+
+    function recalcAll() {
+      const a = getEditableNumber("B2", baseData.exposedCases);        // exposed & disease
+      const c = getEditableNumber("B3", baseData.exposedNonCases);     // exposed & no disease
+      const b = getEditableNumber("C2", baseData.unexposedCases);      // unexposed & disease
+      const d = getEditableNumber("C3", baseData.unexposedNonCases);   // unexposed & no disease
+
+      const totalExposed = a + c;
+      const totalUnexposed = b + d;
+
+      // Totals
+      setCell("B4", totalExposed, 0);
+      setCell("C4", totalUnexposed, 0);
+
+      // Risks
+      const riskExposed = totalExposed > 0 ? a / totalExposed : NaN;
+      const riskUnexposed = totalUnexposed > 0 ? b / totalUnexposed : NaN;
+      setCell("B5", isFinite(riskExposed) ? riskExposed : "", 3);
+      setCell("C5", isFinite(riskUnexposed) ? riskUnexposed : "", 3);
+
+      // Odds
+      const oddsExposed = c > 0 ? a / c : NaN;
+      const oddsUnexposed = d > 0 ? b / d : NaN;
+      setCell("B6", isFinite(oddsExposed) ? oddsExposed : "", 3);
+      setCell("C6", isFinite(oddsUnexposed) ? oddsUnexposed : "", 3);
+
+      // Risk ratio
+      const rr = riskUnexposed > 0 ? riskExposed / riskUnexposed : NaN;
+      setCell("B7", isFinite(rr) ? rr : "", 3);
+
+      // Odds ratio (cross-product)
+      const or = (a > 0 && b >= 0 && c >= 0 && d > 0) ? (a * d) / (b * c) : NaN;
+      setCell("B8", isFinite(or) ? or : "", 3);
+
+      // Summary
+      const summary = document.getElementById("summary-box");
+      summary.innerHTML =
+        "Risk in exposed (B5): <strong>" + (isFinite(riskExposed) ? formatNumber(riskExposed, 3) : "NA") + "</strong>, " +
+        "risk in unexposed (C5): <strong>" + (isFinite(riskUnexposed) ? formatNumber(riskUnexposed, 3) : "NA") + "</strong>.<br>" +
+        "Odds in exposed (B6): <strong>" + (isFinite(oddsExposed) ? formatNumber(oddsExposed, 3) : "NA") + "</strong>, " +
+        "odds in unexposed (C6): <strong>" + (isFinite(oddsUnexposed) ? formatNumber(oddsUnexposed, 3) : "NA") + "</strong>.<br>" +
+        "Risk ratio RR (B7): <strong>" + (isFinite(rr) ? formatNumber(rr, 3) : "NA") + "</strong>, " +
+        "odds ratio OR (B8): <strong>" + (isFinite(or) ? formatNumber(or, 3) : "NA") + "</strong>.";
+    }
+
+    // --- Steps ---------------------------------------------------------------
+
+    const steps = [
+      {
+        title: "Step 1 – Understand the 2×2 table",
+        description:
+          "We have a binary exposure (exposed vs unexposed) and a binary outcome (disease vs no disease). " +
+          "Each cell of the 2×2 table is a count of people in that combination.",
+        formulas: [
+          "In Excel you might label the cells as:",
+          "B2 = exposed & disease (a)",
+          "B3 = exposed & no disease (c)",
+          "C2 = unexposed & disease (b)",
+          "C3 = unexposed & no disease (d)"
+        ],
+        highlight: ["B2","C2","B3","C3","B4","C4"],
+        question:
+          "Looking at the current counts, does the disease appear more common among exposed or unexposed individuals? " +
+          "What do you base that first impression on?",
+        explanation:
+          "The 2×2 table is the foundation for many epidemiological effect measures. " +
+          "Before calculating ratios, it’s important to understand what each cell represents: counts, not yet risks or odds."
+      },
+      {
+        title: "Step 2 – Calculate risks (attack rates)",
+        description:
+          "Risk (or cumulative incidence) in each exposure group is: number with disease / total in that exposure group.",
+        formulas: [
+          "First, calculate totals:",
+          "In B4 type: =B2+B3   (total exposed).",
+          "In C4 type: =C2+C3   (total unexposed).",
+          "",
+          "Then calculate risks:",
+          "In B5 type: =B2/B4   (risk among exposed).",
+          "In C5 type: =C2/C4   (risk among unexposed)."
+        ],
+        highlight: ["B2","B3","C2","C3","B4","C4","B5","C5"],
+        question:
+          "Compare the risks in B5 and C5. By how much is the risk higher (or lower) in the exposed group on an absolute scale (difference) " +
+          "and on a relative scale (rough ratio)?",
+        explanation:
+          "Risk is the probability of the outcome over the follow-up period in each group. " +
+          "The difference in risk (risk_exposed − risk_unexposed) captures absolute effect, " +
+          "while the ratio (risk_exposed / risk_unexposed) captures relative effect."
+      },
+      {
+        title: "Step 3 – Compute the risk ratio (RR)",
+        description:
+          "The risk ratio compares the risk in the exposed group with the risk in the unexposed group.",
+        formulas: [
+          "In B7 type: =B5/C5",
+          "This is equivalent to:",
+          "= (B2/B4) / (C2/C4)",
+          "which is the ratio of the two risks."
+        ],
+        highlight: ["B5","C5","B7"],
+        question:
+          "Is the RR greater than 1, less than 1, or close to 1? " +
+          "How would you describe the strength and direction of association in plain language?",
+        explanation:
+          "RR > 1 suggests the exposure is associated with higher risk of disease; RR < 1 suggests it may be protective; " +
+          "RR ≈ 1 suggests little or no association. The further from 1, the stronger the relative association."
+      },
+      {
+        title: "Step 4 – Calculate odds and the odds ratio (OR)",
+        description:
+          "Odds are defined as: probability of disease / (1 − probability of disease). " +
+          "In a 2×2 table, odds = number with disease / number without disease.",
+        formulas: [
+          "Odds in exposed group:",
+          "In B6 type: =B2/B3",
+          "",
+          "Odds in unexposed group:",
+          "In C6 type: =C2/C3",
+          "",
+          "Odds ratio (OR):",
+          "In B8 type: =B6/C6",
+          "An equivalent cross-product formula is:",
+          "B8 = B2*C3 / (B3*C2)"
+        ],
+        highlight: ["B2","B3","C2","C3","B6","C6","B8"],
+        question:
+          "Compare the OR (B8) with the RR (B7). Are they similar or quite different for this dataset? " +
+          "What happens to the similarity between OR and RR when the outcome is rare versus common?",
+        explanation:
+          "Odds and risks are different but related. When the outcome is rare (risks are small), " +
+          "the OR and RR are often quite similar. When the outcome is common, the OR will exaggerate the magnitude of the effect " +
+          "relative to the RR (further from 1)."
+      },
+      {
+        title: "Step 5 – Interpret RR and OR together",
+        description:
+          "You now have risk, odds, RR, and OR for this synthetic dataset. " +
+          "Try generating new data or editing the counts to see how these measures respond.",
+        formulas: [
+          "Key cells:",
+          "Risk in exposed (B5) = B2/B4",
+          "Risk in unexposed (C5) = C2/C4",
+          "Risk ratio RR (B7) = B5/C5",
+          "Odds ratio OR (B8) = B2*C3/(B3*C2)"
+        ],
+        highlight: ["B5","C5","B6","C6","B7","B8"],
+        question:
+          "After playing with the data (including making the outcome rarer and more common), " +
+          "in what situations would you prefer to report the RR, and when might the OR be more appropriate (e.g. in case–control studies)?",
+        explanation:
+          "In cohort studies and trials where risks can be estimated directly, RR (and risk differences) are often more intuitive. " +
+          "ORs are the natural measure in logistic regression and in case–control studies, and they have nice mathematical properties, " +
+          "but they can be harder to interpret, especially when the outcome is common."
+      }
+    ];
+
+    let currentStepIndex = 0;
+
+    // --- Step rendering ------------------------------------------------------
+
+    function clearHighlights() {
+      Object.values(cells).forEach(td => td.classList.remove("highlight"));
+    }
+
+    function renderStep(index) {
+      currentStepIndex = index;
+      const step = steps[index];
+
+      document.getElementById("step-title").textContent = step.title;
+      document.getElementById("step-description").textContent = step.description;
+
+      const formulaList = document.getElementById("formula-list");
+      formulaList.innerHTML = "";
+      if (step.formulas && step.formulas.length) {
+        step.formulas.forEach(t => {
+          const li = document.createElement("li");
+          li.textContent = t;
+          formulaList.appendChild(li);
+        });
+        document.getElementById("formula-box").style.display = "block";
+      } else {
+        document.getElementById("formula-box").style.display = "none";
+      }
+
+      document.getElementById("question-text").textContent = step.question || "";
+      document.getElementById("reflection").placeholder =
+        step.question ? "Write your answer or interpretation for: \"" + step.question + "\"" : "Write your thoughts here...";
+
+      document.getElementById("explanation-text").textContent = step.explanation || "";
+
+      clearHighlights();
+      if (step.highlight) {
+        step.highlight.forEach(id => {
+          const td = cells[id];
+          if (td) td.classList.add("highlight");
+        });
+      }
+
+      document.getElementById("step-indicator").textContent =
+        "Step " + (index + 1) + " of " + steps.length;
+
+      document.getElementById("prev-btn").disabled = index === 0;
+      document.getElementById("next-btn").disabled = index === steps.length - 1;
+    }
+
+    // --- Event handlers ------------------------------------------------------
+
+    function attachEventHandlers() {
+      document.getElementById("prev-btn").addEventListener("click", () => {
+        if (currentStepIndex > 0) {
+          recalcAll();
+          renderStep(currentStepIndex - 1);
+        }
+      });
+
+      document.getElementById("next-btn").addEventListener("click", () => {
+        if (currentStepIndex < steps.length - 1) {
+          recalcAll();
+          renderStep(currentStepIndex + 1);
+        }
+      });
+
+      document.getElementById("recalc-btn").addEventListener("click", () => {
+        recalcAll();
+      });
+
+      document.getElementById("new-data-btn").addEventListener("click", () => {
+        generateSyntheticData();
+        recalcAll();
+      });
+
+      // Clean numeric entries on blur (keep them integers)
+      document.querySelectorAll(".numeric-editable .cell-content[contenteditable='true']")
+        .forEach(span => {
+          span.addEventListener("blur", () => {
+            const raw = span.textContent.replace(/,/g, "").trim();
+            if (raw === "") return; // leave blank, will fallback to base on recalc
+            const val = parseInt(raw, 10);
+            if (isNaN(val) || val < 0) {
+              // invalid → clear; recalc will revert to baseData
+              span.textContent = "";
+            } else {
+              span.textContent = formatNumber(val, 0);
+            }
+          });
+        });
+    }
+
+    // --- Initialise ----------------------------------------------------------
+
+    window.addEventListener("DOMContentLoaded", () => {
+      cacheCells();
+      generateSyntheticData(); // initial dataset
+      recalcAll();
+      attachEventHandlers();
+      renderStep(0);
+    });
+  })();
+</script>
+</body>
+</html>
