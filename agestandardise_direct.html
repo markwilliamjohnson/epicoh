@@ -1,0 +1,1219 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Age Standardisation Tutor</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f5f5f7;
+      color: #222;
+    }
+
+    header {
+      background: #1e293b;
+      color: #f9fafb;
+      padding: 1rem 1.5rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.5rem;
+    }
+
+    header p {
+      margin: 0.25rem 0 0;
+      font-size: 0.9rem;
+      opacity: 0.85;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: minmax(260px, 1.1fr) minmax(420px, 1.4fr);
+      gap: 1rem;
+      padding: 1rem 1.5rem 1.5rem;
+    }
+
+    @media (max-width: 900px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 0.75rem;
+      padding: 1rem 1.25rem;
+      box-shadow: 0 1px 3px rgba(15,23,42,0.12);
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .card h2 {
+      margin: 0;
+      font-size: 1.15rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      padding: 0.15rem 0.5rem;
+      background: #e0f2fe;
+      color: #0369a1;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .step-title {
+      font-weight: 600;
+      font-size: 1.05rem;
+    }
+
+    .step-description {
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+
+    .formula-box,
+    .question-box,
+    .note-box {
+      border-radius: 0.5rem;
+      border: 1px dashed #cbd5f5;
+      background: #f8fafc;
+      padding: 0.6rem 0.75rem;
+      font-size: 0.85rem;
+    }
+
+    .formula-box h3,
+    .question-box h3,
+    .note-box h3 {
+      margin: 0 0 0.3rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .formula-list {
+      margin: 0.25rem 0 0;
+      padding-left: 1.1rem;
+    }
+
+    .formula-list li {
+      margin-bottom: 0.15rem;
+      font-family: "SF Mono", ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.85rem;
+    }
+
+    .question-text {
+      margin-bottom: 0.5rem;
+    }
+
+    textarea#reflection {
+      width: 100%;
+      min-height: 70px;
+      border-radius: 0.4rem;
+      border: 1px solid #cbd5e1;
+      padding: 0.4rem 0.5rem;
+      font-size: 0.85rem;
+      resize: vertical;
+      font-family: inherit;
+    }
+
+    .buttons {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 0.5rem;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      border-radius: 999px;
+      border: none;
+      padding: 0.35rem 0.95rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-weight: 500;
+    }
+
+    .btn-primary {
+      background: #2563eb;
+      color: #f9fafb;
+    }
+
+    .btn-primary:disabled {
+      background: #bfdbfe;
+      cursor: default;
+    }
+
+    .btn-secondary {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid #e5e7eb;
+      color: #4b5563;
+    }
+
+    .btn span.icon {
+      font-size: 0.95em;
+    }
+
+    .step-indicator {
+      font-size: 0.8rem;
+      color: #6b7280;
+    }
+
+    /* Spreadsheet styling */
+    .sheet-wrapper {
+      overflow-x: auto;
+      border-radius: 0.75rem;
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
+    }
+
+    table.sheet {
+      border-collapse: collapse;
+      min-width: 680px;
+      width: 100%;
+      font-size: 0.8rem;
+    }
+
+    table.sheet th,
+    table.sheet td {
+      border: 1px solid #e5e7eb;
+      padding: 0.35rem 0.4rem;
+      text-align: right;
+      min-width: 70px;
+      position: relative;
+    }
+
+    table.sheet th[scope="col"] {
+      background: #f3f4f6;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    table.sheet th[scope="row"] {
+      background: #f3f4f6;
+      font-weight: 600;
+      text-align: center;
+      width: 32px;
+    }
+
+    table.sheet td[data-cell^="A"] {
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    .sheet-caption {
+      font-size: 0.8rem;
+      padding: 0.5rem 0.6rem;
+      color: #4b5563;
+    }
+
+    .cell-label {
+      position: absolute;
+      top: 2px;
+      left: 4px;
+      font-size: 0.55rem;
+      color: #9ca3af;
+      pointer-events: none;
+    }
+
+    .cell-content {
+      display: block;
+      padding-left: 0.4rem;
+    }
+
+    .highlight {
+      background: #fef3c7 !important;
+      box-shadow: inset 0 0 0 1px #f97316;
+      z-index: 1;
+    }
+
+    .readonly {
+      background-color: #f9fafb;
+    }
+
+    .numeric-editable {
+      background-color: #ffffff;
+    }
+
+    .numeric-editable[contenteditable="true"] {
+      cursor: text;
+    }
+
+    .numeric-editable:focus {
+      outline: 1px solid #3b82f6;
+      background-color: #eff6ff;
+    }
+
+    .legend {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      font-size: 0.75rem;
+      color: #6b7280;
+      margin-top: 0.35rem;
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .legend-swatch {
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+      border: 1px solid #cbd5e1;
+    }
+
+    .legend-swatch.data {
+      background: #ffffff;
+    }
+
+    .legend-swatch.calc {
+      background: #e5e7eb;
+    }
+
+    .legend-swatch.hl {
+      background: #fed7aa;
+      border-color: #f97316;
+    }
+
+    .summary-box {
+      font-size: 0.8rem;
+      border-radius: 0.5rem;
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
+      padding: 0.5rem 0.6rem;
+      margin-top: 0.4rem;
+    }
+
+    .summary-box strong {
+      font-family: "SF Mono", ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1>Age Standardisation Step-by-Step Tutor</h1>
+  <p>Follow the steps to calculate directly age-standardised incidence rates from simulated data.</p>
+</header>
+
+<main>
+  <!-- Left: Step-by-step tutor -->
+  <section class="card" aria-label="Step by step instructions">
+    <div>
+      <div class="badge">Guided walkthrough</div>
+      <div class="step-title" id="step-title"></div>
+    </div>
+
+    <div class="step-description" id="step-description"></div>
+
+    <div class="formula-box" id="formula-box">
+      <h3>Spreadsheet formulas to try</h3>
+      <ul class="formula-list" id="formula-list"></ul>
+    </div>
+
+    <div class="question-box" id="question-box">
+      <h3>Think about this</h3>
+      <div id="question-text" class="question-text"></div>
+      <label for="reflection" style="font-size:0.8rem; display:block; margin-bottom:0.25rem;">
+        Jot down your thoughts (optional):
+      </label>
+      <textarea id="reflection" placeholder="Type your reasoning or hypotheses here..."></textarea>
+    </div>
+
+    <div class="note-box" id="note-box">
+      <h3>Explanation</h3>
+      <div id="explanation-text" style="font-size:0.85rem;"></div>
+    </div>
+
+    <div class="buttons">
+      <button class="btn btn-secondary" id="prev-btn">
+        <span class="icon">←</span> Previous
+      </button>
+      <div class="step-indicator" id="step-indicator"></div>
+      <div style="display:flex; gap:0.4rem;">
+        <button class="btn btn-ghost" id="recalc-btn" title="Recalculate using the current data">
+          Recalculate
+        </button>
+        <button class="btn btn-primary" id="next-btn">
+          Next <span class="icon">→</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Right: Spreadsheet-like grid -->
+  <section class="card" aria-label="Spreadsheet view">
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:0.5rem;">
+      <h2>
+        Spreadsheet
+        <span style="font-size:0.8rem; font-weight:400; color:#6b7280;">(simulated data)</span>
+      </h2>
+    </div>
+    <p style="font-size:0.85rem; margin:0;">
+      Age-specific populations and cancer cases for two regions. You can edit population and case counts in the white cells and press
+      <strong>Recalculate</strong> to see how the rates change.
+    </p>
+
+    <div class="sheet-wrapper">
+      <div class="sheet-caption">
+        Direct age standardisation example: comparing cancer incidence in Region A vs Region B.
+      </div>
+      <table class="sheet" aria-label="Spreadsheet-like data table">
+        <thead>
+        <tr>
+          <th></th>
+          <th scope="col">A</th>
+          <th scope="col">B</th>
+          <th scope="col">C</th>
+          <th scope="col">D</th>
+          <th scope="col">E</th>
+          <th scope="col">F</th>
+          <th scope="col">G</th>
+          <th scope="col">H</th>
+          <th scope="col">I</th>
+          <th scope="col">J</th>
+        </tr>
+        </thead>
+        <tbody>
+        <!-- Row 1 -->
+        <tr>
+          <th scope="row">1</th>
+          <td data-cell="A1" class="readonly">
+            <span class="cell-label">A1</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="B1" class="readonly">
+            <span class="cell-label">B1</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="C1" class="readonly">
+            <span class="cell-label">C1</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="D1" class="readonly">
+            <span class="cell-label">D1</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="E1" class="readonly">
+            <span class="cell-label">E1</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="F1" class="readonly">
+            <span class="cell-label">F1</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="G1" class="readonly">
+            <span class="cell-label">G1</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="H1" class="readonly">
+            <span class="cell-label">H1</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="I1" class="readonly">
+            <span class="cell-label">I1</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="J1" class="readonly">
+            <span class="cell-label">J1</span>
+            <span class="cell-content"></span>
+          </td>
+        </tr>
+        <!-- Row 2 -->
+        <tr>
+          <th scope="row">2</th>
+          <td data-cell="A2" class="readonly">
+            <span class="cell-label">A2</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="B2" class="readonly">
+            <span class="cell-label">B2</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="C2" class="numeric-editable" contenteditable="true">
+            <span class="cell-label">C2</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="D2" class="numeric-editable" contenteditable="true">
+            <span class="cell-label">D2</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="E2" class="numeric-editable" contenteditable="true">
+            <span class="cell-label">E2</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="F2" class="numeric-editable" contenteditable="true">
+            <span class="cell-label">F2</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="G2" class="readonly">
+            <span class="cell-label">G2</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="H2" class="readonly">
+            <span class="cell-label">H2</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="I2" class="readonly">
+            <span class="cell-label">I2</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="J2" class="readonly">
+            <span class="cell-label">J2</span>
+            <span class="cell-content"></span>
+          </td>
+        </tr>
+        <!-- Row 3 -->
+        <tr>
+          <th scope="row">3</th>
+          <td data-cell="A3" class="readonly">
+            <span class="cell-label">A3</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="B3" class="readonly">
+            <span class="cell-label">B3</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="C3" class="numeric-editable" contenteditable="true">
+            <span class="cell-label">C3</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="D3" class="numeric-editable" contenteditable="true">
+            <span class="cell-label">D3</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="E3" class="numeric-editable" contenteditable="true">
+            <span class="cell-label">E3</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="F3" class="numeric-editable" contenteditable="true">
+            <span class="cell-label">F3</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="G3" class="readonly">
+            <span class="cell-label">G3</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="H3" class="readonly">
+            <span class="cell-label">H3</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="I3" class="readonly">
+            <span class="cell-label">I3</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="J3" class="readonly">
+            <span class="cell-label">J3</span>
+            <span class="cell-content"></span>
+          </td>
+        </tr>
+        <!-- Row 4 -->
+        <tr>
+          <th scope="row">4</th>
+          <td data-cell="A4" class="readonly">
+            <span class="cell-label">A4</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="B4" class="readonly">
+            <span class="cell-label">B4</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="C4" class="numeric-editable" contenteditable="true">
+            <span class="cell-label">C4</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="D4" class="numeric-editable" contenteditable="true">
+            <span class="cell-label">D4</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="E4" class="numeric-editable" contenteditable="true">
+            <span class="cell-label">E4</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="F4" class="numeric-editable" contenteditable="true">
+            <span class="cell-label">F4</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="G4" class="readonly">
+            <span class="cell-label">G4</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="H4" class="readonly">
+            <span class="cell-label">H4</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="I4" class="readonly">
+            <span class="cell-label">I4</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="J4" class="readonly">
+            <span class="cell-label">J4</span>
+            <span class="cell-content"></span>
+          </td>
+        </tr>
+        <!-- Row 5 -->
+        <tr>
+          <th scope="row">5</th>
+          <td data-cell="A5" class="readonly">
+            <span class="cell-label">A5</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="B5" class="readonly">
+            <span class="cell-label">B5</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="C5" class="numeric-editable" contenteditable="true">
+            <span class="cell-label">C5</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="D5" class="numeric-editable" contenteditable="true">
+            <span class="cell-label">D5</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="E5" class="numeric-editable" contenteditable="true">
+            <span class="cell-label">E5</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="F5" class="numeric-editable" contenteditable="true">
+            <span class="cell-label">F5</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="G5" class="readonly">
+            <span class="cell-label">G5</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="H5" class="readonly">
+            <span class="cell-label">H5</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="I5" class="readonly">
+            <span class="cell-label">I5</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="J5" class="readonly">
+            <span class="cell-label">J5</span>
+            <span class="cell-content"></span>
+          </td>
+        </tr>
+        <!-- Row 6 -->
+        <tr>
+          <th scope="row">6</th>
+          <td data-cell="A6" class="readonly">
+            <span class="cell-label">A6</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="B6" class="readonly">
+            <span class="cell-label">B6</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="C6" class="numeric-editable" contenteditable="true">
+            <span class="cell-label">C6</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="D6" class="numeric-editable" contenteditable="true">
+            <span class="cell-label">D6</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="E6" class="numeric-editable" contenteditable="true">
+            <span class="cell-label">E6</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="F6" class="numeric-editable" contenteditable="true">
+            <span class="cell-label">F6</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="G6" class="readonly">
+            <span class="cell-label">G6</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="H6" class="readonly">
+            <span class="cell-label">H6</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="I6" class="readonly">
+            <span class="cell-label">I6</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="J6" class="readonly">
+            <span class="cell-label">J6</span>
+            <span class="cell-content"></span>
+          </td>
+        </tr>
+        <!-- Row 7 (Totals) -->
+        <tr>
+          <th scope="row">7</th>
+          <td data-cell="A7" class="readonly">
+            <span class="cell-label">A7</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="B7" class="readonly">
+            <span class="cell-label">B7</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="C7" class="readonly">
+            <span class="cell-label">C7</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="D7" class="readonly">
+            <span class="cell-label">D7</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="E7" class="readonly">
+            <span class="cell-label">E7</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="F7" class="readonly">
+            <span class="cell-label">F7</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="G7" class="readonly">
+            <span class="cell-label">G7</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="H7" class="readonly">
+            <span class="cell-label">H7</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="I7" class="readonly">
+            <span class="cell-label">I7</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="J7" class="readonly">
+            <span class="cell-label">J7</span>
+            <span class="cell-content"></span>
+          </td>
+        </tr>
+        <!-- Row 8 (Crude rates) -->
+        <tr>
+          <th scope="row">8</th>
+          <td data-cell="A8" class="readonly">
+            <span class="cell-label">A8</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="B8" class="readonly">
+            <span class="cell-label">B8</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="C8" class="readonly">
+            <span class="cell-label">C8</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="D8" class="readonly">
+            <span class="cell-label">D8</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="E8" class="readonly">
+            <span class="cell-label">E8</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="F8" class="readonly">
+            <span class="cell-label">F8</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="G8" class="readonly">
+            <span class="cell-label">G8</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="H8" class="readonly">
+            <span class="cell-label">H8</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="I8" class="readonly">
+            <span class="cell-label">I8</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="J8" class="readonly">
+            <span class="cell-label">J8</span>
+            <span class="cell-content"></span>
+          </td>
+        </tr>
+        <!-- Row 9 (Age-standardised rates) -->
+        <tr>
+          <th scope="row">9</th>
+          <td data-cell="A9" class="readonly">
+            <span class="cell-label">A9</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="B9" class="readonly">
+            <span class="cell-label">B9</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="C9" class="readonly">
+            <span class="cell-label">C9</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="D9" class="readonly">
+            <span class="cell-label">D9</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="E9" class="readonly">
+            <span class="cell-label">E9</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="F9" class="readonly">
+            <span class="cell-label">F9</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="G9" class="readonly">
+            <span class="cell-label">G9</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="H9" class="readonly">
+            <span class="cell-label">H9</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="I9" class="readonly">
+            <span class="cell-label">I9</span>
+            <span class="cell-content"></span>
+          </td>
+          <td data-cell="J9" class="readonly">
+            <span class="cell-label">J9</span>
+            <span class="cell-content"></span>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="legend">
+      <span><span class="legend-swatch data"></span> Editable data cells</span>
+      <span><span class="legend-swatch calc"></span> Calculated cells</span>
+      <span><span class="legend-swatch hl"></span> Cells for this step</span>
+    </div>
+
+    <div class="summary-box" id="summary-box"></div>
+  </section>
+</main>
+
+<script>
+  (function () {
+    // --- DATA & UTILITIES ----------------------------------------------------
+
+    const cells = {}; // map Excel-like ID ("C3") -> TD element
+
+    const ageBandsBase = [
+      // Simulated epidemiological data
+      { label: "0–24", std: 25000, popA: 30000, casesA: 12, popB: 28000, casesB: 15 },
+      { label: "25–44", std: 20000, popA: 22000, casesA: 18, popB: 18000, casesB: 20 },
+      { label: "45–64", std: 15000, popA: 16000, casesA: 30, popB: 19000, casesB: 40 },
+      { label: "65–74", std: 10000, popA: 8000,  casesA: 22, popB: 12000, casesB: 35 },
+      { label: "75+",   std: 8000,  popA: 5000,  casesA: 19, popB: 9000,  casesB: 38 }
+    ];
+
+    // Helper: format numbers consistently
+    function formatNumber(value, decimals) {
+      if (value === null || value === undefined || isNaN(value)) return "";
+      return value.toLocaleString(undefined, {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+      });
+    }
+
+    function setCell(cellId, value, decimals) {
+      const td = cells[cellId];
+      if (!td) return;
+      const content = td.querySelector(".cell-content");
+      if (typeof value === "number" && decimals !== undefined) {
+        content.textContent = formatNumber(value, decimals);
+      } else {
+        content.textContent = value;
+      }
+    }
+
+    function getNumericCell(cellId) {
+      const td = cells[cellId];
+      if (!td) return 0;
+      const content = td.querySelector(".cell-content");
+      if (!content) return 0;
+      const raw = content.textContent.replace(/,/g, "").trim();
+      const val = parseFloat(raw);
+      return isNaN(val) ? 0 : val;
+    }
+
+    function getEditableNumber(cellId, fallback) {
+      // For editable cells, read the text and fall back to base data if not numeric
+      const td = cells[cellId];
+      if (!td) return fallback;
+      const content = td.querySelector(".cell-content");
+      const raw = content.textContent.replace(/,/g, "").trim();
+      const val = parseFloat(raw);
+      if (isNaN(val) || val < 0) return fallback;
+      return val;
+    }
+
+    // --- STEP DEFINITIONS ----------------------------------------------------
+
+    const steps = [
+      {
+        title: "Step 1 – Explore the data & the question",
+        description:
+          "You have age-specific population and cancer case counts for two regions (A and B), " +
+          "plus a standard population distribution. The goal is to compare cancer incidence between the regions " +
+          "in a fair way, adjusting for different age structures.",
+        formulas: [],
+        highlight: ["A1", "B1", "C1", "D1", "E1", "F1", "A2", "A3", "A4", "A5", "A6"],
+        question:
+          "Just by looking at the age-specific population counts in columns C and E, " +
+          "which region seems to have more older people? How might that affect crude cancer rates?",
+        explanation:
+          "Cancer risk increases strongly with age. If one region has more older people, it may have a higher crude (overall) rate " +
+          "even if the underlying age-specific risks are similar. Age standardisation helps remove this confounding effect."
+      },
+      {
+        title: "Step 2 – Calculate age-specific incidence rates",
+        description:
+          "Next, compute the age-specific incidence rates for each region. " +
+          "These are the building blocks for age standardisation.",
+        formulas: [
+          "In G2 type: =D2/C2*100000",
+          "Fill or copy down to G6 to get Region A rates.",
+          "In H2 type: =F2/E2*100000",
+          "Fill or copy down to H6 to get Region B rates."
+        ],
+        highlight: ["C2","D2","E2","F2","G2","H2","G3","H3","G4","H4","G5","H5","G6","H6"],
+        question:
+          "Looking down columns G and H, in which age groups does Region B have a higher incidence than Region A? " +
+          "Are there any age groups where Region A is higher?",
+        explanation:
+          "These age-specific rates describe the risk within each age band, independent of how many people are in each band. " +
+          "They are essential for direct standardisation, where we apply these rates to a common standard population."
+      },
+      {
+        title: "Step 3 – Compute crude (overall) rates",
+        description:
+          "Now calculate total population and total cases in each region, then the crude incidence rate per 100,000.",
+        formulas: [
+          "In C7 type: =SUM(C2:C6) and in D7: =SUM(D2:D6)",
+          "In E7 type: =SUM(E2:E6) and in F7: =SUM(F2:F6)",
+          "In G8 type: =D7/C7*100000  (crude rate Region A)",
+          "In H8 type: =F7/E7*100000  (crude rate Region B)"
+        ],
+        highlight: ["C7","D7","E7","F7","G8","H8"],
+        question:
+          "Compare the crude rates in G8 and H8. Which region appears to have higher cancer incidence overall? " +
+          "Does this necessarily mean that the underlying risk is higher in that region?",
+        explanation:
+          "Crude rates are influenced by both risk and age structure. A region with more older adults can have a higher crude rate " +
+          "even if age-specific risks are lower. That’s why we move on to age standardisation."
+      },
+      {
+        title: "Step 4 – Calculate age weights from the standard population",
+        description:
+          "To standardise, convert the standard population in column B into weights that sum to 1. " +
+          "Each weight represents the proportion of people in that age group in the standard population.",
+        formulas: [
+          "In B7 type: =SUM(B2:B6) (total standard population).",
+          "If you want to see the weights explicitly, you could put in a helper column (not shown here):",
+          "e.g. in a spare column: =B2/$B$7, then copy down to correspond to B3:B6."
+        ],
+        highlight: ["B2","B3","B4","B5","B6","B7"],
+        question:
+          "Does the standard population put more weight on younger or older age groups? " +
+          "How might that choice affect the resulting age-standardised rates?",
+        explanation:
+          "The standard population defines the age structure you are adjusting to. Different choices (e.g. WHO standard, national census) " +
+          "can shift the age-standardised rate slightly, but they all remove differences due purely to the age distribution of the real populations."
+      },
+      {
+        title: "Step 5 – Directly age-standardise the rates",
+        description:
+          "Apply each region’s age-specific rates to the same standard population. Here we implement this via weighted rates: " +
+          "weight × age-specific rate, then sum across age groups.",
+        formulas: [
+          "Assuming the weight for each row is B(row)/$B$7:",
+          "In I2 type: =G2*B2/$B$7  and copy down to I6 (Region A).",
+          "In J2 type: =H2*B2/$B$7  and copy down to J6 (Region B).",
+          "In I9 type: =SUM(I2:I6)  (age-standardised rate, Region A).",
+          "In J9 type: =SUM(J2:J6)  (age-standardised rate, Region B)."
+        ],
+        highlight: ["I2","I3","I4","I5","I6","J2","J3","J4","J5","J6","I9","J9"],
+        question:
+          "Compare the crude rates (G8, H8) with the age-standardised rates (I9, J9). " +
+          "Did the difference between the regions get bigger, smaller, or stay about the same after standardisation?",
+        explanation:
+          "The age-standardised rate answers: ‘What would the rate be if each region had the same age structure as the standard population?’ " +
+          "This isolates differences in risk from differences in age composition."
+      },
+      {
+        title: "Step 6 – Interpret the results",
+        description:
+          "You now have crude and age-standardised rates for both regions. The final step is to interpret what they tell you.",
+        formulas: [
+          "Crude rates: G8 (Region A), H8 (Region B).",
+          "Age-standardised rates: I9 (Region A), J9 (Region B)."
+        ],
+        highlight: ["G8","H8","I9","J9"],
+        question:
+          "Suppose Region B has both a higher crude rate and a higher age-standardised rate than Region A. " +
+          "What might that suggest about underlying cancer risk, and what other factors would you want to investigate before concluding there is a real difference?",
+        explanation:
+          "If both crude and age-standardised rates are higher in Region B, this suggests that the true underlying risk may be higher there – " +
+          "not just a consequence of an older population. However, you would still consider chance variation, case ascertainment, screening practices, " +
+          "diagnostic criteria, and other confounders before drawing causal conclusions."
+      }
+    ];
+
+    let currentStepIndex = 0;
+
+    // --- SETUP ---------------------------------------------------------------
+
+    function cacheCells() {
+      document.querySelectorAll("[data-cell]").forEach(td => {
+        const id = td.getAttribute("data-cell");
+        cells[id] = td;
+      });
+    }
+
+    // Fill initial labels and base data
+    function initialiseSheet() {
+      // Header row
+      setCell("A1", "Age band");
+      setCell("B1", "Standard pop");
+      setCell("C1", "Region A pop");
+      setCell("D1", "Region A cases");
+      setCell("E1", "Region B pop");
+      setCell("F1", "Region B cases");
+      setCell("G1", "Rate A (/100k)");
+      setCell("H1", "Rate B (/100k)");
+      setCell("I1", "Weighted rate A");
+      setCell("J1", "Weighted rate B");
+
+      // Age bands and base values
+      for (let i = 0; i < ageBandsBase.length; i++) {
+        const row = 2 + i;
+        const band = ageBandsBase[i];
+        setCell("A" + row, band.label);
+        setCell("B" + row, band.std, 0);
+
+        // Editable cells get initial values
+        setCell("C" + row, band.popA, 0);
+        setCell("D" + row, band.casesA, 0);
+        setCell("E" + row, band.popB, 0);
+        setCell("F" + row, band.casesB, 0);
+      }
+
+      // Labels for totals and rates
+      setCell("A7", "Totals");
+      setCell("A8", "Crude rate (/100k)");
+      setCell("A9", "Age-standardised rate (/100k)");
+
+      // Standard population total label
+      // (B7 gets numeric value in recalc)
+    }
+
+    // Recompute all derived values from the (possibly edited) base data
+    function recalcAll() {
+      const n = ageBandsBase.length;
+
+      // Read possibly edited data
+      const bands = [];
+      for (let i = 0; i < n; i++) {
+        const row = 2 + i;
+        const base = ageBandsBase[i];
+        const popA = getEditableNumber("C" + row, base.popA);
+        const casesA = getEditableNumber("D" + row, base.casesA);
+        const popB = getEditableNumber("E" + row, base.popB);
+        const casesB = getEditableNumber("F" + row, base.casesB);
+        const std = base.std;
+        bands.push({ ...base, popA, casesA, popB, casesB, std });
+      }
+
+      // Totals
+      let totalStd = 0;
+      let totalPopA = 0;
+      let totalCasesA = 0;
+      let totalPopB = 0;
+      let totalCasesB = 0;
+
+      for (const band of bands) {
+        totalStd += band.std;
+        totalPopA += band.popA;
+        totalCasesA += band.casesA;
+        totalPopB += band.popB;
+        totalCasesB += band.casesB;
+      }
+
+      // Put totals in row 7
+      setCell("B7", totalStd, 0);
+      setCell("C7", totalPopA, 0);
+      setCell("D7", totalCasesA, 0);
+      setCell("E7", totalPopB, 0);
+      setCell("F7", totalCasesB, 0);
+
+      // Age-specific rates and weighted rates
+      let asrA = 0;
+      let asrB = 0;
+
+      for (let i = 0; i < n; i++) {
+        const row = 2 + i;
+        const band = bands[i];
+
+        const rA = band.popA > 0 ? (band.casesA / band.popA) * 100000 : 0;
+        const rB = band.popB > 0 ? (band.casesB / band.popB) * 100000 : 0;
+        const weight = totalStd > 0 ? band.std / totalStd : 0;
+
+        setCell("G" + row, rA, 1);
+        setCell("H" + row, rB, 1);
+
+        const wA = rA * weight;
+        const wB = rB * weight;
+
+        setCell("I" + row, wA, 2);
+        setCell("J" + row, wB, 2);
+
+        asrA += wA;
+        asrB += wB;
+      }
+
+      // Crude rates
+      const crudeA = totalPopA > 0 ? (totalCasesA / totalPopA) * 100000 : 0;
+      const crudeB = totalPopB > 0 ? (totalCasesB / totalPopB) * 100000 : 0;
+
+      setCell("G8", crudeA, 1);
+      setCell("H8", crudeB, 1);
+
+      // Age-standardised rates
+      setCell("I9", asrA, 1);
+      setCell("J9", asrB, 1);
+
+      // Summary box
+      const summaryBox = document.getElementById("summary-box");
+      summaryBox.innerHTML =
+        "<strong>Crude rates</strong> – Region A: <strong>" + formatNumber(crudeA, 1) +
+        "</strong>, Region B: <strong>" + formatNumber(crudeB, 1) + "</strong> per 100,000.<br>" +
+        "<strong>Age-standardised rates</strong> – Region A: <strong>" + formatNumber(asrA, 1) +
+        "</strong>, Region B: <strong>" + formatNumber(asrB, 1) + "</strong> per 100,000.";
+    }
+
+    // --- STEP RENDERING ------------------------------------------------------
+
+    function clearHighlights() {
+      Object.values(cells).forEach(td => td.classList.remove("highlight"));
+    }
+
+    function renderStep(index) {
+      currentStepIndex = index;
+      const step = steps[index];
+
+      // Title & description
+      document.getElementById("step-title").textContent = step.title;
+      document.getElementById("step-description").textContent = step.description;
+
+      // Formulas
+      const formulaList = document.getElementById("formula-list");
+      formulaList.innerHTML = "";
+      if (step.formulas && step.formulas.length > 0) {
+        step.formulas.forEach(text => {
+          const li = document.createElement("li");
+          li.textContent = text;
+          formulaList.appendChild(li);
+        });
+        document.getElementById("formula-box").style.display = "block";
+      } else {
+        document.getElementById("formula-box").style.display = "none";
+      }
+
+      // Question
+      document.getElementById("question-text").textContent = step.question || "";
+      document.getElementById("reflection").placeholder =
+        "Write your answer or interpretation for: \"" + (step.question || "") + "\"";
+
+      // Explanation
+      document.getElementById("explanation-text").textContent = step.explanation || "";
+
+      // Highlights
+      clearHighlights();
+      if (step.highlight) {
+        step.highlight.forEach(id => {
+          const td = cells[id];
+          if (td) td.classList.add("highlight");
+        });
+      }
+
+      // Step indicator
+      document.getElementById("step-indicator").textContent =
+        "Step " + (index + 1) + " of " + steps.length;
+
+      // Buttons enabled/disabled
+      const prevBtn = document.getElementById("prev-btn");
+      const nextBtn = document.getElementById("next-btn");
+      prevBtn.disabled = index === 0;
+      nextBtn.disabled = index === steps.length - 1;
+    }
+
+    // --- EVENT HANDLERS ------------------------------------------------------
+
+    function attachEventHandlers() {
+      document.getElementById("prev-btn").addEventListener("click", () => {
+        if (currentStepIndex > 0) {
+          recalcAll(); // keep values in sync
+          renderStep(currentStepIndex - 1);
+        }
+      });
+
+      document.getElementById("next-btn").addEventListener("click", () => {
+        if (currentStepIndex < steps.length - 1) {
+          recalcAll();
+          renderStep(currentStepIndex + 1);
+        }
+      });
+
+      document.getElementById("recalc-btn").addEventListener("click", () => {
+        recalcAll();
+      });
+
+      // Clean numeric editable cells on blur to ensure valid numbers
+      document.querySelectorAll(".numeric-editable").forEach(td => {
+        td.addEventListener("blur", () => {
+          const content = td.querySelector(".cell-content");
+          const raw = content.textContent.replace(/,/g, "").trim();
+          if (raw === "") return; // allow blank, will fallback on recalc
+          const val = parseFloat(raw);
+          if (isNaN(val) || val < 0) {
+            // revert to last valid value from base data on next recalc
+            content.textContent = "";
+          } else {
+            content.textContent = formatNumber(val, 0);
+          }
+        });
+      });
+    }
+
+    // --- INITIALISE APP ------------------------------------------------------
+
+    window.addEventListener("DOMContentLoaded", () => {
+      cacheCells();
+      initialiseSheet();
+      recalcAll();
+      attachEventHandlers();
+      renderStep(0);
+    });
+  })();
+</script>
+</body>
+</html>
