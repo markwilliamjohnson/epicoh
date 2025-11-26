@@ -1,0 +1,714 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ART v1.5-style Exposure Calculator (Demo)</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f5f5f5;
+      color: #222;
+    }
+
+    header {
+      background: #2c3e50;
+      color: #fff;
+      padding: 1rem 1.5rem;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.4rem;
+    }
+
+    header small {
+      display: block;
+      opacity: 0.8;
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+    }
+
+    main {
+      max-width: 1100px;
+      margin: 1rem auto 2rem;
+      padding: 0 1rem;
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+      gap: 1rem;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+      padding: 1rem 1.25rem;
+    }
+
+    h2 {
+      margin-top: 0;
+      font-size: 1.1rem;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 0.4rem;
+    }
+
+    .form-group {
+      margin-bottom: 0.75rem;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.9rem;
+      margin-bottom: 0.2rem;
+      font-weight: 600;
+    }
+
+    .form-group small {
+      display: block;
+      font-size: 0.75rem;
+      color: #666;
+    }
+
+    select, input, button {
+      font: inherit;
+    }
+
+    select, input[type="number"] {
+      width: 100%;
+      padding: 0.35rem 0.4rem;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+
+    .inline-inputs {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 0.5rem;
+    }
+
+    button {
+      background: #2c7be5;
+      color: #fff;
+      border: none;
+      padding: 0.5rem 0.9rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      margin-top: 0.5rem;
+    }
+
+    button:hover {
+      background: #1a5fbf;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .results {
+      font-size: 0.9rem;
+    }
+
+    .results p {
+      margin: 0.3rem 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0.5rem;
+      font-size: 0.85rem;
+    }
+
+    th, td {
+      padding: 0.3rem 0.35rem;
+      border-bottom: 1px solid #eee;
+      text-align: right;
+    }
+
+    th {
+      text-align: right;
+      font-weight: 600;
+      background: #fafafa;
+    }
+
+    th:first-child, td:first-child {
+      text-align: left;
+    }
+
+    canvas {
+      width: 100%;
+      height: 220px;
+      border-radius: 4px;
+      border: 1px solid #eee;
+      margin-top: 0.5rem;
+      background: #fafafa;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.4rem;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      background: #eef2ff;
+      color: #1f3b7c;
+      margin-left: 0.25rem;
+    }
+
+    .disclaimer {
+      font-size: 0.75rem;
+      color: #666;
+      margin-top: 0.25rem;
+    }
+
+    @media (max-width: 900px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1>
+    Advanced REACH Tool (ART) v1.5-style Exposure Demo
+    <small>Mechanistic source–receptor + lognormal distribution (illustrative only)</small>
+  </h1>
+</header>
+
+<main>
+  <section class="card">
+    <h2>1. Scenario definition</h2>
+
+    <div class="form-group">
+      <label for="chemical">Chemical <span class="badge">vapour/dust type &amp; base level</span></label>
+      <select id="chemical">
+        <!-- You can expand this list; each entry has parameters in JS below -->
+      </select>
+      <small>
+        This dropdown just sets example substance type (vapour vs dust) and a calibrated base GM.
+        Replace with your own substance library as needed.
+      </small>
+    </div>
+
+    <div class="form-group">
+      <label for="taskType">Task / activity type</label>
+      <select id="taskType">
+        <option value="mixing">Mixing / blending in open vessel</option>
+        <option value="pouring">Pouring / transfer</option>
+        <option value="spraying">Spraying / high energy application</option>
+        <option value="closedHandling">Handling in closed system</option>
+      </select>
+    </div>
+
+    <div class="form-group inline-inputs">
+      <div>
+        <label for="sourceType">Source type</label>
+        <select id="sourceType">
+          <option value="smallOpen">Small open surface (&lt; 0.5 m²)</option>
+          <option value="largeOpen">Large open surface (&ge; 0.5 m²)</option>
+          <option value="intermittent">Intermittent / point source</option>
+          <option value="fullyClosed">Fully closed / contained</option>
+        </select>
+      </div>
+      <div>
+        <label for="duration">Duration (min)</label>
+        <input id="duration" type="number" min="1" max="480" value="60" />
+        <small>Task duration during shift</small>
+      </div>
+    </div>
+
+    <div class="form-group inline-inputs">
+      <div>
+        <label for="environment">Environment</label>
+        <select id="environment">
+          <option value="smallRoom">Small room (&lt; 100 m³)</option>
+          <option value="mediumRoom" selected>Medium room (100–1000 m³)</option>
+          <option value="largeRoom">Large room (&gt; 1000 m³)</option>
+          <option value="outdoor">Outdoor / open air</option>
+        </select>
+      </div>
+      <div>
+        <label for="ventilation">General ventilation</label>
+        <select id="ventilation">
+          <option value="poor">Poor / stagnant</option>
+          <option value="normal" selected>Normal mechanical</option>
+          <option value="good">Good / high air exchange</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group inline-inputs">
+      <div>
+        <label for="lev">Local exhaust ventilation (LEV)</label>
+        <select id="lev">
+          <option value="none" selected>None</option>
+          <option value="standard">Standard hood / capture</option>
+          <option value="enclosed">Enclosed + LEV</option>
+        </select>
+      </div>
+      <div>
+        <label for="respProtection">Respiratory protection (APF)</label>
+        <select id="respProtection">
+          <option value="1">No RPE</option>
+          <option value="5">APF 5 (e.g. FFP1)</option>
+          <option value="10">APF 10 (e.g. FFP2 / half mask)</option>
+          <option value="20">APF 20</option>
+          <option value="40">APF 40 (full mask)</option>
+        </select>
+      </div>
+    </div>
+
+    <button id="calculateBtn">Calculate exposure distribution</button>
+
+    <p class="disclaimer">
+      This tool mimics the ART v1.5 multiplicative structure (emission × activity × dispersion × controls)
+      and converts the calibrated GM into a lognormal distribution using generic within/between-worker
+      variance components. All multipliers here are placeholders – plug in the official ART factors for real use.
+    </p>
+  </section>
+
+  <section class="card">
+    <h2>2. Exposure distribution</h2>
+    <div class="results" id="results">
+      <p>Define a scenario and click <strong>Calculate exposure distribution</strong>.</p>
+    </div>
+    <canvas id="distCanvas"></canvas>
+  </section>
+</main>
+
+<script>
+  // -----------------------------
+  //  Utility: lognormal quantiles
+  // -----------------------------
+  function normalQuantile(p) {
+    // Approximate inverse CDF for standard normal (Acklam-style rational approximation).
+    // Accurate enough for graphical work.
+    if (p <= 0 || p >= 1) {
+      throw new Error("p must be in (0,1)");
+    }
+    var a1 = -39.69683028665376,
+        a2 = 220.9460984245205,
+        a3 = -275.9285104469687,
+        a4 = 138.3577518672690,
+        a5 = -30.66479806614716,
+        a6 = 2.506628277459239;
+
+    var b1 = -54.47609879822406,
+        b2 = 161.5858368580409,
+        b3 = -155.6989798598866,
+        b4 = 66.80131188771972,
+        b5 = -13.28068155288572;
+
+    var c1 = -0.007784894002430293,
+        c2 = -0.3223964580411365,
+        c3 = -2.400758277161838,
+        c4 = -2.549732539343734,
+        c5 = 4.374664141464968,
+        c6 = 2.938163982698783;
+
+    var d1 = 0.007784695709041462,
+        d2 = 0.3224671290700398,
+        d3 = 2.445134137142996,
+        d4 = 3.754408661907416;
+
+    var q, r;
+    if (p < 0.02425) {
+      // lower region
+      q = Math.sqrt(-2 * Math.log(p));
+      return (((((c1 * q + c2) * q + c3) * q + c4) * q + c5) * q + c6) /
+             ((((d1 * q + d2) * q + d3) * q + d4) * q + 1);
+    } else if (p > 1 - 0.02425) {
+      // upper region
+      q = Math.sqrt(-2 * Math.log(1 - p));
+      return -(((((c1 * q + c2) * q + c3) * q + c4) * q + c5) * q + c6) /
+              ((((d1 * q + d2) * q + d3) * q + d4) * q + 1);
+    } else {
+      // central region
+      q = p - 0.5;
+      r = q * q;
+      return (((((a1 * r + a2) * r + a3) * r + a4) * r + a5) * r + a6) * q /
+             (((((b1 * r + b2) * r + b3) * r + b4) * r + b5) * r + 1);
+    }
+  }
+
+  function lognormalQuantile(p, gm, gsd) {
+    // gm = geometric mean, gsd = geometric standard deviation
+    var mu = Math.log(gm);
+    var sigma = Math.log(gsd);
+    var z = normalQuantile(p);
+    return Math.exp(mu + sigma * z);
+  }
+
+  // -----------------------------------
+  //  Example chemical library
+  //  (type + calibrated base GM & GSD)
+  // -----------------------------------
+  var chemicals = [
+    {
+      id: "acetone",
+      name: "Acetone",
+      type: "vapour",
+      baseGM: 50,   // mg/m³, placeholder illustrative "central" GM for a reference scenario
+      baseGSD: 2.5  // generic between-scenario uncertainty
+    },
+    {
+      id: "toluene",
+      name: "Toluene",
+      type: "vapour",
+      baseGM: 20,
+      baseGSD: 2.5
+    },
+    {
+      id: "ethanol",
+      name: "Ethanol",
+      type: "vapour",
+      baseGM: 30,
+      baseGSD: 2.5
+    },
+    {
+      id: "silicaDust",
+      name: "Respirable crystalline silica",
+      type: "dust",
+      baseGM: 0.1,
+      baseGSD: 2.7
+    },
+    {
+      id: "genericDust",
+      name: "Generic nuisance dust",
+      type: "dust",
+      baseGM: 1.5,
+      baseGSD: 2.7
+    }
+  ];
+
+  function populateChemicalSelect() {
+    var select = document.getElementById("chemical");
+    chemicals.forEach(function(chem) {
+      var opt = document.createElement("option");
+      opt.value = chem.id;
+      opt.textContent = chem.name + " (" + chem.type + ")";
+      select.appendChild(opt);
+    });
+  }
+
+  // -----------------------------------
+  //  Mechanistic modifiers – simplified
+  // -----------------------------------
+  // NOTE: All multipliers here are illustrative. For real work,
+  // replace with the official ART v1.5 mechanistic factors.
+
+  function getTaskMultiplier(taskType, chemType) {
+    var table = {
+      vapour: {
+        mixing: 1.0,
+        pouring: 1.5,
+        spraying: 5.0,
+        closedHandling: 0.3
+      },
+      dust: {
+        mixing: 2.0,
+        pouring: 1.8,
+        spraying: 4.0,         // e.g. sandblasting
+        closedHandling: 0.4
+      }
+    };
+    return (table[chemType] && table[chemType][taskType]) || 1.0;
+  }
+
+  function getSourceMultiplier(sourceType, chemType) {
+    var table = {
+      vapour: {
+        smallOpen: 1.0,
+        largeOpen: 3.0,
+        intermittent: 0.7,
+        fullyClosed: 0.1
+      },
+      dust: {
+        smallOpen: 1.0,
+        largeOpen: 2.5,
+        intermittent: 0.8,
+        fullyClosed: 0.15
+      }
+    };
+    return (table[chemType] && table[chemType][sourceType]) || 1.0;
+  }
+
+  function getDurationMultiplier(minutes) {
+    // ART generally models time-weighted exposure. Here we scale relative to 60 min task.
+    var base = 60;
+    var ratio = Math.max(minutes, 1) / base;
+    return ratio;
+  }
+
+  function getDispersionMultiplier(environment, ventilation) {
+    // Simple dispersion factor combining room size & general ventilation
+    var envBase = {
+      smallRoom: 2.0,
+      mediumRoom: 1.0,
+      largeRoom: 0.6,
+      outdoor: 0.3
+    };
+    var ventMod = {
+      poor: 1.5,
+      normal: 1.0,
+      good: 0.5
+    };
+    return (envBase[environment] || 1.0) * (ventMod[ventilation] || 1.0);
+  }
+
+  function getLEVMultiplier(lev) {
+    // Placeholder effectiveness values
+    var table = {
+      none: 1.0,
+      standard: 0.3,   // 70% reduction
+      enclosed: 0.1    // 90% reduction
+    };
+    return table[lev] || 1.0;
+  }
+
+  function getRPETMultiplier(apf) {
+    // RPE applied at receptor, dividing exposure by APF
+    var apfVal = parseFloat(apf) || 1;
+    return 1 / apfVal;
+  }
+
+  // Combine factors into mechanistic GM
+  function computeMechanisticGM(chem, inputs) {
+    var taskMult = getTaskMultiplier(inputs.taskType, chem.type);
+    var sourceMult = getSourceMultiplier(inputs.sourceType, chem.type);
+    var durMult = getDurationMultiplier(inputs.durationMin);
+    var dispMult = getDispersionMultiplier(inputs.environment, inputs.ventilation);
+    var levMult = getLEVMultiplier(inputs.lev);
+    var rpeMult = getRPETMultiplier(inputs.respProtection);
+
+    var gm = chem.baseGM *
+      taskMult *
+      sourceMult *
+      durMult *
+      dispMult *
+      levMult *
+      rpeMult;
+
+    return {
+      gm: gm,
+      components: {
+        taskMult: taskMult,
+        sourceMult: sourceMult,
+        durMult: durMult,
+        dispMult: dispMult,
+        levMult: levMult,
+        rpeMult: rpeMult
+      }
+    };
+  }
+
+  // Derive overall GSD – simple combination of calibration uncertainty and within-shift variability
+  function computeOverallGSD(chem) {
+    // These are generic placeholders inspired by ART documentation:
+    //   - calibration uncertainty
+    //   - between-scenario variability
+    //   - within-worker variability
+    // Multiply GSDs in log-space => sqrt(sum(log(GSD_i)^2)), then exponentiate.
+    var gsdCalibration = chem.baseGSD;   // between-scenario / model error
+    var gsdWithinWorker = chem.type === "dust" ? 2.0 : 1.8;
+    var gsdBetweenWorker = 1.5;
+
+    var ln2 = Math.pow(Math.log(gsdCalibration), 2) +
+              Math.pow(Math.log(gsdWithinWorker), 2) +
+              Math.pow(Math.log(gsdBetweenWorker), 2);
+    return Math.exp(Math.sqrt(ln2));
+  }
+
+  // -----------------
+  //  Drawing helpers
+  // -----------------
+  function drawDistributionCanvas(canvas, gm, gsd) {
+    var ctx = canvas.getContext("2d");
+    var w = canvas.width;
+    var h = canvas.height;
+
+    ctx.clearRect(0, 0, w, h);
+
+    if (!isFinite(gm) || gm <= 0 || !isFinite(gsd) || gsd <= 1) {
+      ctx.fillStyle = "#444";
+      ctx.font = "12px system-ui";
+      ctx.fillText("No valid distribution to display.", 10, 20);
+      return;
+    }
+
+    // Build set of quantiles for plotting (5th to 95th)
+    var probs = [];
+    for (var p = 0.05; p <= 0.95 + 1e-9; p += 0.05) {
+      probs.push(p);
+    }
+    var values = probs.map(function(p) { return lognormalQuantile(p, gm, gsd); });
+
+    var minVal = Math.min.apply(null, values);
+    var maxVal = Math.max.apply(null, values);
+
+    // Define axes with some padding
+    var leftPad = 40;
+    var bottomPad = 30;
+    var topPad = 10;
+    var rightPad = 10;
+
+    // Draw axes
+    ctx.strokeStyle = "#999";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(leftPad, topPad);
+    ctx.lineTo(leftPad, h - bottomPad);
+    ctx.lineTo(w - rightPad, h - bottomPad);
+    ctx.stroke();
+
+    ctx.font = "10px system-ui";
+    ctx.fillStyle = "#333";
+
+    // Y-axis ticks (log scale)
+    var tickCount = 4;
+    for (var i = 0; i <= tickCount; i++) {
+      var frac = i / tickCount;
+      var val = minVal * Math.pow(maxVal / minVal, frac);
+      var y = (h - bottomPad) - frac * (h - bottomPad - topPad);
+      ctx.beginPath();
+      ctx.moveTo(leftPad - 3, y);
+      ctx.lineTo(leftPad, y);
+      ctx.stroke();
+      ctx.fillText(val.toFixed(2), 2, y + 3);
+    }
+
+    // X-axis label
+    ctx.fillText("Probability (5% → 95%)", leftPad + 40, h - 10);
+
+    // Plot polyline
+    ctx.beginPath();
+    values.forEach(function(v, idx) {
+      var fracX = idx / (values.length - 1);
+      var x = leftPad + fracX * (w - leftPad - rightPad);
+      var fracY = (Math.log(v) - Math.log(minVal)) / (Math.log(maxVal) - Math.log(minVal) || 1);
+      var y = (h - bottomPad) - fracY * (h - bottomPad - topPad);
+      if (idx === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.strokeStyle = "#2c7be5";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  // ---------------
+  //  UI wiring
+  // ---------------
+  function formatNumber(x, digits) {
+    if (!isFinite(x)) return "–";
+    return x.toFixed(digits);
+  }
+
+  function buildResultsHTML(chem, gm, gsd, components) {
+    var pLevels = [0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95];
+    var rows = pLevels.map(function(p) {
+      var q = lognormalQuantile(p, gm, gsd);
+      return "<tr><td>P" + (p * 100).toFixed(0) + "</td><td>" + formatNumber(q, 3) + "</td></tr>";
+    }).join("");
+
+    return `
+      <p><strong>Chemical:</strong> ${chem.name} (${chem.type})</p>
+      <p><strong>Geometric mean (GM):</strong> ${formatNumber(gm, 3)} mg/m³</p>
+      <p><strong>Geometric standard deviation (overall GSD):</strong> ${formatNumber(gsd, 3)}</p>
+      <p><strong>Key quantiles (lognormal):</strong></p>
+      <table>
+        <thead>
+          <tr>
+            <th>Quantile</th>
+            <th>Exposure (mg/m³)</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+
+      <p style="margin-top:0.6rem;"><strong>Mechanistic factors (relative to reference scenario):</strong></p>
+      <table>
+        <thead>
+          <tr>
+            <th>Component</th>
+            <th>Multiplier</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Task / activity</td><td>${formatNumber(components.taskMult, 2)}</td></tr>
+          <tr><td>Source type</td><td>${formatNumber(components.sourceMult, 2)}</td></tr>
+          <tr><td>Duration</td><td>${formatNumber(components.durMult, 2)}</td></tr>
+          <tr><td>Dispersion (room + ventilation)</td><td>${formatNumber(components.dispMult, 2)}</td></tr>
+          <tr><td>Local exhaust ventilation</td><td>${formatNumber(components.levMult, 2)}</td></tr>
+          <tr><td>RPE (APF)</td><td>${formatNumber(components.rpeMult, 3)}</td></tr>
+        </tbody>
+      </table>
+
+      <p class="disclaimer">
+        Interpretation: The GM is the central estimate from the mechanistic model.
+        The GSD captures combined calibration, within-worker and between-worker variability.
+        Replace the placeholder multipliers and base GMs with values from the ART v1.5
+        mechanistic model and calibration to reproduce official estimates.
+      </p>
+    `;
+  }
+
+  function getSelectedChemical() {
+    var id = document.getElementById("chemical").value;
+    return chemicals.find(function(c) { return c.id === id; });
+  }
+
+  function readInputs() {
+    return {
+      taskType: document.getElementById("taskType").value,
+      sourceType: document.getElementById("sourceType").value,
+      durationMin: parseFloat(document.getElementById("duration").value) || 0,
+      environment: document.getElementById("environment").value,
+      ventilation: document.getElementById("ventilation").value,
+      lev: document.getElementById("lev").value,
+      respProtection: document.getElementById("respProtection").value
+    };
+  }
+
+  function setup() {
+    populateChemicalSelect();
+
+    var canvas = document.getElementById("distCanvas");
+    // Ensure logical canvas size for drawing
+    canvas.width = canvas.clientWidth;
+    canvas.height = canvas.clientHeight;
+
+    document.getElementById("calculateBtn").addEventListener("click", function() {
+      var chem = getSelectedChemical();
+      if (!chem) return;
+
+      var inputs = readInputs();
+      var mech = computeMechanisticGM(chem, inputs);
+      var gm = mech.gm;
+      var gsd = computeOverallGSD(chem);
+
+      var resultsDiv = document.getElementById("results");
+      resultsDiv.innerHTML = buildResultsHTML(chem, gm, gsd, mech.components);
+
+      drawDistributionCanvas(canvas, gm, gsd);
+    });
+
+    // Draw placeholder on first load
+    drawDistributionCanvas(canvas, NaN, NaN);
+  }
+
+  window.addEventListener("load", setup);
+  window.addEventListener("resize", function() {
+    // Resize canvas to keep chart crisp
+    var canvas = document.getElementById("distCanvas");
+    canvas.width = canvas.clientWidth;
+    canvas.height = canvas.clientHeight;
+    // Redraw with last known distribution? For simplicity, we skip that here.
+  });
+</script>
+</body>
+</html>
