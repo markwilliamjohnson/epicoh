@@ -1,0 +1,681 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Data Science / AI Lab – 5-Week Learning Journey</title>
+  <style>
+    :root {
+      --bg: #020617;
+      --panel: #020617;
+      --panel-soft: #0b1120;
+      --border-soft: #1f2937;
+      --text-main: #f9fafb;
+      --text-muted: #9ca3af;
+      --accent-1: #0f5c78;
+      --accent-2: #d87229;
+      --accent-3: #0c9ad7;
+      --accent-4: #a32598;
+      --accent-5: #0f6a2d;
+      --radius-pill: 2.5rem;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+      background: radial-gradient(circle at top, #111827 0, #020617 55%);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    .app {
+      max-width: 1100px;
+      width: 100%;
+    }
+
+    header {
+      margin-bottom: 1rem;
+    }
+
+    header h1 {
+      font-size: 1.8rem;
+      color: #facc15;
+      margin-bottom: 0.25rem;
+    }
+
+    header p {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      max-width: 800px;
+      line-height: 1.5;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 2.2fr) minmax(0, 3fr);
+      gap: 1.5rem;
+      margin-top: 1rem;
+    }
+
+    /* learner selector ---------------------------------------------------- */
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+      font-size: 0.85rem;
+    }
+
+    .toolbar label {
+      color: var(--text-muted);
+    }
+
+    select {
+      background: #020617;
+      color: var(--text-main);
+      border-radius: 999px;
+      border: 1px solid var(--border-soft);
+      padding: 0.35rem 0.75rem;
+      font-size: 0.85rem;
+      outline: none;
+    }
+
+    /* week cards ---------------------------------------------------------- */
+    .week-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .week-card {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.8rem;
+      padding: 0.9rem 1rem;
+      border-radius: var(--radius-pill);
+      background: var(--panel-soft);
+      border: 1px solid var(--border-soft);
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: background 0.15s ease, transform 0.15s ease,
+        border-color 0.15s ease;
+    }
+
+    .week-card:hover {
+      transform: translateY(-1px);
+      border-color: #4b5563;
+    }
+
+    .week-card.active {
+      border-color: #e5e7eb;
+      background: #020617;
+    }
+
+    .pill {
+      width: 70px;
+      min-height: 110px;
+      border-radius: var(--radius-pill);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.7rem 0.4rem;
+      color: #f9fafb;
+      font-weight: 600;
+      font-size: 0.8rem;
+    }
+
+    .pill span.week-number {
+      font-size: 1.4rem;
+    }
+
+    .week-main-title {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 0.15rem;
+    }
+
+    .week-meta {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 0.25rem;
+    }
+
+    .week-summary {
+      font-size: 0.8rem;
+      color: #e5e7eb;
+    }
+
+    /* detail panel -------------------------------------------------------- */
+    .detail {
+      background: var(--panel);
+      border-radius: 1.5rem;
+      border: 1px solid var(--border-soft);
+      padding: 1.2rem 1.3rem;
+      font-size: 0.85rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.9rem;
+    }
+
+    .detail-header {
+      border-bottom: 1px solid var(--border-soft);
+      padding-bottom: 0.5rem;
+      display: flex;
+      justify-content: space-between;
+      gap: 0.8rem;
+      align-items: baseline;
+    }
+
+    .detail-header h2 {
+      font-size: 1.1rem;
+      margin-bottom: 0.1rem;
+    }
+
+    .detail-small {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .detail-body {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.8rem;
+    }
+
+    .detail-column h3 {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.25rem;
+      color: #c4ddff;
+    }
+
+    .detail-column ul {
+      list-style: disc;
+      padding-left: 1rem;
+      line-height: 1.5;
+    }
+
+    .detail-column li + li {
+      margin-top: 0.2rem;
+    }
+
+    .detail-learner {
+      border-top: 1px dashed var(--border-soft);
+      padding-top: 0.6rem;
+      margin-top: 0.1rem;
+      font-size: 0.8rem;
+      color: #e5e7eb;
+    }
+
+    .detail-learner h3 {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.25rem;
+      color: #fde68a;
+    }
+
+    .detail-footer {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    @media (max-width: 700px) {
+      body {
+        padding: 1rem;
+      }
+      .week-card {
+        grid-template-columns: 1fr;
+      }
+      .pill {
+        width: 100%;
+        flex-direction: row;
+      }
+      .detail-body {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>Data Science / AI Lab – 5-Week Journey</h1>
+    <p>
+      A laboratory-style programme for Chiesi staff and university students.
+      The goal is to stimulate cross-fertilisation between data specialists,
+      data owners, non-technical experts and managers, using two hackathons
+      and shared “What if…?” questions to explore responsible innovation.
+    </p>
+  </header>
+
+  <div class="layout">
+    <!-- LEFT: Weeks ------------------------------------------------------->
+    <section>
+      <div class="toolbar">
+        <label for="learnerSelect">View this journey as:</label>
+        <select id="learnerSelect">
+          <option value="all">All learners together (lab view)</option>
+          <option value="data-specialist">Data specialist (data scientist, engineer, computational scientist)</option>
+          <option value="data-owner">Data owner / producer (data steward, quality lead, registry owner)</option>
+          <option value="non-technical">Non-technical staff (marketing, medical, operations)</option>
+          <option value="manager">Manager / leader / change champion</option>
+        </select>
+      </div>
+
+      <div id="weekList" class="week-list"></div>
+    </section>
+
+    <!-- RIGHT: Detail panel ----------------------------------------------->
+    <section id="detail" class="detail"></section>
+  </div>
+</div>
+
+<script>
+  // learner profiles inspired by spreadsheet responses ----------------------
+  const learnerProfiles = {
+    "all": {
+      label: "All learners",
+      overview:
+        "The lab works when these groups share their ‘What if…?’ questions and look at each other’s assumptions. Each week mixes pharma-domain expertise with data and organisational perspectives.",
+      weekly: {
+        1: [
+          "Surface different perspectives on the same problem and turn them into shared ‘What if…?’ lab questions.",
+          "Notice where data, ethics, and practical workflow concerns intersect across roles."
+        ],
+        2: [
+          "Compare how different groups imagine solution spaces and what they see as opportunities or risks.",
+          "Use the first hackathon with students to enlarge the problem/solution space (AREA: Reflection on what could be done)."
+        ],
+        3: [
+          "Co-model the organisation: who owns which data, who is affected by each solution space, and what metadata and quality signals are needed.",
+          "Move from individual ideas to self-sustaining collaborations around shared models and notebooks."
+        ],
+        4: [
+          "Use the second hackathon to stress-test ideas against real organisational and data constraints (AREA: Anticipation).",
+          "Balance ambition with feasibility in a pharma environment."
+        ],
+        5: [
+          "Turn joint learning into plans for sustained innovation beyond the 5-week lab.",
+          "Agree how different roles will keep talking, experimenting and sharing data responsibly."
+        ]
+      }
+    },
+    "data-specialist": {
+      label: "Data specialist",
+      overview:
+        "You already work with data, analytics or modelling. In this lab the focus is on connecting your technical skills to real organisational questions and constraints in a pharma setting.",
+      weekly: {
+        1: [
+          "Help translate broad clinical or business questions into precise, model-ready ‘What if…?’ scenarios.",
+          "Explain data limitations, metadata and quality issues in language that non-technical colleagues can use."
+        ],
+        2: [
+          "Use the first hackathon to map the problem/solution space: which modelling approaches could answer each ‘What if…?’",
+          "Prototype in notebooks to quickly show what might be possible, without over-promising."
+        ],
+        3: [
+          "Co-design an analytical architecture (pipelines, features, evaluation) that fits existing pharma processes and governance.",
+          "Document technical assumptions so others can challenge and extend your work."
+        ],
+        4: [
+          "Refine models or analytical approaches within the real data constraints surfaced so far.",
+          "Work with students to implement thin slices of the solution that demonstrate value safely."
+        ],
+        5: [
+          "Contribute to technical appendices, reusable notebooks and data quality playbooks.",
+          "Shape a roadmap for future experiments that other data specialists and non-specialists can join."
+        ]
+      }
+    },
+    "data-owner": {
+      label: "Data owner / producer",
+      overview:
+        "You look after datasets, registries or reporting processes. The lab helps you move from being a ‘data provider’ to a partner in designing new AI-enabled services.",
+      weekly: {
+        1: [
+          "Clarify what your datasets really capture (and what they don’t) when framing ‘What if…?’ questions.",
+          "Highlight metadata, lineage and quality issues that will shape any realistic solution."
+        ],
+        2: [
+          "During the first hackathon, flag where proposed solutions need better metadata, governance or standards.",
+          "Help students understand regulatory and compliance boundaries in pharma."
+        ],
+        3: [
+          "Co-create data models, dictionaries and quality rules that make collaboration easier and more self-sustaining.",
+          "Identify quick wins to improve data quality that unlock promising solution spaces."
+        ],
+        4: [
+          "Assess which solutions respect ownership, consent and pharmacovigilance needs.",
+          "Shape data-access patterns that are safe but still support experimentation."
+        ],
+        5: [
+          "Agree ongoing stewardship responsibilities and quality monitoring for chosen solutions.",
+          "Embed learnings into data quality reports, metadata guidelines and onboarding materials."
+        ]
+      }
+    },
+    "non-technical": {
+      label: "Non-technical staff (marketing / medical / operations)",
+      overview:
+        "You bring deep knowledge of patients, products, markets and processes. The lab treats you as co-designers, not just ‘end users’.",
+      weekly: {
+        1: [
+          "Express real-world pains and opportunities as ‘What if…?’ questions (e.g. What if we could see this signal earlier?).",
+          "Learn how data is structured so you can judge whether an AI idea is meaningful for your workflow."
+        ],
+        2: [
+          "Use the first hackathon to react to a wide variety of student ideas and solution spaces.",
+          "Explain which ideas would actually change behaviour in clinics, marketing or operations."
+        ],
+        3: [
+          "Co-develop simple process models showing who would use each solution, when and how.",
+          "Work with data colleagues to define outcomes and measures that matter to patients and teams."
+        ],
+        4: [
+          "Evaluate second-hackathon prototypes against regulatory, ethical and workload realities.",
+          "Practice telling the story of ‘why this matters’ for colleagues who are sceptical of AI."
+        ],
+        5: [
+          "Draft practical change-management steps (training, communication, pilot sites).",
+          "Turn your insights into a business plan or feasibility report that leaders can act on."
+        ]
+      }
+    },
+    "manager": {
+      label: "Manager / leader / change champion",
+      overview:
+        "You are responsible for strategy, teams or portfolios. The lab helps you understand AI as a partner, not just a technology, and to sponsor responsible experimentation.",
+      weekly: {
+        1: [
+          "Frame strategic ‘What if…?’ questions that connect to outcomes (patients, market access, efficiency).",
+          "Understand the role and management of data, and what working with an ‘AI colleague’ might really mean."
+        ],
+        2: [
+          "Use the first hackathon as a safe space to see a broad range of solution spaces without committing yet.",
+          "Reflect on which spaces align with Chiesi’s values, risk appetite and long-term strategy."
+        ],
+        3: [
+          "Work with teams to select solution spaces that best fit the organisation’s capabilities and data reality.",
+          "Identify sponsorship, decision points and resources needed to move from idea to experiment."
+        ],
+        4: [
+          "At the second hackathon, focus on feasibility, value and risk trade-offs of concrete solutions.",
+          "Decide which solutions should move into pilots, and what success would look like."
+        ],
+        5: [
+          "Articulate a sustained innovation plan: how to keep small experiments running after the course.",
+          "Clarify governance and operating rhythms so learning keeps feeding into strategy."
+        ]
+      }
+    }
+  };
+
+  // weeks / phases based on your image & description ------------------------
+  const weeks = [
+    {
+      id: 1,
+      label: "Week 1",
+      title: "Understand requirements – Lab framing",
+      time: "3.5 hours (plus 1 hour pre-work)",
+      color: "var(--accent-1)",
+      support: "Academics",
+      summary:
+        "Requirements analysis in a lab setting: surface cross-functional needs and turn them into shared ‘What if…?’ questions.",
+      objectives: [
+        "Agree the formal specification of lab objectives in the form of ‘What if…?’ questions.",
+        "Map key pharma stakeholders (data producers, owners, users, managers, students) and their expectations.",
+        "Understand available data, metadata and quality limitations that will shape any solution."
+      ],
+      activities: [
+        "Pre-work: short readings on Chiesi’s context, AREA framework and example AI use-cases.",
+        "Facilitated workshop with academics to unpack challenges and capture ‘What if…?’ questions from different roles.",
+        "Data walk-through: sources, governance, and quality issues relevant to each question.",
+        "Agree which questions move forward into the Week 2 hackathon."
+      ],
+      learning: [
+        "How to express complex organisational and clinical issues as precise, shareable ‘What if…?’ questions.",
+        "Appreciation of metadata and data quality as central to AI, not an afterthought.",
+        "Early experience of cross-fertilisation: hearing how other groups see the same problem."
+      ]
+    },
+    {
+      id: 2,
+      label: "Week 2",
+      title: "Hackathon #1 – Problem / solution space",
+      time: "4 hours (plus 3 hours post-session work)",
+      color: "var(--accent-2)",
+      support: "Academics · Students",
+      summary:
+        "First hackathon with university students: explore the problem/solution space as a way of anticipation and reflection in the AREA framework.",
+      objectives: [
+        "Identify a wide range of potential solution spaces to address the shared ‘What if…?’ questions.",
+        "Use problem/solution space mapping to anticipate how different approaches could play out.",
+        "Capture insights from students to broaden thinking and avoid premature convergence."
+      ],
+      activities: [
+        "Lightning talks: similar case studies, responsible innovation, anticipation & reflection in the AREA framework.",
+        "Mixed teams (Chiesi staff + students) sketch possible solution spaces – including data, models, processes and ethics.",
+        "Rapid exploration in Jupyter notebooks or whiteboard tools to visualise ideas.",
+        "Teams pitch solution spaces; course participants vote on those that best fit organisational needs."
+      ],
+      learning: [
+        "Hands-on experience with problem/solution space identification as anticipation.",
+        "Understanding of how different disciplines imagine solutions and risks.",
+        "A curated set of promising solution spaces to carry into modelling and proposal development."
+      ]
+    },
+    {
+      id: 3,
+      label: "Week 3",
+      title: "Develop proposals – Modelling organisation & solutions",
+      time:
+        "Mentoring sessions: 5 × 2 hours over 5 weeks · Self-led learning: 15 hours",
+      color: "var(--accent-3)",
+      support: "Academic mentors",
+      summary:
+        "Turn chosen solution spaces into models of the organisation and candidate solutions; build self-sustaining collaboration.",
+      objectives: [
+        "Model the organisation and data landscape around each selected solution space.",
+        "Define technical architecture, data pipeline and evaluation strategy for each proposal.",
+        "Strengthen cross-role collaboration so teams can work semi-independently."
+      ],
+      activities: [
+        "Regular mentoring sessions with academics on experimentation design and data modelling.",
+        "Team work on metadata definitions, data quality rules, and simple process models.",
+        "Self-led learning using example materials: understanding metadata, data quality reports, case studies, Jupyter notebooks.",
+        "Drafting concise proposal packs including value case, risks and implementation considerations."
+      ],
+      learning: [
+        "How to connect organisational models, data models and solution design.",
+        "Deeper understanding of metadata, data quality, and governance in a pharma context.",
+        "Practical experience using notebooks and shared artefacts to support self-sustaining collaboration."
+      ]
+    },
+    {
+      id: 4,
+      label: "Week 4",
+      title: "Hackathon #2 – Constrained solutions",
+      time: "4 hours (plus 3 hours post-session work)",
+      color: "var(--accent-4)",
+      support: "Academics · Chiesi sponsors · Students",
+      summary:
+        "Second hackathon: identify concrete solutions to ‘What if…?’ questions within real organisational and data constraints.",
+      objectives: [
+        "Stress-test proposals against regulatory, technical and organisational constraints.",
+        "Refine solutions so they are implementable within existing pharma processes.",
+        "Prepare clear, persuasive presentations of final solutions."
+      ],
+      activities: [
+        "Teams refine their models and prototypes; students contribute implementation ideas.",
+        "Hackathon session with Chiesi sponsors for critique on feasibility, value and risk.",
+        "Presentation of final solutions with clear link back to original ‘What if…?’ questions.",
+        "Collection of feedback to feed into final planning."
+      ],
+      learning: [
+        "How to move from open-ended exploration to realistic solution design.",
+        "Experience balancing innovation with safety, compliance and organisational fit.",
+        "Improved storytelling with data and ability to answer critical questions from sponsors."
+      ]
+    },
+    {
+      id: 5,
+      label: "Week 5",
+      title: "Finalise outputs – Plan sustained innovation",
+      time:
+        "Mentoring sessions: 5 × 2 hours · Self-led learning: 15 hours",
+      color: "var(--accent-5)",
+      support: "Academics · Chiesi sponsors",
+      summary:
+        "Translate learning into sustained innovation plans: feasibility report, data quality report, business plan and change strategy.",
+      objectives: [
+        "Consolidate lab learning into professional outputs tailored to Chiesi’s context.",
+        "Articulate a plan for continued experimentation and collaboration after the course.",
+        "Embed AREA-style anticipation and reflection into ongoing work."
+      ],
+      activities: [
+        "Co-writing of key outputs: feasibility reports, business plans, data quality reports, technical appendices.",
+        "Development of supporting assets – dashboards, notebooks, example outputs, agile change strategies.",
+        "Final reflection session: what was learned across roles, what should continue, what should change.",
+        "Handover meeting with sponsors to agree next steps and ownership."
+      ],
+      learning: [
+        "How to package AI and data-science work into artefacts leaders can act on.",
+        "Practical exposure to change-management and agile implementation in a pharma company.",
+        "Clear personal and organisational next steps for sustaining innovation."
+      ]
+    }
+  ];
+
+  const weekList = document.getElementById("weekList");
+  const detailPanel = document.getElementById("detail");
+  const learnerSelect = document.getElementById("learnerSelect");
+
+  let activeWeekId = weeks[0].id;
+
+  function renderWeekCards() {
+    weekList.innerHTML = "";
+    weeks.forEach((w) => {
+      const card = document.createElement("article");
+      card.className = "week-card" + (w.id === activeWeekId ? " active" : "");
+      card.dataset.id = w.id;
+
+      const pill = document.createElement("div");
+      pill.className = "pill";
+      pill.style.background = w.color;
+      pill.innerHTML = `
+        <span>${w.label}</span>
+        <span class="week-number">${String(w.id).padStart(2, "0")}</span>
+      `;
+
+      const body = document.createElement("div");
+      body.innerHTML = `
+        <div class="week-main-title">${w.title}</div>
+        <div class="week-meta"><strong>Support:</strong> ${w.support}</div>
+        <div class="week-meta"><strong>Time:</strong> ${w.time}</div>
+        <p class="week-summary">${w.summary}</p>
+      `;
+
+      card.appendChild(pill);
+      card.appendChild(body);
+
+      card.addEventListener("click", () => {
+        activeWeekId = w.id;
+        renderWeekCards();
+        renderDetail();
+      });
+
+      weekList.appendChild(card);
+    });
+  }
+
+  function renderDetail() {
+    const week = weeks.find((w) => w.id === activeWeekId);
+    const learnerKey = learnerSelect.value;
+    const profile = learnerProfiles[learnerKey];
+
+    const learnerWeeks = (profile && profile.weekly) || {};
+    const thisWeekLearnerBullets = learnerWeeks[week.id] || [];
+    const learnerIntro = profile ? profile.overview : "";
+
+    detailPanel.innerHTML = `
+      <div class="detail-header">
+        <div>
+          <div class="detail-small">${week.label} · Phase ${week.id} of 5</div>
+          <h2>${week.title}</h2>
+          <div class="detail-small">Support: ${week.support}</div>
+        </div>
+        <div class="detail-small">
+          <strong>Time commitment:</strong><br>${week.time}
+        </div>
+      </div>
+
+      <div class="detail-body">
+        <div class="detail-column">
+          <h3>Overall objectives</h3>
+          <ul>
+            ${week.objectives.map((o) => `<li>${o}</li>`).join("")}
+          </ul>
+        </div>
+        <div class="detail-column">
+          <h3>Activities in the lab</h3>
+          <ul>
+            ${week.activities.map((a) => `<li>${a}</li>`).join("")}
+          </ul>
+        </div>
+        <div class="detail-column">
+          <h3>Learning gained</h3>
+          <ul>
+            ${week.learning.map((l) => `<li>${l}</li>`).join("")}
+          </ul>
+        </div>
+      </div>
+
+      <div class="detail-learner">
+        <h3>${profile.label}</h3>
+        <p class="detail-small" style="margin-bottom:0.4rem;">${learnerIntro}</p>
+        ${
+          thisWeekLearnerBullets.length
+            ? `<ul>${thisWeekLearnerBullets
+                .map((b) => `<li>${b}</li>`)
+                .join("")}</ul>`
+            : "<p>No specific notes for this week.</p>"
+        }
+      </div>
+
+      <div class="detail-footer">
+        This 5-week programme is deliberately run as a lab: ideas are tested,
+        reflected on and refined through shared ‘What if…?’ questions, two
+        hackathons with university students, mentoring sessions, and self-led
+        learning materials such as metadata guides, data quality reports, case
+        studies and Jupyter notebooks.
+      </div>
+    `;
+  }
+
+  learnerSelect.addEventListener("change", renderDetail);
+
+  // Initial render
+  renderWeekCards();
+  renderDetail();
+</script>
+</body>
+</html>
