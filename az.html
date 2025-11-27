@@ -1,0 +1,1299 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>AI in Drug Design – Learning Journey</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #050816;
+      --bg-alt: #0b1020;
+      --card: #111827;
+      --accent: #38bdf8;
+      --accent-soft: rgba(56, 189, 248, 0.16);
+      --accent-strong: rgba(56, 189, 248, 0.25);
+      --text-main: #e5e7eb;
+      --text-muted: #9ca3af;
+      --border-soft: rgba(148, 163, 184, 0.5);
+      --radius-xl: 18px;
+      --shadow-soft: 0 18px 45px rgba(0, 0, 0, 0.55);
+      --transition-fast: 0.18s ease-out;
+      --transition-med: 0.25s ease-out;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top left, #1d3557 0, #050816 45%);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .app-shell {
+      max-width: 1080px;
+      width: 100%;
+      margin: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    header.app-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 20px;
+      padding: 16px 20px;
+      background: linear-gradient(120deg, rgba(15, 23, 42, 0.94), rgba(15, 23, 42, 0.2));
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.9);
+      backdrop-filter: blur(18px);
+    }
+
+    .title-block {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .title-block h1 {
+      font-size: 1.5rem;
+      letter-spacing: 0.03em;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .title-pill {
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(156, 163, 175, 0.7);
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+    }
+
+    .title-block p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      max-width: 620px;
+    }
+
+    .header-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .chip {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      padding: 6px 11px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      background: rgba(15, 23, 42, 0.92);
+      color: var(--text-muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .chip-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+    }
+
+    .main-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 0.35fr) minmax(0, 0.65fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    /* Sidebar timeline */
+    .sidebar {
+      background: rgba(15, 23, 42, 0.92);
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border-soft);
+      box-shadow: var(--shadow-soft);
+      padding: 16px 14px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .sidebar h2 {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--text-muted);
+      margin-left: 4px;
+    }
+
+    .timeline {
+      margin-top: 2px;
+      position: relative;
+    }
+
+    .timeline::before {
+      content: "";
+      position: absolute;
+      top: 6px;
+      left: 13px;
+      bottom: 6px;
+      border-left: 1px dashed rgba(148, 163, 184, 0.5);
+    }
+
+    .timeline-item {
+      position: relative;
+      padding: 8px 10px 10px 32px;
+      border-radius: 999px;
+      cursor: pointer;
+      margin: 4px 0;
+      transition: background var(--transition-fast), transform var(--transition-fast),
+        border-color var(--transition-fast), box-shadow var(--transition-fast);
+      border: 1px solid transparent;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      width: 100%;
+      text-align: left;
+      min-height: 82px; /* consistent size */
+    }
+
+    .timeline-item:hover {
+      background: rgba(15, 23, 42, 0.9);
+      transform: translateY(-1px);
+      border-color: rgba(148, 163, 184, 0.7);
+      box-shadow: 0 10px 22px rgba(15, 23, 42, 0.9);
+    }
+
+    .timeline-item.active {
+      background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.14), rgba(15, 23, 42, 0.98));
+      border-color: rgba(148, 163, 184, 0.9);
+      box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.9), 0 0 0 1px rgba(148, 163, 184, 0.8);
+    }
+
+    .timeline-dot {
+      position: absolute;
+      left: 7px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      border: 2px solid transparent;
+      background: #020617;
+      box-sizing: border-box;
+    }
+
+    .timeline-item.active .timeline-dot {
+      transform: translateY(-50%) scale(1.05);
+    }
+
+    .timeline-week {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--text-muted);
+    }
+
+    .timeline-label {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: #e5e7eb;
+    }
+
+    .timeline-area {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    .sidebar-note {
+      margin-top: 4px;
+      padding: 10px 10px;
+      border-radius: 12px;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .sidebar-note strong {
+      color: #e5e7eb;
+      font-weight: 600;
+    }
+
+    /* Content panel */
+    .content-card {
+      background: radial-gradient(circle at top, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.98));
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border-soft);
+      box-shadow: var(--shadow-soft);
+      padding: 18px 18px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .content-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(
+        circle at 0% 0%,
+        rgba(56, 189, 248, 0.12),
+        transparent 55%
+      );
+      opacity: 0.7;
+      pointer-events: none;
+    }
+
+    .content-inner {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .stage-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .stage-title-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .badge {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      color: var(--text-muted);
+      background: rgba(15, 23, 42, 0.92);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .badge-pill {
+      background: linear-gradient(135deg, var(--accent-strong), rgba(15, 23, 42, 0.96));
+      border-color: rgba(56, 189, 248, 0.8);
+      color: #e0f2fe;
+      box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.9);
+    }
+
+    .badge span.emoji {
+      font-size: 0.95rem;
+    }
+
+    .stage-name {
+      font-size: 1.2rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .area-pill {
+      font-size: 0.8rem;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      background: rgba(15, 23, 42, 0.96);
+      color: var(--text-muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+
+    .area-pill strong {
+      color: #e5e7eb;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-size: 0.78rem;
+    }
+
+    .project-pill {
+      margin-top: 4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      background: rgba(15, 23, 42, 0.96);
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      max-width: 100%;
+    }
+
+    .project-pill strong {
+      color: #e5e7eb;
+    }
+
+    .stage-summary {
+      font-size: 0.92rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .stage-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 2px;
+    }
+
+    .mini-tag {
+      font-size: 0.7rem;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--text-muted);
+    }
+
+    .questions-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 2px;
+    }
+
+    .question-column {
+      background: rgba(15, 23, 42, 0.96);
+      border-radius: 14px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      padding: 10px 10px 9px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-height: 120px;
+    }
+
+    .question-column h3 {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .question-column h3 span.emoji {
+      font-size: 1rem;
+    }
+
+    .question-column ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 0.84rem;
+      color: #e5e7eb;
+    }
+
+    .question-column li {
+      position: relative;
+      padding-left: 14px;
+      line-height: 1.4;
+    }
+
+    .question-column li::before {
+      content: "•";
+      position: absolute;
+      left: 2px;
+      top: 0;
+      color: var(--accent);
+      font-size: 0.8rem;
+    }
+
+    .footer-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 6px;
+      flex-wrap: wrap;
+    }
+
+    .progress-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .progress-bar {
+      position: relative;
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 1);
+      overflow: hidden;
+      border: 1px solid rgba(15, 23, 42, 0.9);
+    }
+
+    .progress-bar-fill {
+      position: absolute;
+      inset: 0;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent), #4ade80);
+      box-shadow: 0 0 18px rgba(56, 189, 248, 0.7);
+      transition: width var(--transition-med);
+    }
+
+    .progress-label {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    button.nav-btn {
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      background: rgba(15, 23, 42, 0.98);
+      color: #e5e7eb;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      padding: 7px 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: background var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast),
+        border-color var(--transition-fast);
+    }
+
+    button.nav-btn.primary {
+      background: linear-gradient(135deg, var(--accent), #4ade80);
+      color: #020617;
+      border-color: transparent;
+      box-shadow: 0 16px 35px rgba(56, 189, 248, 0.5);
+      font-weight: 600;
+    }
+
+    button.nav-btn:disabled {
+      opacity: 0.5;
+      cursor: default;
+      box-shadow: none;
+      transform: none;
+    }
+
+    button.nav-btn:not(:disabled):hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.75);
+      background: rgba(15, 23, 42, 1);
+    }
+
+    button.nav-btn.primary:not(:disabled):hover {
+      box-shadow: 0 18px 40px rgba(56, 189, 248, 0.55);
+    }
+
+    .key-message {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      max-width: 380px;
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+    }
+
+    .key-message span.emoji {
+      margin-top: 1px;
+    }
+
+    .project-selector {
+      margin-top: 6px;
+      margin-bottom: 4px;
+      padding: 8px 10px;
+      border-radius: 14px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      background: rgba(15, 23, 42, 0.96);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    .project-selector label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+    }
+
+    .project-selector select {
+      background: #020617;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      padding: 6px 10px;
+      color: #e5e7eb;
+      font-size: 0.85rem;
+      outline: none;
+    }
+
+    .project-selector small {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    /* Simple fade animation when stage changes */
+    .fade-in {
+      animation: fadeInUp 0.25s ease-out;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(4px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Responsive */
+    @media (max-width: 880px) {
+      header.app-header {
+        border-radius: 18px;
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .main-layout {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 14px;
+      }
+
+      .content-card {
+        padding: 14px 12px 12px;
+      }
+
+      .questions-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .sidebar {
+        padding: 14px 10px 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      <div class="title-block">
+        <h1>
+          AI in Drug Design: Learning Journey
+          <span class="title-pill">Simulation • 6 Weeks</span>
+        </h1>
+        <p>
+          Follow a software developer on placement in a multinational drug company as they co-create,
+          coordinate, and communicate AI projects across teams. See how different technical projects
+          connect to form a coherent organisational AI strategy.
+        </p>
+      </div>
+      <div class="header-tags" aria-hidden="true">
+        <span class="chip"><span class="chip-dot"></span>University–Industry Collaboration</span>
+        <span class="chip"><span class="chip-dot"></span>AI in Drug Design</span>
+        <span class="chip"><span class="chip-dot"></span>AREA Framework</span>
+      </div>
+    </header>
+
+    <main class="main-layout">
+      <!-- Sidebar: Journey timeline -->
+      <aside class="sidebar" aria-label="Learning journey stages">
+        <h2>Journey Map</h2>
+        <div class="timeline" id="timeline"></div>
+        <div class="sidebar-note">
+          <strong>Why this simulation?</strong><br />
+          Organisations rarely struggle for AI ideas, but for <em>coordination</em> between them. The core
+          challenge is creating synergy between multiple projects, teams, and senior decision-makers so that
+          technical work adds up to a coherent strategy rather than isolated pilots.
+        </div>
+      </aside>
+
+      <!-- Main content: Stage details -->
+      <section class="content-card" aria-live="polite">
+        <div class="content-inner" id="content">
+          <!-- Filled by JavaScript -->
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    // Project choices for Week 0 (Before Week 1)
+    const projectOptions = [
+      {
+        id: "multiAgent",
+        label: "Multi-agent coordination for drug discovery workflows",
+        short: "Multi-agent coordination",
+        description:
+          "Agents help coordinate screening, modelling, and reporting steps across scientific teams, highlighting bottlenecks and handovers.",
+        color: "#38bdf8"
+      },
+      {
+        id: "imaging",
+        label: "AI imaging & digital pathology for tissue analysis",
+        short: "AI imaging & digital pathology",
+        description:
+          "Models analyse complex histology images to support pathology workflows, quality control, and earlier decision-making.",
+        color: "#a855f7"
+      },
+      {
+        id: "compute",
+        label: "Compute frameworks & specifications for large-scale AI models",
+        short: "AI compute frameworks",
+        description:
+          "You design scalable compute and tooling so that multiple AI projects can share infrastructure efficiently and safely.",
+        color: "#22c55e"
+      },
+      {
+        id: "portfolio",
+        label: "Cross-project coordination & AI portfolio intelligence",
+        short: "Cross-project coordination",
+        description:
+          "You build tools to see how dozens of AI initiatives fit together, reduce duplication, and surface synergies across the portfolio.",
+        color: "#f97316"
+      }
+    ];
+
+    // Colour palette for the left-hand timeline buttons
+    const stageColors = [
+      "#38bdf8",
+      "#a855f7",
+      "#22c55e",
+      "#f97316",
+      "#eab308",
+      "#06b6d4",
+      "#f97316"
+    ];
+
+    // Data model for the journey stages
+    const stages = [
+      {
+        id: 0,
+        weekLabel: "Before Week 1",
+        name: "Choosing & Positioning an AI Project",
+        areaPillar: "Framing the Challenge",
+        areaDescription:
+          "Clarifying how AI projects connect to each other and to organisational strategy.",
+        icon: "🎯",
+        summary:
+          "You arrive as a software developer on placement in a multinational drug company. Together with your university mentor, you explore a portfolio of potential AI projects in drug design. You consider not only each project’s local impact, but also how your chosen {{project}} can complement and coordinate with other initiatives.",
+        tags: [
+          "Project selection",
+          "Cross-project coordination",
+          "University–industry partnership"
+        ],
+        projectExamples: [
+          "Multi-agent systems coordinating drug discovery workflows",
+          "AI imaging & digital pathology for tissue analysis",
+          "Compute frameworks & specifications for large-scale AI models"
+        ],
+        questions: {
+          learning: [
+            "What kinds of AI projects are most strategically important for this organisation right now?",
+            "How does your chosen {{project}} sit alongside other AI projects already in motion?",
+            "Who are the key stakeholders (scientists, clinicians, IT, compliance, management) affected by each project?"
+          ],
+          insights: [
+            "Not every technically exciting idea solves a genuine organisational problem.",
+            "Different departments understand 'AI in drug design' in very different ways.",
+            "Each project is part of a wider AI portfolio; coordination and interoperability matter as much as local optimisation."
+          ],
+          options: [
+            "Narrow down to 1–2 candidate projects to explore in depth and map their overlaps.",
+            "Draft a short problem statement for each candidate, including how it may share data, models, or infrastructure with other projects.",
+            "Identify which projects create visible value for senior management and synergies across teams within 6–12 months."
+          ]
+        }
+      },
+      {
+        id: 1,
+        weekLabel: "Week 1",
+        name: "Eliciting Requirements with AI Support",
+        areaPillar: "Requirements & Formalisation",
+        areaDescription:
+          "Turning loosely defined ideas into structured requirements that AI systems can address.",
+        icon: "🧩",
+        summary:
+          "In Week 1, you elicit the requirements of your chosen {{project}}. You explore how AI tools can help you formalise messy, real-world needs into precise technical and organisational requirements, keeping an eye on how your project will integrate with other AI initiatives.",
+        tags: [
+          "Requirements elicitation",
+          "Prompting & formalisation",
+          "Stakeholder interviews"
+        ],
+        projectExamples: [],
+        questions: {
+          learning: [
+            "What problem are we truly solving with {{project}}, and how will we recognise success?",
+            "Which data, infrastructure, and human processes does this project depend upon and share with other AI work?",
+            "How can AI tools (e.g. structured prompting) help turn stakeholder interviews into formal requirements and interface contracts?"
+          ],
+          insights: [
+            "Stakeholders often describe symptoms, not underlying requirements.",
+            "Requirements include constraints (e.g. regulatory, ethical, usability), not just features.",
+            "Early decisions about data formats and APIs will strongly influence how {{project}} can coordinate with other systems later."
+          ],
+          options: [
+            "Create a requirements canvas that links user stories to organisational goals and to neighbouring AI projects.",
+            "Use AI to generate alternative formal specifications and compare them with domain experts.",
+            "Identify early which requirements are uncertain and which require alignment with other technical teams."
+          ]
+        }
+      },
+      {
+        id: 2,
+        weekLabel: "Week 2",
+        name: "Anticipation: Understanding Organisational Complexity",
+        areaPillar: "AREA – Anticipation",
+        areaDescription:
+          "Exploring potential futures, impacts, and organisational dynamics around your AI project.",
+        icon: "🔮",
+        summary:
+          "In Week 2, the journey is explicitly framed by the AREA framework for responsible innovation. You dive into Anticipation: modelling the organisation, exploring uncertainties, and examining how management visions, communication channels, and institutional unpredictability shape your {{project}} and its connections to other projects.",
+        tags: [
+          "AREA: Anticipation",
+          "Systems modelling",
+          "Organisational constraints"
+        ],
+        projectExamples: [],
+        questions: {
+          learning: [
+            "How might {{project}} change workflows, responsibilities, and decision-making in 2–5 years?",
+            "What assumptions are we making about data, regulation, organisational culture, and the pace of other AI projects?",
+            "Which organisational needs and constraints can be represented using systems or causal models that show interactions between projects?"
+          ],
+          insights: [
+            "Management visions of AI are often aspirational but may lack operational detail.",
+            "Unpredictable events (e.g. policy shifts, new regulations) can reshape project priorities overnight.",
+            "Communication routes (who talks to whom, and how) are critical constraints, especially when decisions span multiple AI projects."
+          ],
+          options: [
+            "Build a simple systems model of how {{project}} connects teams, data, decisions, and neighbouring projects.",
+            "Use scenario-based prompts to explore best-case, worst-case, and unexpected futures for the wider AI portfolio.",
+            "Identify early warning indicators that your assumptions about the organisation or project synergies are breaking down."
+          ]
+        }
+      },
+      {
+        id: 3,
+        weekLabel: "Week 3",
+        name: "Reflection: Frameworks for Responsible AI",
+        areaPillar: "AREA – Reflection",
+        areaDescription:
+          "Questioning assumptions, values, and responsibilities around your AI project and its ecosystem.",
+        icon: "🪞",
+        summary:
+          "Week 3 focuses on Reflection. You examine your own assumptions, and use frameworks such as TRIPOD-AI and other checklist-style tools to reconsider risk, fairness, transparency, and organisational alignment. These reflections feed back into the design of {{project}} and how it coexists with other AI systems.",
+        tags: [
+          "AREA: Reflection",
+          "TRIPOD-AI & checklists",
+          "Refining requirements"
+        ],
+        projectExamples: [],
+        questions: {
+          learning: [
+            "What ethical, social, and organisational risks does {{project}} introduce or amplify, especially when combined with other AI tools?",
+            "How do frameworks like TRIPOD-AI change the way I think about validation, monitoring, and governance across the AI portfolio?",
+            "Where might there be value misalignment between developers, users, and management around the use of AI in this context?"
+          ],
+          insights: [
+            "Responsible AI is not an afterthought; it changes data choices, metrics, and deployment plans.",
+            "Some risks come from how AI outputs are interpreted within existing power structures.",
+            "Responsible innovation requires thinking about interactions between systems: two 'safe' tools can create problems when combined uncritically."
+          ],
+          options: [
+            "Refine project objectives to better capture safety, equity, or interpretability concerns.",
+            "Propose additional monitoring or feedback loops, including signals that arise from combining {{project}} with other tools.",
+            "Document which framework-based questions remain open and need management input at portfolio level."
+          ]
+        }
+      },
+      {
+        id: 4,
+        weekLabel: "Week 4",
+        name: "Engagement: Modelling and Communicating with the Organisation",
+        areaPillar: "AREA – Engagement",
+        areaDescription:
+          "Designing meaningful interactions with colleagues and managers around AI models and their implications.",
+        icon: "🤝",
+        summary:
+          "In Week 4, you focus on Engagement. You combine modelling and simulation of your {{project}} with modelling of the organisation itself. You may draw on management cybernetics and sociotechnical systems tools to show how your project interacts with existing structures and with parallel AI initiatives. Senior managers participate, giving feedback on your models.",
+        tags: [
+          "AREA: Engagement",
+          "Management cybernetics",
+          "Sociotechnical systems",
+          "Manager feedback"
+        ],
+        projectExamples: [],
+        questions: {
+          learning: [
+            "How can I represent {{project}} so that non-technical colleagues immediately see its impact on their work and on other AI projects?",
+            "Which organisational feedback loops (escalation paths, KPIs, reporting lines) does this system plug into, and who depends on its outputs?",
+            "What forms of engagement (workshops, simulations, dashboards) suit our culture and time constraints for cross-project coordination?"
+          ],
+          insights: [
+            "Models can be persuasive storytelling devices, not just technical artefacts.",
+            "Senior managers care as much about organisational resilience and decision quality as about model accuracy.",
+            "Engagement means listening: management feedback often reshapes priorities, dependencies, and how different AI projects combine."
+          ],
+          options: [
+            "Prototype a visual system map linking AI components to organisational processes, decision points, and related projects.",
+            "Run a small simulation or scenario walk-through with managers and capture their reactions to cross-project interactions.",
+            "Iterate the project narrative so that it speaks clearly to both technical and strategic concerns, highlighting synergies."
+          ]
+        }
+      },
+      {
+        id: 5,
+        weekLabel: "Week 5",
+        name: "Practising the Pitch: Peer Feedback & Video Rehearsals",
+        areaPillar: "From Engagement to Action",
+        areaDescription:
+          "Translating analytical work into clear, compelling narratives for diverse audiences.",
+        icon: "🎥",
+        summary:
+          "Week 5 is about rehearsal. You pitch {{project}} to peers, record video presentations, and critique each other’s clarity, responsibility, and organisational fit. You refine not only what you say, but how you show the project’s place within the broader AI landscape of the company.",
+        tags: [
+          "Pitch rehearsal",
+          "Peer learning",
+          "Narrative clarity"
+        ],
+        projectExamples: [],
+        questions: {
+          learning: [
+            "Can I explain {{project}} in 90 seconds in a way that resonates with both technical and non-technical listeners?",
+            "Which elements of the AREA and TRIPOD-AI reflections should appear explicitly in my story?",
+            "How can I communicate the synergies between {{project}} and other ongoing technical work so that colleagues see a shared vision?"
+          ],
+          insights: [
+            "What feels obvious to me as a developer may be invisible to colleagues without concrete examples.",
+            "The order in which I present motivation, method, and impact changes how the project is perceived.",
+            "Video rehearsal exposes gaps in confidence and clarity, particularly around explaining cross-team coordination."
+          ],
+          options: [
+            "Iterate your pitch script using peer feedback and AI-assisted drafting tools.",
+            "Experiment with different structures (problem → story → demo → risks → portfolio fit → next steps).",
+            "Prepare variants of the pitch tailored to technical teams, clinicians, and senior managers, each emphasising coordination benefits."
+          ]
+        }
+      },
+      {
+        id: 6,
+        weekLabel: "Week 6",
+        name: "Exhibition & Dialogue with Management",
+        areaPillar: "AREA – Action & Ongoing Engagement",
+        areaDescription:
+          "Turning pitches into organisational conversations that support decision-making and alignment.",
+        icon: "🏛️",
+        summary:
+          "Week 6 culminates in an exhibition of video pitches and live discussions with senior managers. Rather than a one-off showcase, the emphasis is on dialogue: how can {{project}} support better decisions, and how does it contribute to a coordinated, synergistic AI portfolio for the organisation?",
+        tags: [
+          "Exhibition",
+          "Management dialogue",
+          "Decision support"
+        ],
+        projectExamples: [],
+        questions: {
+          learning: [
+            "What questions do managers ask that my technical documentation didn’t anticipate, especially about coordination with other projects?",
+            "How does {{project}} contribute to more coordinated, organisation-wide decision-making about AI?",
+            "What forms of ongoing communication would help sustain alignment between developers and leadership across the whole AI portfolio?"
+          ],
+          insights: [
+            "Senior stakeholders often evaluate projects in terms of portfolio fit, risk, and timing—not just innovation.",
+            "The real leverage of AI comes from coordinated adoption across teams, not isolated pilots.",
+            "Decision-makers value students who can bridge technical detail, strategic framing, and cross-project synergies."
+          ],
+          options: [
+            "Capture agreed next steps, owners, and timelines for {{project}} or its ideas.",
+            "Propose lightweight forums (e.g. AI roundtables, newsletters, internal demos) to keep communication flowing between projects.",
+            "Reflect on how your journey prepares you to be a translator between the cutting edge and the boardroom, across many projects at once."
+          ]
+        }
+      }
+    ];
+
+    // Helper to create elements
+    function el(tag, className, text) {
+      const e = document.createElement(tag);
+      if (className) e.className = className;
+      if (text) e.textContent = text;
+      return e;
+    }
+
+    // Replace {{project}} placeholders based on current selection
+    function personalizeText(text) {
+      if (!text) return "";
+      const project = projectOptions[selectedProjectIndex];
+      if (!project) return text;
+      return text.replace(/{{project}}/g, project.short);
+    }
+
+    const timelineContainer = document.getElementById("timeline");
+    const contentContainer = document.getElementById("content");
+    let currentIndex = 0;
+    let selectedProjectIndex = 0; // default first project
+
+    function renderTimeline() {
+      timelineContainer.innerHTML = "";
+      stages.forEach((stage, index) => {
+        const item = el("button", "timeline-item");
+        item.type = "button";
+        item.setAttribute("data-index", index);
+
+        const dot = el("div", "timeline-dot");
+        dot.dataset.color = stageColors[index % stageColors.length];
+
+        const week = el("div", "timeline-week", stage.weekLabel);
+        const label = el("div", "timeline-label", stage.name);
+        const area = el(
+          "div",
+          "timeline-area",
+          stage.areaPillar === "Framing the Challenge"
+            ? "Set direction"
+            : stage.areaPillar
+        );
+
+        item.appendChild(dot);
+        item.appendChild(week);
+        item.appendChild(label);
+        item.appendChild(area);
+
+        item.addEventListener("click", () => {
+          goToStage(index);
+        });
+
+        timelineContainer.appendChild(item);
+      });
+      updateTimelineActive();
+    }
+
+    function updateTimelineActive() {
+      const items = timelineContainer.querySelectorAll(".timeline-item");
+      items.forEach((item, idx) => {
+        const dot = item.querySelector(".timeline-dot");
+        const color = dot.dataset.color || "#38bdf8";
+
+        if (idx === currentIndex) {
+          item.classList.add("active");
+          item.setAttribute("aria-current", "step");
+          dot.style.borderColor = color;
+          dot.style.backgroundColor = color;
+          dot.style.boxShadow = `0 0 0 4px ${color}33`;
+        } else {
+          item.classList.remove("active");
+          item.removeAttribute("aria-current");
+          dot.style.borderColor = color;
+          dot.style.backgroundColor = "#020617";
+          dot.style.boxShadow = "none";
+        }
+
+        // Subtle tint by stage colour
+        item.style.backgroundImage = `linear-gradient(90deg, ${color}10, rgba(15,23,42,0.96))`;
+      });
+    }
+
+    function renderStage() {
+      const stage = stages[currentIndex];
+      const project = projectOptions[selectedProjectIndex];
+      contentContainer.innerHTML = "";
+
+      const wrapper = el("div", "stage fade-in");
+
+      // Header row
+      const headerRow = el("div", "stage-header-row");
+
+      const titleGroup = el("div", "stage-title-group");
+      const badgeRow = el("div", "badge-row");
+
+      const weekBadge = el(
+        "div",
+        "badge badge-pill",
+        `${stage.weekLabel}`
+      );
+      const weekIcon = el("span", "emoji", stage.icon);
+      weekBadge.insertBefore(weekIcon, weekBadge.firstChild);
+
+      const typeBadge = el(
+        "div",
+        "badge",
+        stage.areaPillar === "AREA – Action & Ongoing Engagement"
+          ? "AREA: Engagement → Action"
+          : stage.areaPillar
+      );
+
+      badgeRow.appendChild(weekBadge);
+      badgeRow.appendChild(typeBadge);
+
+      const stageName = el("div", "stage-name", stage.name);
+      titleGroup.appendChild(badgeRow);
+      titleGroup.appendChild(stageName);
+
+      const rightHeaderBlock = el("div");
+      const areaPill = el("div", "area-pill");
+      const areaEmoji = el("span", "emoji", "⚙️");
+      const areaLabel = el("strong", "", stage.areaPillar);
+      const areaText = el("span", "", stage.areaDescription);
+      areaPill.appendChild(areaEmoji);
+      areaPill.appendChild(areaLabel);
+      areaPill.appendChild(areaText);
+
+      rightHeaderBlock.appendChild(areaPill);
+
+      headerRow.appendChild(titleGroup);
+      headerRow.appendChild(rightHeaderBlock);
+
+      // Summary text
+      const summary = el("p", "stage-summary", personalizeText(stage.summary));
+
+      // Project-focus pill (all stages)
+      const projectPill = el("div", "project-pill");
+      const projEmoji = el("span", "emoji", "🧬");
+      const projText = el(
+        "span",
+        "",
+        `${project ? project.short : "Select a focus area to personalise this journey" }`
+      );
+      const projLabel = el("strong", "", "Project focus:");
+      projectPill.appendChild(projEmoji);
+      projectPill.appendChild(projLabel);
+      projectPill.appendChild(projText);
+
+      // Tags row
+      const tagsRow = el("div", "stage-tags");
+      stage.tags.forEach((t) => {
+        tagsRow.appendChild(el("span", "mini-tag", t));
+      });
+
+      if (stage.projectExamples && stage.projectExamples.length) {
+        const moreTag = el("span", "mini-tag");
+        moreTag.textContent = `Examples: ${stage.projectExamples.join(" • ")}`;
+        tagsRow.appendChild(moreTag);
+      }
+
+      // Project selector in first stage
+      if (currentIndex === 0) {
+        const selectorBox = el("div", "project-selector");
+        const label = el("label", "", "Choose your AI project area");
+        label.setAttribute("for", "project-select");
+        const select = document.createElement("select");
+        select.id = "project-select";
+
+        projectOptions.forEach((opt, idx) => {
+          const option = document.createElement("option");
+          option.value = idx;
+          option.textContent = opt.label;
+          select.appendChild(option);
+        });
+        select.value = String(selectedProjectIndex);
+
+        select.addEventListener("change", (e) => {
+          selectedProjectIndex = parseInt(e.target.value, 10) || 0;
+          // Re-render current stage to update text; also refresh header pill / key message
+          renderStage();
+        });
+
+        const desc = el(
+          "small",
+          "",
+          project ? project.description : ""
+        );
+        const coordNote = el(
+          "small",
+          "",
+          "Tip: notice how different project types depend on shared data, infrastructure and governance. Coordination is a first-class design question."
+        );
+
+        selectorBox.appendChild(label);
+        selectorBox.appendChild(select);
+        selectorBox.appendChild(desc);
+        selectorBox.appendChild(coordNote);
+
+        wrapper.appendChild(headerRow);
+        wrapper.appendChild(summary);
+        wrapper.appendChild(projectPill);
+        wrapper.appendChild(selectorBox);
+      } else {
+        wrapper.appendChild(headerRow);
+        wrapper.appendChild(summary);
+        wrapper.appendChild(projectPill);
+      }
+
+      wrapper.appendChild(tagsRow);
+
+      // Questions grid
+      const grid = el("div", "questions-grid");
+
+      const columns = [
+        {
+          title: "What I'm learning now",
+          emoji: "📚",
+          items: stage.questions.learning
+        },
+        {
+          title: "New things I hadn't considered",
+          emoji: "💡",
+          items: stage.questions.insights
+        },
+        {
+          title: "Options for future development",
+          emoji: "🚀",
+          items: stage.questions.options
+        }
+      ];
+
+      columns.forEach((col) => {
+        const colDiv = el("div", "question-column");
+        const h3 = el("h3");
+        const e = el("span", "emoji", col.emoji);
+        const t = document.createTextNode(col.title);
+        h3.appendChild(e);
+        h3.appendChild(t);
+        const ul = el("ul");
+        col.items.forEach((q) => {
+          const li = el("li");
+          li.textContent = personalizeText(q);
+          ul.appendChild(li);
+        });
+        colDiv.appendChild(h3);
+        colDiv.appendChild(ul);
+        grid.appendChild(colDiv);
+      });
+
+      // Footer row with navigation and key message
+      const footer = el("div", "footer-row");
+
+      const progressWrapper = el("div", "progress-wrapper");
+      const progressBar = el("div", "progress-bar");
+      const progressFill = el("div", "progress-bar-fill");
+      const progressLabel = el(
+        "div",
+        "progress-label",
+        `Stage ${currentIndex + 1} of ${stages.length} • ${stage.weekLabel}`
+      );
+      progressBar.appendChild(progressFill);
+      progressWrapper.appendChild(progressBar);
+      progressWrapper.appendChild(progressLabel);
+
+      // Update progress percentage
+      const percent =
+        (currentIndex / (stages.length - 1 || 1)) * 100;
+      requestAnimationFrame(() => {
+        progressFill.style.width = `${percent}%`;
+      });
+
+      const controls = el("div", "controls");
+
+      const prevBtn = el("button", "nav-btn");
+      prevBtn.type = "button";
+      prevBtn.innerHTML = "◀ Previous";
+      prevBtn.disabled = currentIndex === 0;
+      prevBtn.addEventListener("click", () => {
+        goToStage(currentIndex - 1);
+      });
+
+      const nextBtn = el("button", "nav-btn primary");
+      nextBtn.type = "button";
+      nextBtn.innerHTML =
+        currentIndex === stages.length - 1 ? "Finish Journey ✔" : "Next Stage ▶";
+      nextBtn.disabled = false;
+      nextBtn.addEventListener("click", () => {
+        if (currentIndex < stages.length - 1) {
+          goToStage(currentIndex + 1);
+        }
+      });
+
+      controls.appendChild(prevBtn);
+      controls.appendChild(nextBtn);
+
+      const keyMsg = el(
+        "div",
+        "key-message"
+      );
+      const msgEmoji = el("span", "emoji", "🧠");
+      const msgText = document.createTextNode(
+        "Across all weeks, the learning goal is to coordinate and communicate about AI—linking your chosen project with others so that technical work adds up to coherent, organisation-wide decision-making."
+      );
+      keyMsg.appendChild(msgEmoji);
+      keyMsg.appendChild(msgText);
+
+      footer.appendChild(progressWrapper);
+      footer.appendChild(controls);
+      footer.appendChild(keyMsg);
+
+      wrapper.appendChild(grid);
+      wrapper.appendChild(footer);
+
+      contentContainer.appendChild(wrapper);
+    }
+
+    function goToStage(index) {
+      if (index < 0 || index >= stages.length || index === currentIndex) return;
+      currentIndex = index;
+      updateTimelineActive();
+      renderStage();
+    }
+
+    // Initialise app
+    renderTimeline();
+    renderStage();
+  </script>
+</body>
+</html>
