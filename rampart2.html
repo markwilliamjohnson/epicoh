@@ -1164,10 +1164,6 @@
       const info = NODE_INFO[key];
       if (!info) return;
 
-      function renderNode(key) {
-  const info = NODE_INFO[key];
-  if (!info) return;
-
   clearClasses();
 
   // highlight selected node
@@ -1208,8 +1204,7 @@
   });
 
   // (everything below remains unchanged – summary, interventions, impact, etc.)
-  ...
-}
+
 
       // Basic labels
       detailTitle.textContent = info.title;
