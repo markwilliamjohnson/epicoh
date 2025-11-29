@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -28,6 +27,12 @@
       font-size: 1.2rem;
       margin-top: 1rem;
       margin-bottom: 0.4rem;
+    }
+
+    h3 {
+      margin-top: 0.5rem;
+      margin-bottom: 0.3rem;
+      font-size: 1rem;
     }
 
     p {
@@ -242,12 +247,6 @@
       font-size: 0.9rem;
     }
 
-    .advanced-box h3 {
-      margin-top: 0.25rem;
-      margin-bottom: 0.4rem;
-      font-size: 1rem;
-    }
-
     .advanced-list {
       padding-left: 1.2rem;
       margin-top: 0.3rem;
@@ -282,11 +281,26 @@
       color: #4b5563;
       margin-top: 0.45rem;
     }
+
+    .tag-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.3rem;
+      margin-top: 0.4rem;
+      font-size: 0.8rem;
+    }
+
+    .tag {
+      padding: 0.2rem 0.5rem;
+      border-radius: 999px;
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
+    }
   </style>
 </head>
 <body>
   <div class="app">
-    <div class="badge">Simple Walkthrough - No specialist stats required</div>
+    <div class="badge">Very simple teaching tool · No specialist stats required</div>
     <h1>Simple Sample Size Tutor for an Epidemiology Study</h1>
     <p>
       This page helps you think about two things:
@@ -574,9 +588,132 @@
       </p>
     </section>
 
-    <!-- NEW: advanced statistics (optional, last stage) -->
+    <!-- NEW: Sampling strategies and how they link to the statistics -->
     <section class="card">
-      <h2>6. Optional: the statistics hiding underneath</h2>
+      <h2>6. Sampling strategies and when this calculator fits</h2>
+      <p style="font-size:0.9rem;">
+        The simple calculator on this page quietly assumes that your sample behaves like
+        a <strong>fair, random pick of individuals</strong> from the population in each group.
+        In practice, we use different sampling strategies. Here is how they relate.
+      </p>
+
+      <h3>Simple random sampling (or randomised trial)</h3>
+      <p style="font-size:0.9rem;">
+        Everyone in the population (or list) has the same chance of being selected,
+        and each person is chosen independently.
+      </p>
+      <ul class="questions-list">
+        <li>“Could any eligible person have been chosen?”</li>
+        <li>“Was the choice of each person like drawing a name from a hat?”</li>
+      </ul>
+      <p class="small-note">
+        <strong>This is the situation that best matches the formula in our calculator.</strong>
+        In a randomised trial, randomisation creates groups that behave a lot like this.
+      </p>
+
+      <h3>Stratified sampling</h3>
+      <p style="font-size:0.9rem;">
+        Here you split the population into sub-groups (strata), such as age bands or clinics,
+        and then sample randomly within each group.
+      </p>
+      <ul class="questions-list">
+        <li>“Which sub-groups matter (e.g. age, sex, hospital)?”</li>
+        <li>“Do I need a <strong>minimum number</strong> of people in each stratum to make comparisons?”</li>
+      </ul>
+      <p class="small-note">
+        The <strong>same kind of statistical approach</strong> applies inside each stratum, but you may need
+        to plan numbers for each group separately and then add them up.
+      </p>
+
+      <h3>Cluster sampling</h3>
+      <p style="font-size:0.9rem;">
+        Here you sample groups (clusters) such as schools, GP practices, or villages, and then
+        measure people inside those clusters.
+      </p>
+      <ul class="questions-list">
+        <li>“Are people in the same cluster more alike than people in different clusters?”</li>
+        <li>“How many clusters do I have, and how many people per cluster?”</li>
+      </ul>
+      <p class="small-note">
+        The basic <strong>two-group statistical idea</strong> still holds, but because people in the same
+        cluster resemble each other, you usually need to <strong>inflate the sample size</strong> using a
+        “design effect”. The simple calculator here <em>does not</em> include that inflation.
+      </p>
+
+      <h3>Convenience sampling</h3>
+      <p style="font-size:0.9rem;">
+        You include people who are easiest to reach (for example, everyone who comes to one clinic during a month).
+      </p>
+      <ul class="questions-list">
+        <li>“Who is being left out by this approach?”</li>
+        <li>“Are these people different from the wider population in important ways?”</li>
+      </ul>
+      <p class="small-note">
+        You can still <strong>use a sample size calculator</strong> to think about numbers, but the biggest problem is
+        often <strong>bias</strong>, not the exact number. The results may not generalise well beyond the group you sampled.
+      </p>
+
+      <h3>Snowball sampling</h3>
+      <p style="font-size:0.9rem;">
+        Existing participants help you recruit others (for example, in hard-to-reach or hidden populations).
+      </p>
+      <ul class="questions-list">
+        <li>“How might people’s networks shape who ends up in the study?”</li>
+        <li>“Are certain types of people over-represented because they know each other?”</li>
+      </ul>
+      <p class="small-note">
+        Again, a calculator can give a <strong>rough sense of numbers</strong>, but the main challenge is that the
+        sample is often <strong>not like a random slice of the population</strong>. Interpreting findings needs extra care.
+      </p>
+
+      <h3>Systematic sampling</h3>
+      <p style="font-size:0.9rem;">
+        You choose every k-th person on a list (for example, every 10th patient record).
+      </p>
+      <ul class="questions-list">
+        <li>“Is there any pattern in the list (e.g. sorted by severity) that could bias the sample?”</li>
+      </ul>
+      <p class="small-note">
+        If the list order is not related to the outcome, systematic sampling often behaves similarly to
+        <strong>simple random sampling</strong>, so this type of statistical approach can still be reasonable.
+      </p>
+
+      <h3>Big-picture questions about sampling</h3>
+      <ul class="questions-list">
+        <li>
+          <strong>Representativeness:</strong> “In what ways are my participants similar to, and different from,
+          the wider population I care about?”
+        </li>
+        <li>
+          <strong>Fairness in selection:</strong> “Did everyone who should have had a chance to be included
+          actually have a chance?”
+        </li>
+        <li>
+          <strong>Balance between groups:</strong> “Are my exposed and unexposed groups similar in the important
+          things I can measure (age, sex, severity)?”
+        </li>
+        <li>
+          <strong>Dependence / clustering:</strong> “Are there natural groups (families, clinics, villages)
+          that might make people more alike than I first thought?”
+        </li>
+        <li>
+          <strong>Practical limits:</strong> “Given time and resources, which sampling strategy can I really carry out?”
+        </li>
+      </ul>
+
+      <div class="tag-list">
+        <span class="tag">Simple random sampling</span>
+        <span class="tag">Stratified</span>
+        <span class="tag">Cluster</span>
+        <span class="tag">Convenience</span>
+        <span class="tag">Snowball</span>
+        <span class="tag">Systematic</span>
+      </div>
+    </section>
+
+    <!-- Advanced statistics (optional, last stage) -->
+    <section class="card">
+      <h2>7. Optional: the statistics hiding underneath</h2>
       <p style="font-size:0.9rem;">
         You don’t need this section to <em>use</em> the calculator, but it explains what’s going on
         inside the “black box” and <strong>why the statistics matters</strong>.
