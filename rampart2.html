@@ -1164,33 +1164,52 @@
       const info = NODE_INFO[key];
       if (!info) return;
 
-      clearClasses();
-      // highlight selected node
-      const activeNode = svg.querySelector(`.lattice-node[data-key="${key}"]`);
-      if (activeNode) activeNode.classList.add("active");
+      function renderNode(key) {
+  const info = NODE_INFO[key];
+  if (!info) return;
 
-      // highlight neighbors
-      neighbors[key].up.forEach((upKey) => {
-        const el = svg.querySelector(`.lattice-node[data-key="${upKey}"]`);
-        if (el) el.classList.add("neighbor-up");
-      });
-      neighbors[key].down.forEach((downKey) => {
-        const el = svg.querySelector(`.lattice-node[data-key="${downKey}"]`);
-        if (el) el.classList.add("neighbor-down");
-      });
+  clearClasses();
 
-      // highlight connected edges
-      svg.querySelectorAll(".lattice-edge").forEach((line) => {
-        if (line.dataset.above === key || line.dataset.below === key) {
-          line.classList.add("edge-highlight");
-        }
-        if (neighbors[key].up.includes(line.dataset.above) && line.dataset.below === key) {
-          line.classList.add("edge-highlight");
-        }
-        if (neighbors[key].down.includes(line.dataset.below) && line.dataset.above === key) {
-          line.classList.add("edge-highlight");
-        }
-      });
+  // highlight selected node
+  const activeNode = svg.querySelector(`.lattice-node[data-key="${key}"]`);
+  if (activeNode) {
+    activeNode.classList.add("active");
+
+    // Bring the clicked node to the front of the SVG
+    // (SVG uses DOM order for z-index)
+    svg.appendChild(activeNode); // moves <g> to the end → visually on top
+
+    // Also bring its label texts to front by re-appending children
+    const children = [...activeNode.childNodes];
+    children.forEach(child => activeNode.appendChild(child));
+  }
+
+  // highlight neighbors
+  neighbors[key].up.forEach((upKey) => {
+    const el = svg.querySelector(`.lattice-node[data-key="${upKey}"]`);
+    if (el) el.classList.add("neighbor-up");
+  });
+  neighbors[key].down.forEach((downKey) => {
+    const el = svg.querySelector(`.lattice-node[data-key="${downKey}"]`);
+    if (el) el.classList.add("neighbor-down");
+  });
+
+  // highlight connected edges
+  svg.querySelectorAll(".lattice-edge").forEach((line) => {
+    if (line.dataset.above === key || line.dataset.below === key) {
+      line.classList.add("edge-highlight");
+    }
+    if (neighbors[key].up.includes(line.dataset.above) && line.dataset.below === key) {
+      line.classList.add("edge-highlight");
+    }
+    if (neighbors[key].down.includes(line.dataset.below) && line.dataset.above === key) {
+      line.classList.add("edge-highlight");
+    }
+  });
+
+  // (everything below remains unchanged – summary, interventions, impact, etc.)
+  ...
+}
 
       // Basic labels
       detailTitle.textContent = info.title;
