@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Rampart CRASH Mechanisms Explorer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #070b12;
+      --bg-elevated: #111727;
+      --bg-elevated-soft: #151c2e;
+      --accent: #f97316;
+      --accent-soft: rgba(249, 115, 22, 0.12);
+      --accent-strong: rgba(249, 115, 22, 0.3);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --text-main: #f9fafb;
+      --text-muted: #9ca3af;
+      --text-faint: #6b7280;
+      --danger: #ef4444;
+      --ok: #22c55e;
+      --neutral: #60a5fa;
+      --radius-xl: 18px;
+      --radius-pill: 999px;
+      --shadow-soft: 0 18px 40px rgba(0, 0, 0, 0.45);
+      --transition-fast: 0.18s ease-out;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #111827 0, #020617 52%, #000 100%);
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      padding: 16px;
+      gap: 16px;
+    }
+
+    header {
+      max-width: 1080px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 14px 18px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.82));
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      backdrop-filter: blur(22px);
+    }
+
+    header .title-block {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    header h1 {
+      font-size: 1.4rem;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    header .badge {
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+      border: 1px solid rgba(248, 250, 252, 0.18);
+      background: radial-gradient(circle at top, rgba(248, 250, 252, 0.16), transparent 60%);
+      color: var(--text-main);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    header p {
+      margin: 0;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      max-width: 580px;
+    }
+
+    header .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      font-size: 0.7rem;
+      align-items: center;
+    }
+
+    header .legend-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 9px;
+      border-radius: var(--radius-pill);
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      white-space: nowrap;
+    }
+
+    header .legend-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+    }
+
+    .dot-context { background: var(--neutral); }
+    .dot-culture { background: #eab308; }
+    .dot-tactics { background: var(--danger); }
+    .dot-oversight { background: #22d3ee; }
+    .dot-outcome { background: var(--ok); }
+
+    main {
+      max-width: 1080px;
+      width: 100%;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.3fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    @media (max-width: 860px) {
+      main {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .panel {
+      border-radius: 20px;
+      border: 1px solid var(--border-subtle);
+      background: radial-gradient(circle at top left, rgba(248, 250, 252, 0.03), transparent 50%), radial-gradient(circle at bottom right, rgba(15, 23, 42, 0.9), #020617);
+      padding: 14px 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: var(--shadow-soft);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .panel::before {
+      content: "";
+      position: absolute;
+      inset: -40%;
+      background: radial-gradient(circle at top left, rgba(248, 250, 252, 0.07), transparent 60%);
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    .panel-inner {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      height: 100%;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 2px;
+    }
+
+    .panel-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .panel-header small {
+      font-size: 0.75rem;
+      color: var(--text-faint);
+    }
+
+    .diagram-grid {
+      display: grid;
+      grid-template-rows: repeat(5, minmax(70px, auto));
+      gap: 8px;
+      position: relative;
+    }
+
+    .diagram-row {
+      display: grid;
+      grid-template-columns: 1.1fr 0.3fr 1.1fr;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .diagram-connector {
+      height: 2px;
+      background: linear-gradient(to right, transparent, rgba(148, 163, 184, 0.6), transparent);
+      position: relative;
+    }
+
+    .diagram-connector::after {
+      content: "";
+      position: absolute;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      border: 2px solid rgba(148, 163, 184, 0.8);
+    }
+
+    .node {
+      border-radius: 16px;
+      padding: 8px 10px;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      background: rgba(15, 23, 42, 0.9);
+      backdrop-filter: blur(14px);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .node::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top, rgba(248, 250, 252, 0.1), transparent 60%);
+      opacity: 0;
+      transition: opacity var(--transition-fast);
+      pointer-events: none;
+    }
+
+    .node:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.55);
+      border-color: rgba(249, 250, 251, 0.6);
+    }
+
+    .node:hover::before {
+      opacity: 1;
+    }
+
+    .node.active {
+      border-width: 1.5px;
+      border-color: var(--accent);
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(24, 16, 8, 0.98));
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8);
+    }
+
+    .node.active::before {
+      opacity: 1;
+    }
+
+    .node-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .node-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .node-pill {
+      font-size: 0.65rem;
+      padding: 1px 6px;
+      border-radius: var(--radius-pill);
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+    }
+
+    .node-tag-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .node-body {
+      font-size: 0.75rem;
+      color: var(--text-faint);
+      line-height: 1.35;
+    }
+
+    .node-metric {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 2px;
+    }
+
+    .node-metric span {
+      padding: 1px 6px;
+      border-radius: var(--radius-pill);
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px dashed rgba(148, 163, 184, 0.6);
+    }
+
+    .node-context .node-tag-dot { background: var(--neutral); }
+    .node-culture .node-tag-dot { background: #eab308; }
+    .node-tactics .node-tag-dot { background: var(--danger); }
+    .node-oversight .node-tag-dot { background: #22d3ee; }
+    .node-outcomes .node-tag-dot { background: var(--ok); }
+
+    .node-context { border-color: rgba(96, 165, 250, 0.6); }
+    .node-culture { border-color: rgba(234, 179, 8, 0.7); }
+    .node-tactics { border-color: rgba(248, 113, 113, 0.7); }
+    .node-oversight { border-color: rgba(45, 212, 191, 0.7); }
+    .node-outcomes { border-color: rgba(52, 211, 153, 0.7); }
+
+    /* Details panel */
+    .details-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      justify-content: space-between;
+    }
+
+    .details-title-block {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    #detail-title {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    #detail-type {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .chip {
+      font-size: 0.7rem;
+      padding: 4px 8px;
+      border-radius: var(--radius-pill);
+      border: 1px solid rgba(148, 163, 184, 0.55);
+      background: rgba(15, 23, 42, 0.9);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .chip-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+    }
+
+    .chip-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .tags-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 3px 0 4px;
+    }
+
+    .tag {
+      font-size: 0.68rem;
+      padding: 3px 8px;
+      border-radius: var(--radius-pill);
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      color: var(--text-muted);
+    }
+
+    #detail-summary {
+      margin: 4px 0 2px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .detail-columns {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.95fr);
+      gap: 10px;
+      margin-top: 4px;
+      flex: 1;
+    }
+
+    @media (max-width: 860px) {
+      .detail-columns {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .detail-section {
+      border-radius: 14px;
+      padding: 8px 9px;
+      background: rgba(15, 23, 42, 0.96);
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-height: 0;
+    }
+
+    .detail-section h3 {
+      margin: 0;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .detail-section h3 span.icon {
+      font-size: 0.8rem;
+    }
+
+    .detail-list {
+      margin: 2px 0 0;
+      padding-left: 16px;
+      font-size: 0.78rem;
+      color: var(--text-main);
+      line-height: 1.4;
+      max-height: 150px;
+      overflow: auto;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(148, 163, 184, 0.8) transparent;
+    }
+
+    .detail-list li + li {
+      margin-top: 2px;
+    }
+
+    .detail-list li span.note {
+      display: block;
+      font-size: 0.7rem;
+      color: var(--text-faint);
+    }
+
+    .detail-timeline {
+      margin: 2px 0 0;
+      padding-left: 0;
+      list-style: none;
+      font-size: 0.78rem;
+      color: var(--text-main);
+      max-height: 150px;
+      overflow: auto;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(148, 163, 184, 0.8) transparent;
+    }
+
+    .detail-timeline li {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 6px;
+      align-items: start;
+      padding: 3px 0;
+    }
+
+    .detail-timeline-time {
+      font-size: 0.7rem;
+      color: var(--text-faint);
+      padding: 1px 6px;
+      border-radius: var(--radius-pill);
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      background: rgba(15, 23, 42, 0.95);
+      white-space: nowrap;
+    }
+
+    .detail-timeline text {
+      font-size: 0.78rem;
+    }
+
+    .detail-timeline span.label {
+      display: block;
+    }
+
+    .detail-timeline span.sub {
+      font-size: 0.7rem;
+      color: var(--text-faint);
+    }
+
+    .detail-footer {
+      margin-top: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      font-size: 0.7rem;
+      color: var(--text-faint);
+    }
+
+    .detail-footer a {
+      color: #93c5fd;
+      text-decoration: none;
+    }
+
+    .detail-footer a:hover {
+      text-decoration: underline;
+    }
+
+    .detail-badge-row {
+      display: inline-flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .impact-pill {
+      padding: 3px 7px;
+      border-radius: var(--radius-pill);
+      font-size: 0.68rem;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      background: rgba(15, 23, 42, 0.92);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .impact-pill span.dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+    }
+
+    .impact-high span.dot { background: var(--danger); }
+    .impact-medium span.dot { background: #eab308; }
+    .impact-low span.dot { background: var(--ok); }
+
+    /* Small helper label on nodes */
+    .node-hotspot-label {
+      position: absolute;
+      top: 6px;
+      right: 10px;
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: rgba(248, 250, 252, 0.7);
+      background: rgba(15, 23, 42, 0.9);
+      padding: 2px 6px;
+      border-radius: var(--radius-pill);
+      border: 1px solid rgba(248, 250, 252, 0.18);
+      display: none;
+    }
+
+    .node.active .node-hotspot-label {
+      display: inline-flex;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="title-block">
+      <h1>
+        Rampart CRASH Mechanisms
+        <span class="badge">Interactive case map</span>
+      </h1>
+      <p>
+        Explore how an aggressive anti-gang mandate, a closed unit culture, weak oversight,
+        and specific street-level tactics interacted in the LAPD Rampart CRASH scandal.
+        Click the nodes to see what changed at each stage.
+      </p>
+    </div>
+    <div class="legend">
+      <span class="legend-pill">
+        <span class="legend-dot dot-context"></span> Context & Incentives
+      </span>
+      <span class="legend-pill">
+        <span class="legend-dot dot-culture"></span> Unit Culture
+      </span>
+      <span class="legend-pill">
+        <span class="legend-dot dot-tactics"></span> Tactics & Misconduct
+      </span>
+      <span class="legend-pill">
+        <span class="legend-dot dot-oversight"></span> Oversight & Cover-Up
+      </span>
+      <span class="legend-pill">
+        <span class="legend-dot dot-outcome"></span> System Outcomes
+      </span>
+    </div>
+  </header>
+
+  <main>
+    <section class="panel" aria-label="Mechanism diagram">
+      <div class="panel-inner">
+        <div class="panel-header">
+          <div class="panel-title">
+            <span>Mechanism Flow</span>
+          </div>
+          <small>Click any node to focus its role in the scandal.</small>
+        </div>
+
+        <div class="diagram-grid" id="diagram">
+          <!-- Row 1: Context -->
+          <div class="diagram-row">
+            <button class="node node-context" data-key="context_mandate">
+              <div class="node-hotspot-label">Start</div>
+              <div class="node-header">
+                <div class="node-title">
+                  <span class="node-tag-dot"></span>
+                  Late-80s / 90s Context
+                </div>
+                <span class="node-pill">city & politics</span>
+              </div>
+              <div class="node-body">
+                Rising gang violence, political pressure, and a “war on gangs”
+                mentality created demand for an aggressive anti-gang unit.
+              </div>
+              <div class="node-metric">
+                <span>Citywide gang crackdown</span>
+              </div>
+            </button>
+            <div class="diagram-connector"></div>
+            <button class="node node-context" data-key="context_crash_design">
+              <div class="node-header">
+                <div class="node-title">
+                  <span class="node-tag-dot"></span>
+                  CRASH Unit Design
+                </div>
+                <span class="node-pill">structure</span>
+              </div>
+              <div class="node-body">
+                Specialized, semi-autonomous gang unit: unmarked cars, flexible
+                schedules, and wide discretion with minimal day-to-day supervision.
+              </div>
+            </button>
+          </div>
+
+          <!-- Row 2: Culture -->
+          <div class="diagram-row">
+            <button class="node node-culture" data-key="culture_elite_identity">
+              <div class="node-header">
+                <div class="node-title">
+                  <span class="node-tag-dot"></span>
+                  “Elite Warrior” Identity
+                </div>
+                <span class="node-pill">culture</span>
+              </div>
+              <div class="node-body">
+                Sponsorship-based entry, “in-the-loop” insiders, gang-like rituals
+                and tattoos reinforced loyalty and separation from the rest of LAPD.
+              </div>
+              <div class="node-metric">
+                <span>Insider / outsider divide</span>
+              </div>
+            </button>
+            <div class="diagram-connector"></div>
+            <button class="node node-culture" data-key="culture_incentives">
+              <div class="node-header">
+                <div class="node-title">
+                  <span class="node-tag-dot"></span>
+                  Informal Incentives
+                </div>
+                <span class="node-pill">performance logic</span>
+              </div>
+              <div class="node-body">
+                Status came from guns seized, arrests and shootings, not legality.
+                Plaques and bar celebrations rewarded “results” over rules.
+              </div>
+            </button>
+          </div>
+
+          <!-- Row 3: Tactics & Misconduct -->
+          <div class="diagram-row">
+            <button class="node node-tactics" data-key="tactics_evidence">
+              <div class="node-hotspot-label">Core</div>
+              <div class="node-header">
+                <div class="node-title">
+                  <span class="node-tag-dot"></span>
+                  Evidence & Perjury
+                </div>
+                <span class="node-pill">street-level</span>
+              </div>
+              <div class="node-body">
+                Planting guns and drugs, false reports, and coordinated perjury
+                turned suspects into “bad guys” on paper even when facts didn’t fit.
+              </div>
+              <div class="node-metric">
+                <span>100+ convictions overturned</span>
+              </div>
+            </button>
+            <div class="diagram-connector"></div>
+            <button class="node node-tactics" data-key="tactics_violence_profit">
+              <div class="node-header">
+                <div class="node-title">
+                  <span class="node-tag-dot"></span>
+                  Violence & Profit
+                </div>
+                <span class="node-pill">street-level</span>
+              </div>
+              <div class="node-body">
+                Beatings in station, shootings framed as “self-defense,” theft and
+                resale of seized cocaine, and off-duty work with gang-linked entities.
+              </div>
+            </button>
+          </div>
+
+          <!-- Row 4: Oversight & Cover-Up -->
+          <div class="diagram-row">
+            <button class="node node-oversight" data-key="oversight_internal">
+              <div class="node-header">
+                <div class="node-title">
+                  <span class="node-tag-dot"></span>
+                  Weak Internal Controls
+                </div>
+                <span class="node-pill">supervision</span>
+              </div>
+              <div class="node-body">
+                Complaints were minimized, supervisors socialized with the unit, and
+                early warning signs around key officers were not acted on.
+              </div>
+              <div class="node-metric">
+                <span>70+ officers implicated</span>
+              </div>
+            </button>
+            <div class="diagram-connector"></div>
+            <button class="node node-oversight" data-key="oversight_coverup">
+              <div class="node-header">
+                <div class="node-title">
+                  <span class="node-tag-dot"></span>
+                  Cover-Up & Damage Control
+                </div>
+                <span class="node-pill">organization</span>
+              </div>
+              <div class="node-body">
+                Narrow internal inquiries, disputed investigators, and pressure to
+                frame scandal as a few “bad apples” delayed full disclosure.
+              </div>
+            </button>
+          </div>
+
+          <!-- Row 5: Outcomes -->
+          <div class="diagram-row">
+            <button class="node node-outcomes" data-key="outcomes_court">
+              <div class="node-header">
+                <div class="node-title">
+                  <span class="node-tag-dot"></span>
+                  Courts & Victims
+                </div>
+                <span class="node-pill">harm</span>
+              </div>
+              <div class="node-body">
+                Wrongful convictions, deportations, severe injuries and deaths.
+                Massive case reviews and civil rights suits followed.
+              </div>
+              <div class="node-metric">
+                <span>$100M+ in payouts</span>
+              </div>
+            </button>
+            <div class="diagram-connector"></div>
+            <button class="node node-outcomes" data-key="outcomes_reform">
+              <div class="node-hotspot-label">Reform</div>
+              <div class="node-header">
+                <div class="node-title">
+                  <span class="node-tag-dot"></span>
+                  Reforms & Backlash
+                </div>
+                <span class="node-pill">aftershock</span>
+              </div>
+              <div class="node-body">
+                CRASH disbanded, federal oversight and data systems imposed; later,
+                officers partly disengaged (“drive and wave”) in response to scrutiny.
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" aria-label="Mechanism details">
+      <div class="panel-inner">
+        <div class="panel-header details-header">
+          <div class="details-title-block">
+            <h2 id="detail-title">Pick a node to explore its role</h2>
+            <div id="detail-type"></div>
+          </div>
+          <div class="chip-row">
+            <span class="chip">
+              <span class="chip-label">Mechanism</span>
+              <span id="detail-mechanism-label">—</span>
+            </span>
+            <span class="chip">
+              <span class="chip-label">Level</span>
+              <span id="detail-level-label">—</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="tags-row" id="detail-tags"></div>
+        <p id="detail-summary">
+          This panel explains how each mechanism operated in the Rampart CRASH scandal
+          and how it interacted with other parts of the system. Start by clicking
+          “Evidence & Perjury” or “Weak Internal Controls.”
+        </p>
+
+        <div class="detail-columns">
+          <section class="detail-section">
+            <h3>
+              <span class="icon">⚙️</span>
+              How this mechanism worked
+            </h3>
+            <ul class="detail-list" id="detail-mechanism-list">
+              <li>
+                Choose a mechanism on the left to see the concrete practices,
+                incentives and informal rules that made it powerful.
+              </li>
+            </ul>
+          </section>
+
+          <section class="detail-section">
+            <h3>
+              <span class="icon">📍</span>
+              Key events / examples
+            </h3>
+            <ul class="detail-timeline" id="detail-timeline">
+              <li>
+                <span class="detail-timeline-time">1990s</span>
+                <span>
+                  <span class="label">
+                    Major events from the Rampart CRASH case tied to this mechanism
+                    will appear here.
+                  </span>
+                </span>
+              </li>
+            </ul>
+          </section>
+        </div>
+
+        <div class="detail-footer">
+          <div class="detail-badge-row" id="detail-impact">
+            <span class="impact-pill impact-medium">
+              <span class="dot"></span>
+              Impact: —
+            </span>
+          </div>
+          <div>
+            <span>Hint:</span>
+            <span>
+              Follow the diagram top-to-bottom to see how context → culture →
+              tactics → oversight → outcomes.
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // Data model describing each mechanism node
+    const MECHANISMS = {
+      context_mandate: {
+        title: "Late-80s / 90s Context & Anti-Gang Mandate",
+        type: "Context & incentives",
+        level: "City / political system",
+        mechanismLabel: "Political pressure + fear of crime",
+        tags: [
+          "Gang homicide spike",
+          "“War on gangs” rhetoric",
+          "Public demand for tough policing"
+        ],
+        impactLevel: "high",
+        impactLabel: "high – set the mandate",
+        summary:
+          "The Rampart CRASH scandal grew out of a citywide push to “take the streets back” from gangs. Rising violence, media focus on drive-by shootings, and political competition to appear tough on crime created strong pressure for visible, forceful action.",
+        mechanismPoints: [
+          "Mayors, councilmembers and police leadership were evaluated on crime rates and visible enforcement. Saturation sweeps, mass arrests and aggressive gang units were politically rewarded.",
+          "Public and media narratives framed gang areas as war zones. This normalized militarized language and made collateral harm in those neighborhoods easier to ignore.",
+          "Budgets and prestige flowed to units that promised decisive results against gangs. That made a specialized anti-gang unit like CRASH an attractive organizational strategy.",
+          "The focus on numbers (guns seized, arrests, cars impounded) created a narrow definition of success that did not track legitimacy, accuracy or community trust."
+        ],
+        timeline: [
+          {
+            time: "Late 1980s–1990s",
+            label:
+              "Growth of street gangs and drug markets in Los Angeles; intensive gang-suppression strategies adopted across the city.",
+            sub:
+              "These strategies formed the environment in which CRASH expanded and gained political support."
+          },
+          {
+            time: "1992",
+            label:
+              "After the Rodney King beating and LA uprising, senior leadership promised control and order, reinforcing the demand for aggressive anti-gang efforts.",
+            sub:
+              "The scandal later showed that these control-oriented responses did not address underlying accountability problems."
+          }
+        ]
+      },
+
+      context_crash_design: {
+        title: "CRASH Unit Design & Autonomy",
+        type: "Organizational structure",
+        level: "Unit structure",
+        mechanismLabel: "Semi-autonomous specialized unit",
+        tags: [
+          "Unmarked cars & flexible shifts",
+          "Assigned to specific gangs",
+          "High discretion, low oversight"
+        ],
+        impactLevel: "high",
+        impactLabel: "high – created opportunity",
+        summary:
+          "CRASH was built as a specialized anti-gang unit with considerable freedom in tactics and scheduling. Officers drove unmarked cars, chose their own hours around gang activity, and operated with relatively little direct supervision, which magnified both good work and bad.",
+        mechanismPoints: [
+          "Officers were embedded in specific gang territories, expected to know nicknames, hangouts, cars and family members. That deep local knowledge made it easy to target individuals—and to fabricate plausible stories about them.",
+          "Unmarked cars and flexible deployments increased tactical effectiveness but also made it harder for supervisors and the public to monitor day-to-day interactions.",
+          "The unit developed its own informal norms for who counted as a “gang member” and what counted as justified force, often broader than formal policy.",
+          "Because CRASH produced valued crime-control outputs (guns, drugs, arrests), management tolerated or overlooked warning signs about how those outputs were produced."
+        ],
+        timeline: [
+          {
+            time: "1979–1990s",
+            label:
+              "CRASH spreads to multiple divisions, including Rampart, as LAPD’s key gang-suppression tool.",
+            sub:
+              "In Rampart, the unit’s structure and autonomy became the platform for systematic misconduct."
+          },
+          {
+            time: "Mid-1990s",
+            label:
+              "Rampart CRASH officers are widely known within LAPD as highly aggressive and tightly knit, but they remain in place because their numbers look good.",
+            sub:
+              "The same design features that enabled responsiveness also shielded misconduct from routine scrutiny."
+          }
+        ]
+      },
+
+      culture_elite_identity: {
+        title: "Closed “Elite Warrior” Identity",
+        type: "Unit culture",
+        level: "Small group / peer culture",
+        mechanismLabel: "Us-versus-them solidarity",
+        tags: [
+          "Sponsorship entry",
+          "Gang-like rituals & tattoos",
+          "Code of silence"
+        ],
+        impactLevel: "high",
+        impactLabel: "high – normalized rule-breaking",
+        summary:
+          "Rampart CRASH developed a tight, quasi-gang identity. Entry often depended on being sponsored by existing members, and rituals, tattoos and shared war stories reinforced loyalty to the unit over loyalty to departmental rules.",
+        mechanismPoints: [
+          "New officers learned quickly that belonging depended on proving toughness and loyalty, not on strict legality. Planting evidence or backing a partner’s story could be treated as a loyalty test.",
+          "“In-the-loop” insiders knew which stories were real and which were fabricated. Being kept in that loop was a status marker; questioning the group narrative risked exclusion.",
+          "Symbols such as skull-and-cards imagery, matching tattoos and bar celebrations around shootings turned uses of force into identity-defining achievements rather than grave last-resort decisions.",
+          "Peers, rather than supervisors, were the primary audience that mattered. If the group approved of a tactic, formal policy became negotiable."
+        ],
+        timeline: [
+          {
+            time: "Early–mid 1990s",
+            label:
+              "Rampart CRASH develops a reputation—even within LAPD—for being unusually aggressive and insular.",
+            sub:
+              "Officers who were uncomfortable with this culture often tried to transfer out; those who stayed tended to reinforce it."
+          },
+          {
+            time: "1999+",
+            label:
+              "Whistleblower testimony describes 90% of unit members as “in the loop” on framing and perjury.",
+            sub:
+              "This suggests a shared culture problem, not just individual deviance."
+          }
+        ]
+      },
+
+      culture_incentives: {
+        title: "Informal Performance Incentives",
+        type: "Incentives & rewards",
+        level: "Unit / informal",
+        mechanismLabel: "Results over legality",
+        tags: [
+          "Arrest & seizure counts",
+          "Plaques and bar rituals",
+          "Tolerance for “creative” policing"
+        ],
+        impactLevel: "high",
+        impactLabel: "high – rewarded misconduct",
+        summary:
+          "Formal metrics and informal status systems both focused on outputs like arrests, guns and seizures. Officers were subtly rewarded for high numbers and high-profile shootings, with little attention to legality or long-term legitimacy.",
+        mechanismPoints: [
+          "Supervisors and commanders highlighted numbers—guns taken off the street, cases filed—when praising CRASH, rarely asking closely how those numbers were produced.",
+          "Inside the unit, officers who used force or made big cases were celebrated with plaques and rituals, sometimes distinguishing between woundings and killings.",
+          "Discretionary perks (scheduling, desirable assignments) often went to “producers,” sending a clear signal that output trumped process.",
+          "Because most victims of misconduct were marginalized or labeled as gang members, complaints carried less political weight than impressive statistics."
+        ],
+        timeline: [
+          {
+            time: "1990s",
+            label:
+              "High-arrest weekends and major seizures from CRASH are touted as evidence the tough strategy is working.",
+            sub:
+              "Short-term crime-control stories overshadow growing complaint patterns and anomalies in case files."
+          },
+          {
+            time: "Post-scandal",
+            label:
+              "Later reforms shift some emphasis toward tracking complaints and uses of force, implicitly acknowledging that earlier metrics were incomplete.",
+            sub:
+              "This also leads to unintended consequences, like some officers disengaging to avoid complaints."
+          }
+        ]
+      },
+
+      tactics_evidence: {
+        title: "Evidence Planting & Coordinated Perjury",
+        type: "Street-level tactics",
+        level: "Individual cases",
+        mechanismLabel: "Manufacturing “good cases”",
+        tags: [
+          "Spare guns (“throw-downs”)",
+          "False reports & testimony",
+          "Framing suspects and bystanders"
+        ],
+        impactLevel: "high",
+        impactLabel: "high – direct harm to justice",
+        summary:
+          "CRASH officers systematically fabricated probable cause by planting guns or drugs and writing reports that turned questionable stops, searches and shootings into apparently lawful actions. Partners and supervisors often backed these narratives in court.",
+        mechanismPoints: [
+          "Officers carried spare weapons and contraband they could “discover” on a suspect, especially after a dubious shooting or violent encounter that needed legal justification.",
+          "Reports were written to fit constitutional requirements after the fact: suspicious bulges, furtive movements, anonymous tips, or supposed confessions smoothed over earlier illegal steps.",
+          "Partners rehearsed testimony so that stories matched, making it difficult for judges and juries to detect fabrication.",
+          "Because courts and prosecutors tended to treat officer testimony as highly credible, fabricated narratives often prevailed even when defendants insisted they were innocent.",
+          "Over time, this created a self-reinforcing system: success in court validated the tactic and emboldened officers to use it more often."
+        ],
+        timeline: [
+          {
+            time: "Mid-1990s",
+            label:
+              "Multiple shootings and arrests in Rampart rely heavily on officer testimony with little corroborating evidence.",
+            sub:
+              "Some involve unarmed or minimally involved individuals who are later portrayed as armed aggressors."
+          },
+          {
+            time: "1998–1999",
+            label:
+              "After the arrest of a key officer for stealing cocaine, cooperation with investigators reveals routine planting of evidence and coordinated perjury.",
+            sub:
+              "More than 100 convictions tied to his cases are ultimately overturned, and thousands more are reviewed."
+          }
+        ]
+      },
+
+      tactics_violence_profit: {
+        title: "Violence, Theft & Personal Profit",
+        type: "Street-level tactics",
+        level: "Individual & group behavior",
+        mechanismLabel: "Abuse of power for gain",
+        tags: [
+          "Beatings & coercive questioning",
+          "Misuse of evidence lockers",
+          "Side deals with criminal actors"
+        ],
+        impactLevel: "high",
+        impactLabel: "high – extreme abuses",
+        summary:
+          "Some CRASH officers moved from rule-bending to overt criminality: beating suspects during interrogation, shooting and then framing unarmed individuals, stealing cocaine from evidence lockers, and working off-duty for entities linked to gangs and record labels.",
+        mechanismPoints: [
+          "In interrogation rooms and stations, suspects were sometimes beaten while handcuffed to extract information or to punish perceived disrespect.",
+          "Unarmed or minimally involved individuals were shot and then depicted as armed assailants, with evidence planted to support that story.",
+          "Cocaine checked out of evidence was diluted or replaced with inert substances before being returned, while the real drugs were sold on the street.",
+          "Off-duty officers worked as private security for organizations suspected of serious criminal involvement, blurring the line between law enforcement and protection for favored groups.",
+          "Because these acts happened in hidden spaces (back rooms, evidence rooms, informal meetings), they were hard to detect without inside cooperation."
+        ],
+        timeline: [
+          {
+            time: "1996–1997",
+            label:
+              "High-profile incidents include brutal stationhouse beatings and shootings later alleged to involve planted guns.",
+            sub:
+              "Victims’ complaints initially struggle to gain traction inside the department."
+          },
+          {
+            time: "1998",
+            label:
+              "A CRASH officer is caught stealing multiple pounds of cocaine from an evidence locker, triggering the cooperation that exposes broader misconduct.",
+            sub:
+              "Investigators discover additional suspicious withdrawals and patterns of tampering."
+          }
+        ]
+      },
+
+      oversight_internal: {
+        title: "Weak Internal Controls & Early-Warning Failure",
+        type: "Oversight & supervision",
+        level: "Department / command staff",
+        mechanismLabel: "Signals ignored or minimized",
+        tags: [
+          "Complaint patterns",
+          "Investigative bottlenecks",
+          "Tolerance for “problem” units"
+        ],
+        impactLevel: "high",
+        impactLabel: "high – allowed persistence",
+        summary:
+          "Even as complaints, anomalies and troubling incidents accumulated, internal accountability systems did not effectively intervene. Supervisors sometimes defended or socialized with the unit, and data about complaints and uses of force were fragmented and under-analyzed.",
+        mechanismPoints: [
+          "Complaints from gang-labeled residents were often discounted as predictable pushback, rather than treated as potential indicators of serious misconduct.",
+          "Internal Affairs investigations could be narrow or delayed, focusing on the most immediate allegation instead of looking for patterns across cases and officers.",
+          "Supervisors sometimes celebrated the same officers who generated the most complaints, because they also generated attention-grabbing enforcement statistics.",
+          "Existing information systems did not easily flag that certain officers or units had unusually high complaint, shooting or evidence-suppression rates.",
+          "Informal loyalty within the chain of command meant that critical internal reports could be softened, delayed or discouraged."
+        ],
+        timeline: [
+          {
+            time: "Early–mid 1990s",
+            label:
+              "Repeated complaints, lawsuits and rumors surround certain Rampart officers, but they remain in operational roles.",
+            sub:
+              "Some investigators later allege their attempts to look deeper were blocked or sidelined."
+          },
+          {
+            time: "1998–1999",
+            label:
+              "Only after an incontrovertible evidence-locker theft and cooperating testimony do broader pattern investigations gain traction.",
+            sub:
+              "Subsequent reviews acknowledge that internal systems failed to detect or stop trends earlier."
+          }
+        ]
+      },
+
+      oversight_coverup: {
+        title: "Cover-Up Dynamics & Narrow Framing",
+        type: "Organizational response",
+        level: "Leadership & legal strategy",
+        mechanismLabel: "Damage control vs. full reckoning",
+        tags: [
+          "“Few bad apples” narrative",
+          "Scope-limited inquiries",
+          "Litigation risk management"
+        ],
+        impactLevel: "medium",
+        impactLabel: "medium – delayed learning",
+        summary:
+          "Once the scandal surfaced, there were strong incentives to present it as the isolated misconduct of a handful of officers. That meant tight control over information, narrow internal reports, and a focus on protecting the department from liability rather than fully mapping systemic causes.",
+        mechanismPoints: [
+          "Initial narratives emphasized individual moral failure rather than design flaws in unit structure, culture and incentives.",
+          "Some investigative leads linking officers to broader patterns or external actors were allegedly downgraded or not fully pursued.",
+          "Civil litigation risk encouraged careful, sometimes defensive public messaging, making it harder to acknowledge systemic problems openly.",
+          "This framing slowed reforms that would have targeted the underlying incentive structure and accountability gaps.",
+          "Over time, external pressure—from the courts, the federal government and independent panels—forced a broader view."
+        ],
+        timeline: [
+          {
+            time: "1999–2000",
+            label:
+              "Internal boards of inquiry concentrate on a subset of implicated officers and incidents.",
+            sub:
+              "Independent analysts later criticize these efforts as too narrow and protective of the institution."
+          },
+          {
+            time: "2000+",
+            label:
+              "Federal oversight and independent review panels expand the frame, documenting organizational drivers that internal reports downplayed.",
+            sub:
+              "These outside pressures ultimately reshape LAPD policies and structures more substantially."
+          }
+        ]
+      },
+
+      outcomes_court: {
+        title: "Court System & Victim Impact",
+        type: "System outcomes",
+        level: "Justice system",
+        mechanismLabel: "Judicial deference + cumulative harm",
+        tags: [
+          "Overturned convictions",
+          "Civil rights suits",
+          "Deportations & long sentences"
+        ],
+        impactLevel: "high",
+        impactLabel: "high – long-term damage",
+        summary:
+          "The combination of fabricated evidence and high judicial trust in officer testimony produced wrongful convictions, long prison terms, deportations and life-altering records for many people. When the scandal came to light, the courts had to unwind years of cases.",
+        mechanismPoints: [
+          "Judges and juries often assumed officers were more credible than defendants with gang affiliations, which gave fabricated narratives a major advantage.",
+          "Once a defendant accepted a plea based on falsified reports, it became legally and practically difficult to revisit the case without new evidence.",
+          "Immigration and collateral-consequence systems treated these convictions as valid, leading to deportations, lost jobs and housing, and long-term stigma.",
+          "After the scandal broke, prosecutors and courts had to review thousands of cases, overturning many convictions and dismissing charges, which strained resources and did not fully repair the harm.",
+          "Civil lawsuits provided financial compensation to some victims but could not easily restore lost years, family ties or community trust."
+        ],
+        timeline: [
+          {
+            time: "Pre-1999",
+            label:
+              "Dozens of convictions rest on CRASH officer testimony, with limited independent corroboration.",
+            sub:
+              "Many defendants plead guilty, facing long sentences if they go to trial and lose."
+          },
+          {
+            time: "1999–2001",
+            label:
+              "Following officer cooperation, prosecutors move to vacate or review large numbers of convictions linked to implicated officers.",
+            sub:
+              "More than 100 convictions are overturned, and many civil rights suits are filed against the city."
+          }
+        ]
+      },
+
+      outcomes_reform: {
+        title: "Reforms, Federal Oversight & Behavioral Backlash",
+        type: "System outcomes & feedback",
+        level: "Department & street level",
+        mechanismLabel: "Reform → adaptation",
+        tags: [
+          "Disbanding CRASH",
+          "Consent-decree-style oversight",
+          "“Drive and wave” disengagement"
+        ],
+        impactLevel: "medium",
+        impactLabel: "medium – mixed effects",
+        summary:
+          "The scandal triggered major reforms: CRASH was disbanded, federal oversight was imposed, and LAPD built new data systems to track uses of force and complaints. But increased scrutiny also led some officers to pull back from proactive policing (“drive and wave”), showing how accountability reforms can change behavior in complex ways.",
+        mechanismPoints: [
+          "Disbanding CRASH signaled that the specific unit model was no longer acceptable, and a new gang & narcotics structure was created with more formal oversight.",
+          "A federal consent-decree-style agreement required detailed tracking of stops, arrests, complaints and uses of force, and mandated regular audits.",
+          "Supervisors gained better tools to spot outlier officers or units, at least on paper, and were held more responsible for patterns on their watch.",
+          "Some officers responded to the risk of discipline and complaints by avoiding discretionary stops and proactive work, in a strategy dubbed “drive and wave.”",
+          "Over time, the department had to balance the goals of preventing abuse, maintaining community trust and still providing effective crime control."
+        ],
+        timeline: [
+          {
+            time: "2000–2001",
+            label:
+              "CRASH is formally disbanded; federal authorities and the city agree to years of external monitoring of LAPD practices.",
+            sub:
+              "New gang enforcement structures and oversight mechanisms are created."
+          },
+          {
+            time: "Early 2000s & after",
+            label:
+              "Studies find that heightened oversight initially reduces arrest-to-crime ratios as officers disengage, then partially rebounds when oversight relaxes.",
+            sub:
+              "This illustrates how frontline behavior adapts to accountability rules, sometimes in unintended ways."
+          }
+        ]
+      }
+    };
+
+    // DOM references
+    const nodes = Array.from(document.querySelectorAll(".node"));
+    const detailTitle = document.getElementById("detail-title");
+    const detailType = document.getElementById("detail-type");
+    const detailMechanismLabel = document.getElementById("detail-mechanism-label");
+    const detailLevelLabel = document.getElementById("detail-level-label");
+    const detailTags = document.getElementById("detail-tags");
+    const detailSummary = document.getElementById("detail-summary");
+    const detailMechanismList = document.getElementById("detail-mechanism-list");
+    const detailTimeline = document.getElementById("detail-timeline");
+    const detailImpact = document.getElementById("detail-impact");
+
+    function clearActiveNodes() {
+      nodes.forEach((n) => n.classList.remove("active"));
+    }
+
+    function setImpactPill(level, labelText) {
+      detailImpact.innerHTML = "";
+      const pill = document.createElement("span");
+      pill.className = "impact-pill";
+      if (level === "high") pill.classList.add("impact-high");
+      else if (level === "medium") pill.classList.add("impact-medium");
+      else pill.classList.add("impact-low");
+
+      const dot = document.createElement("span");
+      dot.className = "dot";
+      const textNode = document.createTextNode("Impact: " + labelText);
+
+      pill.appendChild(dot);
+      pill.appendChild(textNode);
+      detailImpact.appendChild(pill);
+    }
+
+    function renderMechanism(key) {
+      const data = MECHANISMS[key];
+      if (!data) return;
+
+      clearActiveNodes();
+      const node = nodes.find((n) => n.dataset.key === key);
+      if (node) node.classList.add("active");
+
+      // Basic labels
+      detailTitle.textContent = data.title;
+      detailType.textContent = data.type;
+      detailMechanismLabel.textContent = data.mechanismLabel;
+      detailLevelLabel.textContent = data.level;
+
+      // Tags
+      detailTags.innerHTML = "";
+      (data.tags || []).forEach((tag) => {
+        const span = document.createElement("span");
+        span.className = "tag";
+        span.textContent = tag;
+        detailTags.appendChild(span);
+      });
+
+      // Summary
+      detailSummary.textContent = data.summary;
+
+      // Mechanism points
+      detailMechanismList.innerHTML = "";
+      (data.mechanismPoints || []).forEach((point) => {
+        const li = document.createElement("li");
+        li.textContent = point;
+        detailMechanismList.appendChild(li);
+      });
+
+      // Timeline / examples
+      detailTimeline.innerHTML = "";
+      (data.timeline || []).forEach((item) => {
+        const li = document.createElement("li");
+
+        const time = document.createElement("span");
+        time.className = "detail-timeline-time";
+        time.textContent = item.time;
+
+        const textWrapper = document.createElement("span");
+        const label = document.createElement("span");
+        label.className = "label";
+        label.textContent = item.label;
+        const sub = document.createElement("span");
+        sub.className = "sub";
+        sub.textContent = item.sub || "";
+
+        textWrapper.appendChild(label);
+        if (item.sub) textWrapper.appendChild(sub);
+
+        li.appendChild(time);
+        li.appendChild(textWrapper);
+        detailTimeline.appendChild(li);
+      });
+
+      // Impact
+      setImpactPill(data.impactLevel || "medium", data.impactLabel || "—");
+    }
+
+    // Attach click listeners
+    nodes.forEach((node) => {
+      node.addEventListener("click", () => {
+        const key = node.dataset.key;
+        renderMechanism(key);
+      });
+    });
+
+    // Start with a central mechanism selected
+    renderMechanism("tactics_evidence");
+  </script>
+</body>
+</html>
