@@ -1,0 +1,847 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Simple Sample Size Tutor (Epidemiology)</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f5f5f7;
+      color: #222;
+    }
+
+    .app {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 1rem 1.2rem 2.5rem;
+    }
+
+    h1 {
+      font-size: 1.7rem;
+      margin-bottom: 0.25rem;
+    }
+
+    h2 {
+      font-size: 1.2rem;
+      margin-top: 1rem;
+      margin-bottom: 0.4rem;
+    }
+
+    p {
+      margin-top: 0.2rem;
+      font-size: 0.95rem;
+      line-height: 1.4;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 0.8rem;
+      padding: 0.8rem 1rem;
+      margin-top: 0.7rem;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+      border: 1px solid #e0e0e0;
+    }
+
+    .two-columns {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.1fr);
+      gap: 1rem;
+      margin-top: 0.8rem;
+    }
+
+    @media (max-width: 800px) {
+      .two-columns {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .step-list {
+      padding-left: 1.2rem;
+      font-size: 0.92rem;
+      margin-top: 0.3rem;
+    }
+
+    .step-list li {
+      margin-bottom: 0.3rem;
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      padding: 0.15rem 0.55rem;
+      border-radius: 999px;
+      background: #e0ecff;
+      color: #174ea6;
+      margin-bottom: 0.4rem;
+    }
+
+    .inputs {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      margin-top: 0.4rem;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 0.6rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .input-row label {
+      font-size: 0.9rem;
+      min-width: 150px;
+    }
+
+    .input-row input,
+    .input-row select {
+      padding: 0.25rem 0.4rem;
+      font-size: 0.9rem;
+      border-radius: 0.4rem;
+      border: 1px solid #ccc;
+      min-width: 80px;
+    }
+
+    .help-text {
+      font-size: 0.8rem;
+      color: #555;
+      margin-left: 0.2rem;
+    }
+
+    .button-row {
+      margin-top: 0.6rem;
+    }
+
+    button {
+      padding: 0.4rem 0.9rem;
+      border-radius: 999px;
+      border: none;
+      font-size: 0.9rem;
+      font-weight: 600;
+      background: #2563eb;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      filter: brightness(1.05);
+    }
+
+    .button-secondary {
+      background: #e5e7eb;
+      color: #111827;
+      box-shadow: none;
+    }
+
+    .button-secondary:hover {
+      filter: brightness(0.98);
+    }
+
+    .result-box {
+      margin-top: 0.7rem;
+      padding: 0.6rem 0.7rem;
+      border-radius: 0.6rem;
+      background: #f1f5f9;
+      border: 1px solid #d4d4d8;
+      font-size: 0.94rem;
+    }
+
+    .result-box strong.main-number {
+      font-size: 1.05rem;
+    }
+
+    /* Simple spreadsheet style table */
+    .sheet-title {
+      font-size: 0.9rem;
+      margin-bottom: 0.35rem;
+      color: #444;
+    }
+
+    table.sheet {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 0.85rem;
+      border-radius: 0.6rem;
+      overflow: hidden;
+      background: #fafafa;
+    }
+
+    table.sheet th,
+    table.sheet td {
+      border: 1px solid #ddd;
+      padding: 0.25rem 0.4rem;
+      vertical-align: top;
+    }
+
+    table.sheet thead th {
+      background: #e5e5e5;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    table.sheet th.row-header {
+      width: 1.5rem;
+      text-align: center;
+      background: #e5e5e5;
+    }
+
+    .cell-label {
+      font-size: 0.65rem;
+      color: #999;
+      float: right;
+    }
+
+    .cell-main {
+      font-weight: 600;
+      font-size: 0.83rem;
+      margin-bottom: 0.1rem;
+    }
+
+    .cell-secondary {
+      font-size: 0.78rem;
+      color: #555;
+    }
+
+    .sheet-input {
+      width: 100%;
+      box-sizing: border-box;
+      border-radius: 0.3rem;
+      border: 1px solid #ccc;
+      padding: 0.15rem 0.25rem;
+      font-size: 0.83rem;
+      text-align: right;
+      background: white;
+    }
+
+    .sheet-footnote {
+      font-size: 0.78rem;
+      color: #555;
+      margin-top: 0.4rem;
+    }
+
+    .questions-list {
+      padding-left: 1.2rem;
+      font-size: 0.9rem;
+    }
+
+    .questions-list li {
+      margin-bottom: 0.35rem;
+    }
+
+    /* Advanced statistics section */
+    .advanced-box {
+      margin-top: 0.6rem;
+      padding: 0.7rem 0.8rem;
+      border-radius: 0.7rem;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      font-size: 0.9rem;
+    }
+
+    .advanced-box h3 {
+      margin-top: 0.25rem;
+      margin-bottom: 0.4rem;
+      font-size: 1rem;
+    }
+
+    .advanced-list {
+      padding-left: 1.2rem;
+      margin-top: 0.3rem;
+      font-size: 0.88rem;
+    }
+
+    .advanced-list li {
+      margin-bottom: 0.3rem;
+    }
+
+    .formula-block {
+      margin-top: 0.5rem;
+      background: #111827;
+      color: #e5e7eb;
+      padding: 0.6rem 0.8rem;
+      border-radius: 0.7rem;
+      font-size: 0.82rem;
+      overflow-x: auto;
+    }
+
+    .formula-block code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+
+    .formula-comment {
+      color: #9ca3af;
+      font-size: 0.78rem;
+    }
+
+    .small-note {
+      font-size: 0.8rem;
+      color: #4b5563;
+      margin-top: 0.45rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="badge">Simple Walkthrough - No specialist stats required</div>
+    <h1>Simple Sample Size Tutor for an Epidemiology Study</h1>
+    <p>
+      This page helps you think about two things:
+      <strong>(1) Who is in your sample?</strong> and
+      <strong>(2) Roughly how many people you might need</strong>
+      when you compare two groups (for example, exposed vs not exposed).
+    </p>
+
+    <div class="two-columns">
+      <!-- LEFT SIDE: ideas and plain language -->
+      <section class="card">
+        <h2>1. First: what are we actually sampling?</h2>
+        <ul class="step-list">
+          <li>
+            <strong>Population:</strong> the big group you care about
+            (for example: “all adults with asthma in my city”).
+          </li>
+          <li>
+            <strong>Sample:</strong> the smaller group you actually study
+            (for example: 300 of those adults who agree to take part).
+          </li>
+          <li>
+            <strong>Two groups:</strong> in this tool we think about
+            <em>Group A = not exposed / control</em> and
+            <em>Group B = exposed / intervention</em>.
+          </li>
+        </ul>
+
+        <p style="margin-top:0.6rem;">
+          Our main outcome is a simple “yes/no” event, such as:
+          <em>“Did they get the disease within 1 year?”</em>
+        </p>
+
+        <h2>2. Simple question we want to answer</h2>
+        <p>
+          <strong>“Is the risk different between the two groups?”</strong><br />
+          To plan a study, we need a rough guess for:
+        </p>
+        <ul class="step-list">
+          <li>How common the outcome is in Group A (no exposure).</li>
+          <li>
+            How common the outcome might be in Group B (with exposure or treatment).
+          </li>
+        </ul>
+
+        <p>
+          Below, you can type your guesses as percentages, and the calculator will
+          give a <strong>very simple estimate</strong> of how many people you might need
+          in each group.
+        </p>
+      </section>
+
+      <!-- RIGHT SIDE: simple calculator and mini spreadsheet -->
+      <section class="card">
+        <h2>3. Enter your guesses</h2>
+
+        <div class="inputs">
+          <div class="input-row">
+            <label for="risk-a-input">
+              Risk in Group A (no exposure)
+            </label>
+            <input id="risk-a-input" type="number" min="0" max="100" step="1" value="10" />
+            <span class="help-text">e.g. 10% means 10 out of 100 people</span>
+          </div>
+
+          <div class="input-row">
+            <label for="risk-b-input">
+              Risk in Group B (with exposure)
+            </label>
+            <input id="risk-b-input" type="number" min="0" max="100" step="1" value="20" />
+            <span class="help-text">this reflects the difference you care about</span>
+          </div>
+
+          <div class="input-row">
+            <label for="power-select">
+              How sure do you want to be?
+            </label>
+            <select id="power-select">
+              <option value="0.80" data-zbeta="0.84" selected>
+                Reasonably sure (about 80% chance of spotting a real difference)
+              </option>
+              <option value="0.90" data-zbeta="1.28">
+                Very sure (about 90% chance of spotting a real difference)
+              </option>
+            </select>
+          </div>
+
+          <div class="input-row">
+            <label for="dropout-input">
+              Expected losses / drop-outs
+            </label>
+            <input id="dropout-input" type="number" min="0" max="50" step="5" value="10" />
+            <span class="help-text">percent who may not complete the study</span>
+          </div>
+        </div>
+
+        <div class="button-row">
+          <button id="calc-btn">Calculate sample size</button>
+        </div>
+
+        <div class="result-box" id="result-box">
+          Try the default numbers and click <strong>Calculate sample size</strong>.
+        </div>
+
+        <h2 style="margin-top:0.8rem;">4. “Excel-like” view</h2>
+        <div class="sheet-title">
+          This is the same information, shown like a tiny spreadsheet.
+          You could build this yourself in Excel.
+        </div>
+        <table class="sheet">
+          <thead>
+            <tr>
+              <th class="row-header"></th>
+              <th>A</th>
+              <th>B</th>
+              <th>C</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th class="row-header">1</th>
+              <td>
+                <span class="cell-label">A1</span>
+                <div class="cell-main">Item</div>
+              </td>
+              <td>
+                <span class="cell-label">B1</span>
+                <div class="cell-main">Value</div>
+              </td>
+              <td>
+                <span class="cell-label">C1</span>
+                <div class="cell-main">What this means (plain language)</div>
+              </td>
+            </tr>
+            <tr>
+              <th class="row-header">2</th>
+              <td>
+                <span class="cell-label">A2</span>
+                <div class="cell-main">Risk in Group A</div>
+              </td>
+              <td>
+                <span class="cell-label">B2</span>
+                <input id="sheet-risk-a" class="sheet-input" type="number" min="0" max="100" step="1" value="10" />
+              </td>
+              <td>
+                <span class="cell-label">C2</span>
+                <div class="cell-secondary">
+                  Your guess for the outcome in people <strong>without</strong> the exposure.
+                  Example: 10 means 10 out of 100 will get the outcome.
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <th class="row-header">3</th>
+              <td>
+                <span class="cell-label">A3</span>
+                <div class="cell-main">Risk in Group B</div>
+              </td>
+              <td>
+                <span class="cell-label">B3</span>
+                <input id="sheet-risk-b" class="sheet-input" type="number" min="0" max="100" step="1" value="20" />
+              </td>
+              <td>
+                <span class="cell-label">C3</span>
+                <div class="cell-secondary">
+                  Your guess for the outcome in people <strong>with</strong> the exposure or treatment.
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <th class="row-header">4</th>
+              <td>
+                <span class="cell-label">A4</span>
+                <div class="cell-main">Difference you care about</div>
+              </td>
+              <td>
+                <span class="cell-label">B4</span>
+                <span id="sheet-diff-display">10 percentage points</span>
+              </td>
+              <td>
+                <span class="cell-label">C4</span>
+                <div class="cell-secondary">
+                  This is just Group B minus Group A.
+                  Smaller differences need <strong>larger</strong> sample sizes.
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <th class="row-header">5</th>
+              <td>
+                <span class="cell-label">A5</span>
+                <div class="cell-main">How sure you want to be</div>
+              </td>
+              <td>
+                <span class="cell-label">B5</span>
+                <span id="sheet-power-display">About 80% chance of spotting a real difference</span>
+              </td>
+              <td>
+                <span class="cell-label">C5</span>
+                <div class="cell-secondary">
+                  This is called “power” in statistics.
+                  Higher power = safer study, but needs more people.
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <th class="row-header">6</th>
+              <td>
+                <span class="cell-label">A6</span>
+                <div class="cell-main">People needed in each group</div>
+              </td>
+              <td>
+                <span class="cell-label">B6</span>
+                <span id="sheet-n-per-group">—</span>
+              </td>
+              <td>
+                <span class="cell-label">C6</span>
+                <div class="cell-secondary">
+                  This is a rough estimate based on your guesses above and common choices used in health research.
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <th class="row-header">7</th>
+              <td>
+                <span class="cell-label">A7</span>
+                <div class="cell-main">Adjusted for drop-outs</div>
+              </td>
+              <td>
+                <span class="cell-label">B7</span>
+                <span id="sheet-n-final">—</span>
+              </td>
+              <td>
+                <span class="cell-label">C7</span>
+                <div class="cell-secondary">
+                  People may move away, withdraw, or have missing data.
+                  We increase the number at the start to allow for this.
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="sheet-footnote">
+          Note: behind the scenes this uses a standard formula for two groups and a 5% significance level
+          (a common choice in medical research). The details are hidden so we can focus on the ideas.
+        </div>
+      </section>
+    </div>
+
+    <section class="card">
+      <h2>5. Key questions when defining your sample</h2>
+      <ul class="questions-list">
+        <li>
+          <strong>Who is in the “population” you care about?</strong><br />
+          Be as clear as you can: age range, condition, place, time period.
+        </li>
+        <li>
+          <strong>Who will you actually invite?</strong><br />
+          This is your sampling frame (for example, people on a clinic list).
+          Are some groups missing (e.g. people who never come to clinic)?
+        </li>
+        <li>
+          <strong>How will you choose people?</strong><br />
+          Random selection is best. Convenience sampling (whoever turns up)
+          is easier but can give biased results.
+        </li>
+        <li>
+          <strong>Are the two groups comparable?</strong><br />
+          If one group is much older or sicker, the difference you see may be
+          due to those things, not the exposure. Randomisation or good matching
+          helps here.
+        </li>
+        <li>
+          <strong>Is the sample size realistic?</strong><br />
+          If the number the calculator suggests is far too big for you to manage,
+          you might need a different study question, a longer follow-up, or to
+          work with more centres.
+        </li>
+      </ul>
+      <p class="small-note">
+        A calculator can suggest a number, but <strong>good thinking about the sample</strong>
+        – who is included, how they are chosen, and how complete your data will be –
+        is just as important.
+      </p>
+    </section>
+
+    <!-- NEW: advanced statistics (optional, last stage) -->
+    <section class="card">
+      <h2>6. Optional: the statistics hiding underneath</h2>
+      <p style="font-size:0.9rem;">
+        You don’t need this section to <em>use</em> the calculator, but it explains what’s going on
+        inside the “black box” and <strong>why the statistics matters</strong>.
+      </p>
+
+      <button id="toggle-advanced-btn" class="button-secondary">
+        Show the statistics behind this (optional)
+      </button>
+
+      <div id="advanced-section" class="advanced-box" style="display:none;">
+        <h3>Why do we need statistics for sample size?</h3>
+        <ul class="advanced-list">
+          <li>
+            In real life, we never see the whole population. We only see a sample,
+            and there is <strong>random noise</strong> in what we observe.
+          </li>
+          <li>
+            Statistics helps us say:
+            <em>“How big does my sample need to be so I probably see a real difference,
+            and not just random luck?”</em>
+          </li>
+          <li>
+            Two key ideas:
+            <ul class="advanced-list" style="margin-top:0.2rem;">
+              <li><strong>α (alpha):</strong> how often we are willing to shout “difference!” when there is none (false alarm).</li>
+              <li><strong>Power (1 − β):</strong> how often we correctly see a difference when it really exists.</li>
+            </ul>
+          </li>
+        </ul>
+
+        <h3>The normal curve and “Z-scores”</h3>
+        <p style="font-size:0.88rem;">
+          Many averages and proportions behave (approximately) like a bell-shaped curve,
+          called the <strong>normal distribution</strong>. A <strong>Z-score</strong> tells us
+          how far away from “no difference” our result is, measured in standard deviations.
+        </p>
+        <ul class="advanced-list">
+          <li>
+            For a 5% significance level (α = 0.05, two-sided), the critical value is
+            approximately <strong>Z<sub>α/2</sub> = 1.96</strong>.
+          </li>
+          <li>
+            For 80% power, we use <strong>Z<sub>β</sub> ≈ 0.84</strong>
+            (for 90% power it is ≈ 1.28).
+          </li>
+          <li>
+            These Z-scores appear in the sample size formula. Bigger Z-scores
+            → more cautious study → <strong>larger sample size</strong>.
+          </li>
+        </ul>
+
+        <h3>The actual formula used here</h3>
+        <p class="small-note">
+          Below, <code>p₀</code> is the risk in Group A (no exposure), and
+          <code>p₁</code> is the risk in Group B (with exposure).
+        </p>
+
+        <div class="formula-block">
+          <div class="formula-comment">// Step 1: average risk</div>
+          <code>p̄ = (p₀ + p₁) / 2</code>
+
+          <br /><br />
+          <div class="formula-comment">// Step 2: sample size per group for two proportions</div>
+          <code>
+            n_per_group =
+            [ Z<sub>α/2</sub> · √(2 · p̄ · (1 − p̄))
+            + Z<sub>β</sub> · √(p₀(1 − p₀) + p₁(1 − p₁)) ]²
+            / (p₁ − p₀)²
+          </code>
+        </div>
+
+        <p class="small-note">
+          This formula comes from asking:
+          <em>“How big should n be so that, in the bell-curve world, the true difference
+          between p₀ and p₁ is unlikely to be hidden by random noise?”</em>
+        </p>
+
+        <h3>Why this matters for students and researchers</h3>
+        <ul class="advanced-list">
+          <li>
+            If you <strong>ignore</strong> these ideas and just pick a convenient number
+            (for example, 50 per group), you might end up with a study that is
+            <strong>too small to detect a real effect</strong>.
+          </li>
+          <li>
+            On the other hand, choosing a sample size that is far too big may be
+            <strong>unethical or wasteful</strong> (more time, money, and patient burden than needed).
+          </li>
+          <li>
+            The statistics give a <strong>reasoned starting point</strong>, which you can then
+            adjust for practical issues (budget, time, recruitment rate, etc.).
+          </li>
+        </ul>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // Fixed choices we keep “under the bonnet” to keep things simple.
+    // Significance level (chance of a false alarm) is set to 5% (two-sided),
+    // which corresponds roughly to Z_alpha = 1.96.
+    const Z_ALPHA = 1.96;
+
+    function round(x, decimals) {
+      const factor = Math.pow(10, decimals || 0);
+      return Math.round(x * factor) / factor;
+    }
+
+    function calculateSampleSize(p0, p1, zAlpha, zBeta) {
+      // p0 and p1 are proportions (0 to 1)
+      if (!isFinite(p0) || !isFinite(p1)) return NaN;
+      if (p0 < 0 || p0 > 1 || p1 < 0 || p1 > 1) return NaN;
+      if (p0 === p1) return NaN;
+
+      // Standard formula for comparing two proportions with equal group sizes.
+      const pBar = (p0 + p1) / 2;
+      const term1 = zAlpha * Math.sqrt(2 * pBar * (1 - pBar));
+      const term2 = zBeta * Math.sqrt(p0 * (1 - p0) + p1 * (1 - p1));
+      const numerator = Math.pow(term1 + term2, 2);
+      const denominator = Math.pow(p1 - p0, 2);
+
+      const nPerGroup = numerator / denominator;
+      return nPerGroup;
+    }
+
+    function syncTopToSheet() {
+      document.getElementById("sheet-risk-a").value = document.getElementById("risk-a-input").value;
+      document.getElementById("sheet-risk-b").value = document.getElementById("risk-b-input").value;
+    }
+
+    function syncSheetToTop() {
+      document.getElementById("risk-a-input").value = document.getElementById("sheet-risk-a").value;
+      document.getElementById("risk-b-input").value = document.getElementById("sheet-risk-b").value;
+    }
+
+    function updateDiffAndPowerText() {
+      const riskA = parseFloat(document.getElementById("risk-a-input").value) || 0;
+      const riskB = parseFloat(document.getElementById("risk-b-input").value) || 0;
+      const diff = riskB - riskA;
+
+      const diffText = isFinite(diff)
+        ? Math.abs(diff) + " percentage points"
+        : "—";
+      document.getElementById("sheet-diff-display").textContent = diffText;
+
+      const powerSelect = document.getElementById("power-select");
+      const powerVal = parseFloat(powerSelect.value);
+      const powerText = powerVal === 0.9
+        ? "About 90% chance of spotting a real difference"
+        : "About 80% chance of spotting a real difference";
+      document.getElementById("sheet-power-display").textContent = powerText;
+    }
+
+    function runCalculator() {
+      // Make sure values match between the top inputs and the spreadsheet cells
+      syncSheetToTop();
+      updateDiffAndPowerText();
+
+      const riskA = parseFloat(document.getElementById("risk-a-input").value);
+      const riskB = parseFloat(document.getElementById("risk-b-input").value);
+      const powerSelect = document.getElementById("power-select");
+      const zBeta = parseFloat(powerSelect.selectedOptions[0].dataset.zbeta);
+      const dropout = parseFloat(document.getElementById("dropout-input").value) || 0;
+
+      const resultBox = document.getElementById("result-box");
+      const sheetNPerGroup = document.getElementById("sheet-n-per-group");
+      const sheetNFinal = document.getElementById("sheet-n-final");
+
+      if (
+        !isFinite(riskA) || !isFinite(riskB) ||
+        riskA < 0 || riskA > 100 ||
+        riskB < 0 || riskB > 100
+      ) {
+        resultBox.textContent = "Please enter risks between 0 and 100.";
+        sheetNPerGroup.textContent = "—";
+        sheetNFinal.textContent = "—";
+        return;
+      }
+
+      if (riskA === riskB) {
+        resultBox.textContent = "If both risks are the same, there is no difference to detect.";
+        sheetNPerGroup.textContent = "—";
+        sheetNFinal.textContent = "—";
+        return;
+      }
+
+      const p0 = riskA / 100;
+      const p1 = riskB / 100;
+
+      const nPerGroup = calculateSampleSize(p0, p1, Z_ALPHA, zBeta);
+
+      if (!isFinite(nPerGroup) || nPerGroup <= 0) {
+        resultBox.textContent = "The calculation did not work with these inputs. Try more realistic values.";
+        sheetNPerGroup.textContent = "—";
+        sheetNFinal.textContent = "—";
+        return;
+      }
+
+      const nRounded = Math.ceil(nPerGroup);
+
+      const lossFraction = Math.min(Math.max(dropout / 100, 0), 0.9);
+      const nAdjusted = nPerGroup / (1 - lossFraction);
+      const nAdjustedRounded = Math.ceil(nAdjusted);
+
+      const totalPeople = nRounded * 2;
+      const totalPeopleAdjusted = nAdjustedRounded * 2;
+
+      resultBox.innerHTML = `
+        With your guesses:
+        <br />
+        – Group A risk: <strong>${riskA}%</strong><br />
+        – Group B risk: <strong>${riskB}%</strong><br />
+        the calculator suggests roughly
+        <strong class="main-number">${nRounded} people in each group</strong>
+        (about <strong>${totalPeople} people in total</strong>) <em>before</em> allowing for drop-outs.
+        <br /><br />
+        If you expect about <strong>${dropout}%</strong> to drop out or have missing data,
+        you should start with around
+        <strong class="main-number">${nAdjustedRounded} people in each group</strong>
+        (about <strong>${totalPeopleAdjusted} people in total</strong>).
+      `;
+
+      sheetNPerGroup.textContent = nRounded + " per group";
+      sheetNFinal.textContent = nAdjustedRounded + " per group (after allowing for losses)";
+    }
+
+    // Hook up main calculator button
+    document.getElementById("calc-btn").addEventListener("click", runCalculator);
+
+    // Keep inputs in sync between the top section and the spreadsheet view
+    document.getElementById("risk-a-input").addEventListener("change", () => {
+      syncTopToSheet();
+      updateDiffAndPowerText();
+    });
+    document.getElementById("risk-b-input").addEventListener("change", () => {
+      syncTopToSheet();
+      updateDiffAndPowerText();
+    });
+
+    document.getElementById("sheet-risk-a").addEventListener("change", () => {
+      syncSheetToTop();
+      updateDiffAndPowerText();
+    });
+    document.getElementById("sheet-risk-b").addEventListener("change", () => {
+      syncSheetToTop();
+      updateDiffAndPowerText();
+    });
+
+    document.getElementById("power-select").addEventListener("change", updateDiffAndPowerText);
+
+    // Advanced section toggle
+    const toggleBtn = document.getElementById("toggle-advanced-btn");
+    const advancedSection = document.getElementById("advanced-section");
+
+    toggleBtn.addEventListener("click", () => {
+      const isHidden = advancedSection.style.display === "none" || advancedSection.style.display === "";
+      advancedSection.style.display = isHidden ? "block" : "none";
+      toggleBtn.textContent = isHidden
+        ? "Hide the statistics details"
+        : "Show the statistics behind this (optional)";
+    });
+
+    // Initial sync
+    syncTopToSheet();
+    updateDiffAndPowerText();
+  </script>
+</body>
+</html>
