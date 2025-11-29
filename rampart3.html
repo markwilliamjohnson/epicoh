@@ -1,0 +1,1314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Rampart CRASH Constraint Lattice</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #020617;
+      --bg-panel: #0b1220;
+      --bg-panel-soft: #0f172a;
+      --accent: #f97316;
+      --border-subtle: rgba(148, 163, 184, 0.5);
+      --text-main: #f9fafb;
+      --text-muted: #9ca3af;
+      --text-faint: #6b7280;
+      --radius-xl: 18px;
+      --radius-pill: 999px;
+      --shadow-soft: 0 18px 40px rgba(0, 0, 0, 0.45);
+      --transition-fast: 0.18s ease-out;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #0f172a 0, #020617 52%, #000 100%);
+      color: var(--text-main);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    header {
+      max-width: 1080px;
+      margin: 0 auto;
+      width: 100%;
+      padding: 14px 18px;
+      border-radius: var(--radius-xl);
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(23, 37, 84, 0.9));
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      backdrop-filter: blur(20px);
+    }
+
+    header .title-block {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.4rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    header .badge {
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+      border: 1px solid rgba(248, 250, 252, 0.22);
+      background: radial-gradient(circle at top, rgba(248, 250, 252, 0.14), transparent 60%);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    header p {
+      margin: 0;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      max-width: 600px;
+    }
+
+    header .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      font-size: 0.7rem;
+      align-items: center;
+    }
+
+    header .legend-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 9px;
+      border-radius: var(--radius-pill);
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      white-space: nowrap;
+    }
+
+    .legend-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+    }
+
+    .dot-A { background: #60a5fa; }
+    .dot-B { background: #a78bfa; }
+    .dot-C { background: #facc15; }
+    .dot-D { background: #34d399; }
+
+    main {
+      max-width: 1080px;
+      margin: 0 auto;
+      width: 100%;
+      display: grid;
+      grid-template-columns: minmax(0, 1.3fr) minmax(0, 1.2fr);
+      gap: 16px;
+    }
+
+    @media (max-width: 860px) {
+      main {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .panel {
+      border-radius: var(--radius-xl);
+      background: radial-gradient(circle at top left, rgba(248, 250, 252, 0.03), transparent 55%),
+        linear-gradient(135deg, var(--bg-panel-soft), var(--bg-panel));
+      border: 1px solid var(--border-subtle);
+      padding: 14px 14px 16px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .panel::before {
+      content: "";
+      position: absolute;
+      inset: -40%;
+      background: radial-gradient(circle at top, rgba(248, 250, 252, 0.06), transparent 60%);
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    .panel-inner {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      height: 100%;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .panel-title {
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .panel-header small {
+      font-size: 0.75rem;
+      color: var(--text-faint);
+    }
+
+    .panel-subtitle {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .lattice-container {
+      border-radius: 14px;
+      background: radial-gradient(circle at top, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 1));
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      padding: 8px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .lattice-key {
+      position: absolute;
+      left: 16px;
+      top: 10px;
+      font-size: 0.7rem;
+      color: var(--text-faint);
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .lattice-axis {
+      position: absolute;
+      right: 10px;
+      top: 10px;
+      font-size: 0.7rem;
+      color: var(--text-faint);
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+    }
+
+    .lattice-axis span {
+      padding: 1px 6px;
+      border-radius: var(--radius-pill);
+      background: rgba(15, 23, 42, 0.96);
+      border: 1px solid rgba(55, 65, 81, 0.9);
+    }
+
+    svg {
+      width: 100%;
+      height: 520px;
+      display: block;
+    }
+
+    .lattice-edge {
+      stroke: rgba(148, 163, 184, 0.45);
+      stroke-width: 1.2;
+      transition: stroke 0.18s ease-out, stroke-width 0.18s ease-out;
+    }
+
+    .lattice-edge.edge-highlight {
+      stroke: rgba(248, 250, 252, 0.9);
+      stroke-width: 1.7;
+    }
+
+    .lattice-node {
+      cursor: pointer;
+      transition: transform var(--transition-fast);
+    }
+
+    .lattice-node rect {
+      rx: 10;
+      ry: 10;
+      fill: rgba(15, 23, 42, 0.95);
+      stroke: rgba(148, 163, 184, 0.7);
+      stroke-width: 1.1;
+      transition: fill var(--transition-fast), stroke var(--transition-fast),
+        stroke-width var(--transition-fast), filter var(--transition-fast);
+    }
+
+    .lattice-node text {
+      font-size: 10px;
+      fill: var(--text-main);
+      pointer-events: none;
+    }
+
+    .node-label-main {
+      font-weight: 600;
+    }
+
+    .node-label-sub {
+      fill: var(--text-faint);
+    }
+
+    .lattice-node:hover rect {
+      stroke: rgba(248, 250, 252, 0.9);
+      filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.8));
+    }
+
+    .lattice-node.active rect {
+      stroke: var(--accent);
+      stroke-width: 1.7;
+    }
+
+    .lattice-node.neighbor-up rect {
+      stroke: rgba(59, 130, 246, 0.9);
+      stroke-width: 1.5;
+    }
+
+    .lattice-node.neighbor-down rect {
+      stroke: rgba(52, 211, 153, 0.9);
+      stroke-width: 1.5;
+    }
+
+    .level-label {
+      font-size: 0.65rem;
+      fill: var(--text-faint);
+    }
+
+    .details-title-block {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    #detail-title {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    #detail-constraints {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 2px;
+    }
+
+    .chip {
+      font-size: 0.7rem;
+      padding: 3px 8px;
+      border-radius: var(--radius-pill);
+      border: 1px solid rgba(148, 163, 184, 0.55);
+      background: rgba(15, 23, 42, 0.9);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .chip-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      color: var(--text-muted);
+    }
+
+    .chip-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+    }
+
+    .chip-dot.A { background: #60a5fa; }
+    .chip-dot.B { background: #a78bfa; }
+    .chip-dot.C { background: #facc15; }
+    .chip-dot.D { background: #34d399; }
+
+    .tags-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .tag {
+      font-size: 0.68rem;
+      padding: 3px 8px;
+      border-radius: var(--radius-pill);
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      color: var(--text-muted);
+    }
+
+    #detail-summary {
+      margin: 6px 0 6px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .detail-columns {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.05fr);
+      gap: 10px;
+      flex: 1;
+    }
+
+    @media (max-width: 860px) {
+      .detail-columns {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .detail-section {
+      border-radius: 14px;
+      padding: 8px 9px;
+      background: rgba(15, 23, 42, 0.96);
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-height: 0;
+    }
+
+    .detail-section h3 {
+      margin: 0;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .detail-section h3 span.icon {
+      font-size: 0.85rem;
+    }
+
+    .detail-list {
+      margin: 2px 0 0;
+      padding-left: 16px;
+      font-size: 0.78rem;
+      color: var(--text-main);
+      line-height: 1.4;
+      max-height: 160px;
+      overflow: auto;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(148, 163, 184, 0.9) transparent;
+    }
+
+    .detail-list li + li {
+      margin-top: 2px;
+    }
+
+    .neighbors-list {
+      margin: 2px 0 0;
+      padding-left: 16px;
+      font-size: 0.78rem;
+      color: var(--text-main);
+      line-height: 1.4;
+      max-height: 160px;
+      overflow: auto;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(148, 163, 184, 0.9) transparent;
+    }
+
+    .neighbors-list li + li {
+      margin-top: 2px;
+    }
+
+    .neighbors-list span.level-label {
+      font-size: 0.7rem;
+      color: var(--text-faint);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-right: 4px;
+    }
+
+    .detail-footer {
+      margin-top: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      font-size: 0.7rem;
+      color: var(--text-faint);
+    }
+
+    .hint-pill {
+      padding: 3px 8px;
+      border-radius: var(--radius-pill);
+      border: 1px dashed rgba(148, 163, 184, 0.6);
+      background: rgba(15, 23, 42, 0.9);
+    }
+
+    .impact-pill {
+      padding: 3px 7px;
+      border-radius: var(--radius-pill);
+      font-size: 0.68rem;
+      border: 1px solid rgba(148, 163, 184, 0.8);
+      background: rgba(15, 23, 42, 0.95);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .impact-pill span.dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+    }
+
+    .impact-high span.dot { background: #f97316; }
+    .impact-medium span.dot { background: #eab308; }
+    .impact-low span.dot { background: #22c55e; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="title-block">
+      <h1>
+        Rampart CRASH Constraint Lattice
+        <span class="badge">Klir / Krippendorff style</span>
+      </h1>
+      <p>
+        A constraint lattice of the Rampart CRASH case. At the top, combined constraints
+        generate systemic corruption and distorted gang control; at the bottom, isolated
+        constraints show local levers. Click nodes to see mechanisms and interventions at
+        each level.
+      </p>
+    </div>
+    <div class="legend">
+      <span class="legend-pill">
+        <span class="legend-dot dot-A"></span> A: Anti-gang political mandate
+      </span>
+      <span class="legend-pill">
+        <span class="legend-dot dot-B"></span> B: Semi-autonomous unit structure
+      </span>
+      <span class="legend-pill">
+        <span class="legend-dot dot-C"></span> C: Warrior culture & incentives
+      </span>
+      <span class="legend-pill">
+        <span class="legend-dot dot-D"></span> D: Weak oversight & deference
+      </span>
+    </div>
+  </header>
+
+  <main>
+    <section class="panel" aria-label="Constraint lattice diagram">
+      <div class="panel-inner">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Constraint lattice</div>
+            <div class="panel-subtitle">
+              Top: all constraints → complex phenomena. Bottom: isolated constraints.
+              Lines show how adding one constraint at a time moves up the lattice.
+            </div>
+          </div>
+          <small>Click a node to see mechanisms and interventions.</small>
+        </div>
+
+        <div class="lattice-container">
+          <div class="lattice-key">
+            <span>Node label: phenomena at this combination of constraints</span>
+          </div>
+          <div class="lattice-axis">
+            <span>▲ More combined constraints (systemic)</span>
+            <span>▼ Fewer constraints (local / isolated)</span>
+          </div>
+          <svg id="latticeSvg"></svg>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" aria-label="Node details and interventions">
+      <div class="panel-inner">
+        <div class="panel-header">
+          <div class="details-title-block">
+            <h2 id="detail-title">Pick a node in the lattice</h2>
+            <div id="detail-constraints">Constraints: —</div>
+          </div>
+          <div class="chip-row" id="detail-chips"></div>
+        </div>
+
+        <div class="tags-row" id="detail-tags"></div>
+        <p id="detail-summary">
+          This panel explains the phenomena generated by combinations of constraints
+          (e.g. A+B+C+D) and how incremental interventions can operate either on isolated
+          constraints (bottom) or on their combinations (moving up the lattice). Start by
+          clicking the top node (A+B+C+D).
+        </p>
+
+        <div class="detail-columns">
+          <section class="detail-section">
+            <h3>
+              <span class="icon">⚙️</span>
+              Phenomena & mechanisms at this level
+            </h3>
+            <ul class="detail-list" id="detail-phenomena">
+              <li>
+                Select any lattice node to see how that particular bundle of constraints
+                shapes police behaviour, corruption risk, and gang control.
+              </li>
+            </ul>
+          </section>
+
+          <section class="detail-section">
+            <h3>
+              <span class="icon">🩺</span>
+              Incremental interventions (move up/down)
+            </h3>
+            <ul class="detail-list" id="detail-interventions">
+              <li>
+                Interventions at the same level adjust how constraints combine here.
+                Moving <strong>down</strong> targets individual constraints; moving
+                <strong>up</strong> rewires systems that bundle them.
+              </li>
+            </ul>
+          </section>
+        </div>
+
+        <div class="detail-columns" style="margin-top:6px;">
+          <section class="detail-section">
+            <h3>
+              <span class="icon">↕️</span>
+              Neighbouring nodes in the lattice
+            </h3>
+            <ul class="neighbors-list" id="detail-neighbors">
+              <li>
+                <span class="level-label">Up / down:</span>
+                The nodes directly above and below the selected one show what happens when
+                you add or remove a single constraint.
+              </li>
+            </ul>
+          </section>
+
+          <section class="detail-section">
+            <h3>
+              <span class="icon">📊</span>
+              Impact focus
+            </h3>
+            <div id="detail-impact">
+              <span class="impact-pill impact-medium">
+                <span class="dot"></span>
+                Impact: —
+              </span>
+            </div>
+            <ul class="detail-list" id="detail-impact-notes">
+              <li>
+                Bottom-level nodes (single constraints) are easiest to target but may
+                leave the overall pattern intact.
+              </li>
+              <li>
+                Top-level nodes are harder to shift but can transform multiple downstream
+                patterns at once.
+              </li>
+            </ul>
+          </section>
+        </div>
+
+        <div class="detail-footer">
+          <span class="hint-pill">
+            Hint: Click the top node A+B+C+D, then follow green (downward) neighbours to
+            imagine disassembling the Rampart pattern constraint by constraint.
+          </span>
+          <span>
+            Blue nodes are one constraint <em>up</em> from your focus; green nodes are
+            one constraint <em>down</em>.
+          </span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // ---------- DATA: atomic constraints ----------
+    const ATOMS = {
+      A: {
+        name: "Anti-gang political mandate",
+        short: "Anti-gang mandate",
+        description:
+          "Intense political and public pressure for visible, tough action against gangs.",
+        tags: ["“War on gangs” rhetoric", "Fear of crime", "Output-focused politics"],
+      },
+      B: {
+        name: "Semi-autonomous unit structure",
+        short: "Unit autonomy",
+        description:
+          "Specialized, semi-autonomous units (like CRASH) with high discretion and low day-to-day supervision.",
+        tags: ["Flexible deployment", "Unmarked cars", "Local discretion"],
+      },
+      C: {
+        name: "Warrior culture & incentives",
+        short: "Warrior culture",
+        description:
+          "Closed, elite identity inside the unit with rewards for arrests, guns and shootings over legality.",
+        tags: ["Elite warrior ethos", "Output incentives", "Code of silence"],
+      },
+      D: {
+        name: "Weak oversight & judicial deference",
+        short: "Weak oversight",
+        description:
+          "Internal controls and courts that routinely defer to officer testimony and minimize complaints.",
+        tags: ["Complaint discounting", "Narrow IA investigations", "Officer credibility in court"],
+      },
+    };
+
+    // ---------- DATA: node info by constraint set ----------
+    const NODE_INFO = {
+      "ABCD": {
+        title: "Systemic corruption with distorted gang control",
+        tags: ["Systemic pattern", "High harm", "Emergent phenomena"],
+        summary:
+          "All four constraints combine to produce a Rampart-style situation: CRASH-like units enjoy political backing to fight gangs (A), operational autonomy (B), an internal warrior culture (C), and weak oversight (D). The result is durable corruption, rights violations, and a partial, violent form of gang control.",
+        phenomena: [
+          "Street-level misconduct—evidence planting, perjury, beatings, theft—becomes normalized as the price of “winning the war on gangs”.",
+          "Corruption is not just individual; it is reproduced by structures, incentives, and deference from supervisors and courts.",
+          "Neighborhoods experience both heavy-handed control and deep mistrust, making long-term cooperation with law enforcement very difficult.",
+        ],
+        interventions: [
+          "High-level settlements and reform packages (e.g. consent decrees) that simultaneously change metrics, structures and oversight.",
+          "Re-design specialized units: clear mandates that include legitimacy, shorter rotations, stronger supervision and transparent data systems.",
+          "Rebuild external accountability: independent investigations, court skepticism about patterns of misconduct, and empowered community oversight.",
+        ],
+        impactLevel: "high",
+        impactLabel: "system level – transforms the whole pattern",
+      },
+      "ABC": {
+        title: "Aggressive, autonomous warrior units with weak external challenge",
+        tags: ["Unit-centred pattern", "High misconduct risk"],
+        summary:
+          "Political demand (A), unit autonomy (B) and warrior culture (C) combine to create highly aggressive CRASH-style teams. Even without explicit weak oversight rules, the culture and mandate make it hard for outsiders to question them.",
+        phenomena: [
+          "Officers see themselves as front-line soldiers in a war, with considerable freedom in how they deliver results.",
+          "Internal status is tied to guns seized, gang members arrested and stories of force on the street.",
+          "Supervisors may rely on these units to keep numbers looking good and thus be reluctant to interfere.",
+        ],
+        interventions: [
+          "Reframe the anti-gang mandate to balance harm reduction and legitimacy, not just arrest and seizure counts.",
+          "Insert stronger supervision into the unit: mandatory ride-alongs, real-time review of force, and rotation of leadership.",
+          "Change internal status markers: celebrate problem-solving and community cooperation, not just enforcement outputs.",
+        ],
+        impactLevel: "high",
+        impactLabel: "unit level – can prevent a Rampart-style culture",
+      },
+      "ABD": {
+        title: "Politically-backed units shielded by oversight gaps",
+        tags: ["Political shield", "Oversight failure"],
+        summary:
+          "A strong anti-gang mandate (A), autonomous units (B) and weak oversight (D) combine to create a situation where almost any tactic is tolerated, even without a fully developed warrior culture.",
+        phenomena: [
+          "Complaints from targeted communities are discounted as attacks on necessary crime control.",
+          "Evidence of anomalies or misconduct is interpreted as rare exceptions rather than pattern indicators.",
+          "The combination of political backing and oversight gaps allows problematic practices to persist for years.",
+        ],
+        interventions: [
+          "Tie political support to compliance and legitimacy metrics, not just arrest or gang suppression numbers.",
+          "Create independent channels for complaints and pattern detection that bypass local chains of command.",
+          "Strengthen early-warning systems that flag officers or units with unusual complaint and force patterns.",
+        ],
+        impactLevel: "medium",
+        impactLabel: "governance level – makes political cover conditional",
+      },
+      "ACD": {
+        title: "Punitive culture with weak checks",
+        tags: ["Cultural driver", "Court deference"],
+        summary:
+          "Aggressive mandate (A) combines with warrior culture (C) and weak oversight (D). Even without special unit autonomy, the culture and deference can spread through parts of the department.",
+        phenomena: [
+          "Informal norms and stories teach younger officers that rules are negotiable when fighting “dangerous” people.",
+          "Supervisors and courts largely back officer accounts, reinforcing the idea that the system is on their side.",
+          "Misconduct can occur in a wider range of settings, not just specialized units.",
+        ],
+        interventions: [
+          "Redesign training and promotion criteria to emphasize de-escalation, accuracy and integrity as markers of professionalism.",
+          "Align prosecutor practices with integrity goals (e.g. tracking officers whose testimony is repeatedly challenged).",
+          "Introduce external auditing of use-of-force reports and stop data to challenge the narrative of exceptional cases.",
+        ],
+        impactLevel: "medium",
+        impactLabel: "culture & oversight – reshapes everyday norms",
+      },
+      "BCD": {
+        title: "Semi-autonomous units drifting into corruption",
+        tags: ["Structural risk", "Unit drift"],
+        summary:
+          "Autonomy (B), warrior culture & incentives (C), and weak oversight (D) combine to make corruption likely even without intense political anti-gang rhetoric.",
+        phenomena: [
+          "Units define their own mission and markers of success, often focused on “winning” against local gangs or rivals.",
+          "Without external scrutiny, pragmatic shortcuts—like evidence planting or perjury—are redefined as clever policing.",
+          "Misconduct continues until an external shock (whistleblower, scandal) forces attention.",
+        ],
+        interventions: [
+          "Reconfigure specialized units to have clear, externally monitored mandates and rotation policies.",
+          "Use random audits and pattern analysis to detect drift in unit practices before scandals emerge.",
+          "Create safe channels and protection for insiders to report normalization of deviance inside units.",
+        ],
+        impactLevel: "high",
+        impactLabel: "unit structure – stops drift toward corruption",
+      },
+      "AB": {
+        title: "Politically-backed autonomy",
+        tags: ["Design risk", "Foundation of CRASH"],
+        summary:
+          "Anti-gang pressure (A) plus autonomous units (B) set the basic organizational platform for CRASH. Even before cultural shifts, this combination enables aggressive tactics with limited oversight.",
+        phenomena: [
+          "Leaders create or expand specialized units to show visible action against gangs.",
+          "Officers in these units are given exceptional discretion about tactics and deployments.",
+          "Other parts of the organization come to rely on these units to manage “problem areas”.",
+        ],
+        interventions: [
+          "When creating specialized units, design in transparency and accountability from the start.",
+          "Define the mandate in multi-dimensional terms (crime, trust, legality) rather than single metrics.",
+          "Avoid locking political prestige to the sheer existence or size of such units.",
+        ],
+        impactLevel: "medium",
+        impactLabel: "design stage – prevents risky unit creation",
+      },
+      "AC": {
+        title: "War talk and warrior culture",
+        tags: ["Rhetoric → culture"],
+        summary:
+          "Anti-gang rhetoric (A) and warrior culture (C) reinforce each other, even outside CRASH-like structures.",
+        phenomena: [
+          "Political and media language about a “war” legitimizes warrior self-images among officers.",
+          "Stories about “heroes” on the street become more salient than stories about accurate investigations.",
+          "Some officers experience moral injury or exit; others double down on an us-versus-them mentality.",
+        ],
+        interventions: [
+          "Shift public and internal language from “war” to stewardship, guardianship or problem-solving.",
+          "Elevate role models who exemplify procedural justice and accuracy, not just aggression.",
+          "Provide spaces for officers to reflect on moral conflict and to value restraint.",
+        ],
+        impactLevel: "medium",
+        impactLabel: "narrative – changes what counts as heroic",
+      },
+      "AD": {
+        title: "Tough-on-crime politics with weak checks",
+        tags: ["Macro-level risk"],
+        summary:
+          "When a tough anti-gang stance (A) meets weak oversight and deferential courts (D), the system invites overreach even without special units or warrior culture.",
+        phenomena: [
+          "Policies expand police powers faster than mechanisms for independent review.",
+          "Courts and internal affairs see pushback as a threat to public safety rather than as accountability.",
+          "Misconduct is harder to surface because each institution leans on the others’ perceived legitimacy.",
+        ],
+        interventions: [
+          "Introduce sunset clauses and review mechanisms for emergency or anti-gang powers.",
+          "Educate courts and oversight bodies about systemic risk, not just individual cases.",
+          "Institutionalize external reviews of new enforcement campaigns and their disparate impacts.",
+        ],
+        impactLevel: "medium",
+        impactLabel: "macro checks – keeps crackdowns bounded",
+      },
+      "BC": {
+        title: "Autonomous warrior unit",
+        tags: ["Local engine of abuse"],
+        summary:
+          "Autonomy (B) plus warrior culture & incentives (C) create a unit-level engine of aggressive, often abusive policing.",
+        phenomena: [
+          "The unit’s internal code becomes more important than departmental rules.",
+          "Misconduct is framed as necessary or even noble in service of the mission.",
+          "Peer pressure and incentives keep officers in line with the dominant culture.",
+        ],
+        interventions: [
+          "Change how officers enter and leave the unit: transparent criteria, limited tenure, exit interviews.",
+          "Rebuild incentives: promotion credit for integrity, accurate reporting and community collaboration.",
+          "Monitor unit-level storytelling (briefings, celebrations) as an indicator of culture drift.",
+        ],
+        impactLevel: "high",
+        impactLabel: "unit culture – critical for prevention",
+      },
+      "BD": {
+        title: "Autonomy without oversight",
+        tags: ["Classic corruption risk"],
+        summary:
+          "Autonomous units (B) combined with weak oversight (D) are a classic recipe for corruption and abuse.",
+        phenomena: [
+          "Routine supervision and audits rarely penetrate unit practices.",
+          "Patterns of complaints or anomalies are slow to trigger serious investigations.",
+          "Good officers inside feel pressure to conform or leave rather than escalate concerns.",
+        ],
+        interventions: [
+          "Introduce independent auditing that specifically targets high-discretion units.",
+          "Give supervisors clear responsibility (and consequences) for patterns in their units.",
+          "Implement whistleblower protections tailored to small-team dynamics.",
+        ],
+        impactLevel: "high",
+        impactLabel: "control – closes classic corruption gap",
+      },
+      "CD": {
+        title: "Punitive culture with legal cover",
+        tags: ["Street → court path"],
+        summary:
+          "Warrior culture & incentives (C) plus weak oversight and court deference (D) connect street-level misconduct to durable legal outcomes.",
+        phenomena: [
+          "Officers are confident that their reports and testimony will usually be believed.",
+          "Victims of misconduct face long odds in challenging fabricated narratives.",
+          "Over time, the justice system’s own records (convictions, case law) reflect and reinforce the distorted reality.",
+        ],
+        interventions: [
+          "Track and respond to repeated credibility issues with specific officers or units.",
+          "Enable defense and civil rights lawyers to access pattern data on officers and units.",
+          "Encourage courts to weigh patterns of misconduct when evaluating testimony.",
+        ],
+        impactLevel: "high",
+        impactLabel: "street-to-court – breaks the pipeline",
+      },
+      "A": {
+        title: "Anti-gang political mandate (isolated)",
+        tags: ["Context constraint"],
+        summary:
+          "On its own, the anti-gang mandate sets expectations for strong action in certain neighborhoods, but does not determine exactly how police respond.",
+        phenomena: [
+          "Political actors and media emphasize visible action against gangs.",
+          "Communities expect some form of decisive intervention, especially after high-profile crimes.",
+          "Police leaders feel pressure to “do something” quickly.",
+        ],
+        interventions: [
+          "Broaden success metrics to include community trust, accuracy and harm reduction.",
+          "Engage communities in defining what “safety” should look like beyond arrests.",
+          "Give political leaders credible alternatives to purely punitive responses.",
+        ],
+        impactLevel: "medium",
+        impactLabel: "context – shapes what seems possible",
+      },
+      "B": {
+        title: "Semi-autonomous unit structure (isolated)",
+        tags: ["Structural constraint"],
+        summary:
+          "On its own, autonomy creates flexibility and responsiveness, but also raises the stakes for how units are monitored and guided.",
+        phenomena: [
+          "Specialized units can focus on complex problems and move quickly.",
+          "They develop local expertise and relationships in specific territories.",
+          "They can also drift away from organizational norms if unsupervised.",
+        ],
+        interventions: [
+          "Design governance for specialized units at the moment of creation, not after scandals.",
+          "Mandate periodic rotations and cross-posting to prevent insular subcultures.",
+          "Build dashboards that surface unit-level patterns for leadership review.",
+        ],
+        impactLevel: "medium",
+        impactLabel: "structure – neutral but high leverage",
+      },
+      "C": {
+        title: "Warrior culture & incentives (isolated)",
+        tags: ["Cultural constraint"],
+        summary:
+          "On its own, warrior culture shapes how officers interpret danger, status and what counts as doing a good job.",
+        phenomena: [
+          "Officers valorize force, risk-taking and toughness.",
+          "Peers and stories matter more than formal training or policies.",
+          "Rule-bending is often recast as cleverness or courage.",
+        ],
+        interventions: [
+          "Reorient training around guardianship, procedural justice and accuracy.",
+          "Change informal rewards: who gets praised, promoted and held up as a model.",
+          "Support officers who want to practice a different professional identity.",
+        ],
+        impactLevel: "high",
+        impactLabel: "culture – critical, but slow to shift",
+      },
+      "D": {
+        title: "Weak oversight & judicial deference (isolated)",
+        tags: ["Oversight constraint"],
+        summary:
+          "On its own, weak oversight shapes how risky it feels to bend rules and how likely misconduct is to surface and matter.",
+        phenomena: [
+          "Complaints are more easily dismissed or quietly settled.",
+          "Officers expect that their word will usually prevail in disputes.",
+          "Patterns of misconduct can grow before any strong response is triggered.",
+        ],
+        interventions: [
+          "Strengthen independent oversight bodies with real access and authority.",
+          "Improve data systems to detect patterns of complaints and use of force.",
+          "Encourage courts and prosecutors to treat recurring anomalies as red flags.",
+        ],
+        impactLevel: "high",
+        impactLabel: "oversight – changes the risk calculus",
+      },
+    };
+
+    // ---------- LATTICE GENERATION ----------
+    const svg = document.getElementById("latticeSvg");
+    const NODE_RADIUS_X = 80;
+    const NODE_RADIUS_Y = 22;
+    const NS = "http://www.w3.org/2000/svg";
+
+    function generateSubsets() {
+      const atomKeys = Object.keys(ATOMS); // ["A","B","C","D"]
+      const subsets = [];
+      const n = atomKeys.length;
+      for (let mask = 1; mask < (1 << n); mask++) {
+        const subset = [];
+        for (let i = 0; i < n; i++) {
+          if (mask & (1 << i)) subset.push(atomKeys[i]);
+        }
+        subsets.push(subset.sort().join(""));
+      }
+      subsets.sort((a, b) => b.length - a.length); // big sets at top
+      return subsets;
+    }
+
+    const subsetKeys = generateSubsets();
+
+    // Group into levels by size
+    const levels = {};
+    subsetKeys.forEach((key) => {
+      const size = key.length;
+      if (!levels[size]) levels[size] = [];
+      levels[size].push(key);
+    });
+    const sortedLevelSizes = Object.keys(levels)
+      .map((n) => parseInt(n, 10))
+      .sort((a, b) => b - a);
+
+    // Positions
+    const width = svg.clientWidth || svg.parentElement.clientWidth || 1000;
+    const height = svg.clientHeight || 520;
+    const topY = 40;
+    const bottomY = height - 40;
+    const vStep = (bottomY - topY) / (sortedLevelSizes.length - 1);
+    const nodePositions = {};
+
+    sortedLevelSizes.forEach((size, idx) => {
+      const keys = levels[size];
+      const y = topY + idx * vStep;
+      const margin = 60;
+      const usableWidth = width - 2 * margin;
+      const count = keys.length;
+      const hStep = count === 1 ? 0 : usableWidth / (count - 1);
+
+      keys.forEach((key, i) => {
+        const x = margin + (count === 1 ? usableWidth / 2 : i * hStep);
+        nodePositions[key] = { x, y };
+      });
+    });
+
+    // Neighbours & edges
+    const neighbors = {};
+    subsetKeys.forEach((k) => (neighbors[k] = { up: [], down: [] }));
+    const edges = [];
+
+    function isSubset(sub, sup) {
+      for (let i = 0; i < sub.length; i++) {
+        if (!sup.includes(sub[i])) return false;
+      }
+      return true;
+    }
+
+    subsetKeys.forEach((a) => {
+      subsetKeys.forEach((b) => {
+        if (a.length + 1 === b.length && isSubset(a, b)) {
+          edges.push({ above: b, below: a });
+          neighbors[a].up.push(b);
+          neighbors[b].down.push(a);
+        }
+      });
+    });
+
+    // ---------- DRAW LATTICE ----------
+    // Edges
+    edges.forEach((e) => {
+      const pa = nodePositions[e.above];
+      const pb = nodePositions[e.below];
+      const line = document.createElementNS(NS, "line");
+      line.setAttribute("x1", pa.x);
+      line.setAttribute("y1", pa.y + NODE_RADIUS_Y);
+      line.setAttribute("x2", pb.x);
+      line.setAttribute("y2", pb.y - NODE_RADIUS_Y);
+      line.classList.add("lattice-edge");
+      line.dataset.above = e.above;
+      line.dataset.below = e.below;
+      svg.appendChild(line);
+    });
+
+    // Nodes
+    subsetKeys.forEach((key) => {
+      const g = document.createElementNS(NS, "g");
+      g.classList.add("lattice-node");
+      g.dataset.key = key;
+      const pos = nodePositions[key];
+
+      const rect = document.createElementNS(NS, "rect");
+      rect.setAttribute("x", pos.x - NODE_RADIUS_X);
+      rect.setAttribute("y", pos.y - NODE_RADIUS_Y);
+      rect.setAttribute("width", NODE_RADIUS_X * 2);
+      rect.setAttribute("height", NODE_RADIUS_Y * 2);
+
+      const mainText = document.createElementNS(NS, "text");
+      mainText.setAttribute("x", pos.x);
+      mainText.setAttribute("y", pos.y - 4);
+      mainText.setAttribute("text-anchor", "middle");
+      mainText.classList.add("node-label-main");
+      mainText.textContent = NODE_INFO[key]?.title || key;
+
+      const subText = document.createElementNS(NS, "text");
+      subText.setAttribute("x", pos.x);
+      subText.setAttribute("y", pos.y + 10);
+      subText.setAttribute("text-anchor", "middle");
+      subText.classList.add("node-label-sub");
+      subText.textContent = key.split("").join(" + ");
+
+      g.appendChild(rect);
+      g.appendChild(mainText);
+      g.appendChild(subText);
+      svg.appendChild(g);
+    });
+
+    // Level labels
+    sortedLevelSizes.forEach((size, idx) => {
+      const y = topY + idx * vStep;
+      const text = document.createElementNS(NS, "text");
+      text.setAttribute("x", 20);
+      text.setAttribute("y", y + 4);
+      text.classList.add("level-label");
+      text.textContent = size + " constraints";
+      svg.appendChild(text);
+    });
+
+    // ---------- DETAIL PANEL WIRING ----------
+    const detailTitle = document.getElementById("detail-title");
+    const detailConstraints = document.getElementById("detail-constraints");
+    const detailChips = document.getElementById("detail-chips");
+    const detailTags = document.getElementById("detail-tags");
+    const detailSummary = document.getElementById("detail-summary");
+    const detailPhenomena = document.getElementById("detail-phenomena");
+    const detailInterventions = document.getElementById("detail-interventions");
+    const detailNeighbors = document.getElementById("detail-neighbors");
+    const detailImpact = document.getElementById("detail-impact");
+    const detailImpactNotes = document.getElementById("detail-impact-notes");
+
+    function clearClasses() {
+      svg.querySelectorAll(".lattice-node").forEach((g) => {
+        g.classList.remove("active", "neighbor-up", "neighbor-down");
+      });
+      svg.querySelectorAll(".lattice-edge").forEach((l) => {
+        l.classList.remove("edge-highlight");
+      });
+    }
+
+    function setImpactPill(level, labelText) {
+      detailImpact.innerHTML = "";
+      const pill = document.createElement("span");
+      pill.className = "impact-pill";
+      if (level === "high") pill.classList.add("impact-high");
+      else if (level === "medium") pill.classList.add("impact-medium");
+      else pill.classList.add("impact-low");
+      const dot = document.createElement("span");
+      dot.className = "dot";
+      pill.appendChild(dot);
+      pill.appendChild(document.createTextNode("Impact: " + labelText));
+      detailImpact.appendChild(pill);
+    }
+
+    // Bring a node (and its labels) to the front of the SVG
+    function bringNodeToFront(node) {
+      if (!node || !node.parentNode) return;
+      // Move the group to the end of the SVG so it renders on top
+      svg.appendChild(node);
+      // Ensure its rect is behind its texts inside the group
+      const children = Array.from(node.childNodes);
+      children.forEach((child) => node.appendChild(child));
+    }
+
+    function renderNode(key) {
+      const info = NODE_INFO[key];
+      if (!info) return;
+
+      clearClasses();
+
+      // Highlight selected node and bring it to the front
+      const activeNode = svg.querySelector(`.lattice-node[data-key="${key}"]`);
+      if (activeNode) {
+        activeNode.classList.add("active");
+        bringNodeToFront(activeNode);
+      }
+
+      // Neighbour highlights
+      neighbors[key].up.forEach((upKey) => {
+        const el = svg.querySelector(`.lattice-node[data-key="${upKey}"]`);
+        if (el) el.classList.add("neighbor-up");
+      });
+      neighbors[key].down.forEach((downKey) => {
+        const el = svg.querySelector(`.lattice-node[data-key="${downKey}"]`);
+        if (el) el.classList.add("neighbor-down");
+      });
+
+      // Edge highlights (around current and between neighbours)
+      svg.querySelectorAll(".lattice-edge").forEach((line) => {
+        const above = line.dataset.above;
+        const below = line.dataset.below;
+
+        if (above === key || below === key) {
+          line.classList.add("edge-highlight");
+        }
+        if (neighbors[key].up.includes(above) && below === key) {
+          line.classList.add("edge-highlight");
+        }
+        if (neighbors[key].down.includes(below) && above === key) {
+          line.classList.add("edge-highlight");
+        }
+      });
+
+      // Detail panel: labels and chips
+      detailTitle.textContent = info.title;
+      const constraintsList = key
+        .split("")
+        .map((c) => `${c}: ${ATOMS[c].short}`)
+        .join(" · ");
+      detailConstraints.textContent = "Constraints: " + constraintsList;
+
+      detailChips.innerHTML = "";
+      key.split("").forEach((c) => {
+        const chip = document.createElement("span");
+        chip.className = "chip";
+        const label = document.createElement("span");
+        label.className = "chip-label";
+        label.textContent = c;
+        const dot = document.createElement("span");
+        dot.className = "chip-dot " + c;
+        const text = document.createElement("span");
+        text.textContent = ATOMS[c].short;
+        chip.appendChild(label);
+        chip.appendChild(dot);
+        chip.appendChild(text);
+        detailChips.appendChild(chip);
+      });
+
+      // Tags & summary
+      detailTags.innerHTML = "";
+      (info.tags || []).forEach((t) => {
+        const span = document.createElement("span");
+        span.className = "tag";
+        span.textContent = t;
+        detailTags.appendChild(span);
+      });
+      detailSummary.textContent = info.summary;
+
+      // Phenomena & interventions
+      detailPhenomena.innerHTML = "";
+      (info.phenomena || []).forEach((p) => {
+        const li = document.createElement("li");
+        li.textContent = p;
+        detailPhenomena.appendChild(li);
+      });
+
+      detailInterventions.innerHTML = "";
+      (info.interventions || []).forEach((p) => {
+        const li = document.createElement("li");
+        li.textContent = p;
+        detailInterventions.appendChild(li);
+      });
+
+      // Neighbour list
+      detailNeighbors.innerHTML = "";
+      if (!neighbors[key].up.length && !neighbors[key].down.length) {
+        const li = document.createElement("li");
+        li.textContent =
+          "No immediate neighbours – this node is isolated in this lattice (only one constraint combination).";
+        detailNeighbors.appendChild(li);
+      } else {
+        neighbors[key].up.forEach((upKey) => {
+          const li = document.createElement("li");
+          const span = document.createElement("span");
+          span.className = "level-label";
+          span.textContent = "Up (add one constraint):";
+          const name = NODE_INFO[upKey]?.title || upKey;
+          li.appendChild(span);
+          li.appendChild(
+            document.createTextNode(" " + upKey.split("").join(" + ") + " – " + name)
+          );
+          detailNeighbors.appendChild(li);
+        });
+        neighbors[key].down.forEach((downKey) => {
+          const li = document.createElement("li");
+          const span = document.createElement("span");
+          span.className = "level-label";
+          span.textContent = "Down (remove one constraint):";
+          const name = NODE_INFO[downKey]?.title || downKey;
+          li.appendChild(span);
+          li.appendChild(
+            document.createTextNode(" " + downKey.split("").join(" + ") + " – " + name)
+          );
+          detailNeighbors.appendChild(li);
+        });
+      }
+
+      // Impact pill and notes
+      setImpactPill(info.impactLevel || "medium", info.impactLabel || "—");
+      detailImpactNotes.innerHTML = "";
+      const size = key.length;
+
+      if (size === 1) {
+        const li1 = document.createElement("li");
+        li1.textContent =
+          "Targeting this single constraint is relatively concrete (e.g. redesigning oversight, changing unit structure) but other constraints can recombine to reproduce similar patterns.";
+        const li2 = document.createElement("li");
+        li2.textContent =
+          "Use bottom-level interventions to test ideas and build evidence for broader change higher in the lattice.";
+        detailImpactNotes.appendChild(li1);
+        detailImpactNotes.appendChild(li2);
+      } else if (size === sortedLevelSizes[0]) {
+        const li1 = document.createElement("li");
+        li1.textContent =
+          "Intervening here requires multi-actor coalitions (police, courts, city leadership, communities) but can shift many downstream phenomena at once.";
+        const li2 = document.createElement("li");
+        li2.textContent =
+          "Design reform packages so they deliberately dismantle key constraint combinations instead of treating them as separate problems.";
+        detailImpactNotes.appendChild(li1);
+        detailImpactNotes.appendChild(li2);
+      } else {
+        const li1 = document.createElement("li");
+        li1.textContent =
+          "Interventions at this mid-level can be framed as reforms of a particular pattern (e.g. unit drift, court deference), while still relating back to the larger system.";
+        const li2 = document.createElement("li");
+        li2.textContent =
+          "Moving one step down can identify specific constraints to target; moving one step up clarifies how this pattern fits into systemic corruption.";
+        detailImpactNotes.appendChild(li1);
+        detailImpactNotes.appendChild(li2);
+      }
+    }
+
+    // Click handlers for all nodes
+    svg.querySelectorAll(".lattice-node").forEach((g) => {
+      g.addEventListener("click", () => {
+        renderNode(g.dataset.key);
+      });
+    });
+
+    // Initial selection: top node ABCD if present
+    if (NODE_INFO["ABCD"]) {
+      renderNode("ABCD");
+    }
+  </script>
+</body>
+</html>
