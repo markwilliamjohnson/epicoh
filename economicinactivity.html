@@ -1,0 +1,1109 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Economic Inactivity – Constraint Lattice</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --bg-alt: #020617;
+      --card-bg: #020617;
+      --accent: #38bdf8;
+      --accent-soft: rgba(56,189,248,0.15);
+      --accent-strong: #0ea5e9;
+      --border: #1f2937;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --danger: #fb7185;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #1f2937 0, #020617 40%, #000 100%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .app-shell {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px 16px 40px;
+      width: 100%;
+    }
+
+    header {
+      margin-bottom: 16px;
+    }
+
+    header h1 {
+      margin: 0 0 4px 0;
+      font-size: 1.6rem;
+      font-weight: 650;
+      letter-spacing: 0.02em;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    header h1 span.badge {
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--accent);
+      color: var(--accent-strong);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    header p {
+      margin: 4px 0 0;
+      font-size: 0.9rem;
+      color: var(--muted);
+      max-width: 52rem;
+    }
+
+    .top-row {
+      display: grid;
+      grid-template-columns: 2.3fr 1.3fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    @media (max-width: 900px) {
+      .top-row { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: radial-gradient(circle at top left, rgba(148,163,184,0.08), transparent 55%), var(--card-bg);
+      border-radius: 14px;
+      border: 1px solid rgba(15,23,42,0.9);
+      box-shadow: 0 18px 45px rgba(0,0,0,0.6);
+      padding: 14px 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top, rgba(56,189,248,0.12), transparent 65%);
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    .card > * { position: relative; z-index: 1; }
+
+    .card-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .card-title h2 {
+      margin: 0;
+      font-size: 0.95rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .top-constraint {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.6);
+      background: radial-gradient(circle at top, rgba(249,250,251,0.08), transparent 80%);
+      font-size: 0.78rem;
+      color: var(--accent-strong);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .top-constraint span.dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #f97316, #f97373);
+      box-shadow: 0 0 10px rgba(248,113,113,0.8);
+    }
+
+    .top-constraint strong {
+      color: #e5e7eb;
+      font-weight: 600;
+    }
+
+    .constraint-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .constraint-chip {
+      font-size: 0.75rem;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.5);
+      color: var(--muted);
+      background: rgba(15,23,42,0.84);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.16s ease-out;
+    }
+
+    .constraint-chip span.key {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      opacity: 0.8;
+    }
+
+    .constraint-chip.active {
+      border-color: var(--accent-strong);
+      color: var(--accent-strong);
+      box-shadow: 0 0 0 1px rgba(56,189,248,0.3);
+      background: radial-gradient(circle at top, rgba(56,189,248,0.16), rgba(15,23,42,0.9));
+    }
+
+    .constraint-chip:hover {
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    .constraint-footer {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 8px;
+    }
+
+    .btn-reset {
+      font-size: 0.72rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.5);
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.16s ease-out;
+    }
+
+    .btn-reset span.icon { font-size: 0.8rem; }
+
+    .btn-reset:hover {
+      border-color: var(--accent);
+      color: var(--accent-strong);
+      transform: translateY(-1px);
+    }
+
+    .lattice-shell { margin-top: 20px; position: relative; }
+
+    .lattice-container {
+      position: relative;
+      border-radius: 18px;
+      border: 1px solid rgba(15,23,42,0.9);
+      background: radial-gradient(circle at top, rgba(30,64,175,0.18), rgba(15,23,42,0.98));
+      box-shadow: 0 26px 70px rgba(0,0,0,0.75);
+      overflow: hidden;
+      padding: 16px 16px 14px;
+    }
+
+    .lattice-container-inner { position: relative; z-index: 1; }
+
+    .lattice-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      gap: 8px;
+    }
+
+    .lattice-title-row h2 {
+      margin: 0;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .lattice-title-row h2 span.level-text { color: var(--accent-strong); }
+
+    .lattice-title-row small {
+      font-size: 0.74rem;
+      color: var(--muted);
+      opacity: 0.95;
+    }
+
+    #edge-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .levels {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .level {
+      display: grid;
+      grid-template-columns: 140px minmax(0, 1fr);
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    @media (max-width: 800px) {
+      .level { grid-template-columns: 120px minmax(0, 1fr); }
+    }
+
+    .level-label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      padding-top: 6px;
+      white-space: nowrap;
+    }
+
+    .level-label span.tag {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.45);
+      background: rgba(15,23,42,0.9);
+      margin-left: 4px;
+      font-size: 0.68rem;
+      color: var(--accent-strong);
+    }
+
+    .level-nodes {
+      display: flex;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      gap: 8px;
+      padding-bottom: 4px;
+    }
+
+    .level-nodes::-webkit-scrollbar { height: 4px; }
+    .level-nodes::-webkit-scrollbar-thumb {
+      background: rgba(148,163,184,0.4);
+      border-radius: 999px;
+    }
+
+    .node {
+      min-width: 150px;
+      max-width: 200px;
+      padding: 8px 8px 7px;
+      border-radius: 10px;
+      border: 1px solid rgba(15,23,42,0.95);
+      background: radial-gradient(circle at top, rgba(15,23,42,0.2), rgba(15,23,42,0.96));
+      box-shadow: 0 12px 30px rgba(0,0,0,0.7);
+      font-size: 0.72rem;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.14s ease-out;
+      color: #e5e7eb;
+    }
+
+    .node::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: radial-gradient(circle at top, rgba(56,189,248,0.08), transparent 70%);
+      opacity: 0;
+      transition: opacity 0.2s ease-out;
+      pointer-events: none;
+    }
+
+    .node:hover {
+      border-color: rgba(56,189,248,0.6);
+      transform: translateY(-2px);
+      box-shadow: 0 16px 40px rgba(0,0,0,0.8);
+    }
+
+    .node:hover::before { opacity: 1; }
+
+    .node-title {
+      font-weight: 600;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 4px;
+      display: flex;
+      justify-content: space-between;
+      gap: 4px;
+      align-items: baseline;
+      flex-wrap: wrap;
+    }
+
+    .node-title span.size {
+      font-size: 0.65rem;
+      color: var(--accent);
+    }
+
+    .node-title span.entropy {
+      font-size: 0.68rem;
+      color: var(--muted);
+      opacity: 0.9;
+    }
+
+    .node-constraints {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .node-constraint-pill {
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: rgba(15,23,42,0.95);
+      border: 1px solid rgba(148,163,184,0.5);
+      font-size: 0.68rem;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .node.highlighted {
+      border-color: var(--accent-strong);
+      box-shadow: 0 0 0 1px rgba(56,189,248,0.5), 0 16px 40px rgba(0,0,0,0.9);
+    }
+
+    .node.highlighted::before { opacity: 1; }
+
+    .node.dimmed {
+      opacity: 0.25;
+      filter: grayscale(0.4);
+    }
+
+    .node.neighbour-up {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(56,189,248,0.55), 0 14px 36px rgba(15,23,42,0.9);
+    }
+
+    .node.neighbour-down {
+      border-color: var(--danger);
+      box-shadow: 0 0 0 1px rgba(251,113,133,0.6), 0 14px 36px rgba(15,23,42,0.9);
+    }
+
+    .edge-line {
+      stroke: rgba(148,163,184,0.6);
+      stroke-width: 1.1;
+      stroke-linecap: round;
+      pointer-events: none;
+    }
+
+    .edge-line.highlighted {
+      stroke: var(--accent);
+      stroke-width: 1.5;
+    }
+
+    .details-card {
+      background: radial-gradient(circle at top, rgba(15,23,42,0.7), rgba(15,23,42,1));
+      border-radius: 14px;
+      border: 1px solid rgba(15,23,42,0.95);
+      box-shadow: 0 22px 60px rgba(0,0,0,0.85);
+      padding: 14px;
+      font-size: 0.8rem;
+    }
+
+    .details-title {
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .details-main-label {
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: #f9fafb;
+    }
+
+    .details-sub {
+      font-size: 0.74rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .details-section-title {
+      font-size: 0.74rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      margin-top: 6px;
+      margin-bottom: 3px;
+    }
+
+    .details-list {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 4px;
+    }
+
+    .details-list li { margin-bottom: 2px; }
+
+    .details-list strong {
+      color: var(--accent-strong);
+      font-weight: 600;
+    }
+
+    .details-examples {
+      font-size: 0.74rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .details-placeholder {
+      font-size: 0.76rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .details-placeholder span { color: var(--accent-strong); }
+
+    .intervention-list {
+      list-style: none;
+      padding-left: 0;
+      margin: 2px 0 4px;
+      font-size: 0.74rem;
+    }
+
+    .intervention-list li { margin-bottom: 3px; }
+
+    .intervention-label {
+      font-weight: 600;
+      font-size: 0.75rem;
+    }
+
+    .intervention-chip {
+      display: inline-block;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.6);
+      padding: 1px 6px;
+      font-size: 0.7rem;
+      margin-right: 4px;
+      margin-bottom: 2px;
+    }
+
+    .intervention-chip.up {
+      border-color: var(--accent);
+      color: var(--accent-strong);
+    }
+
+    .intervention-chip.down {
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+
+    .best-intervention {
+      margin-top: 4px;
+      font-size: 0.75rem;
+      color: var(--accent-strong);
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header>
+      <h1>
+        Economic Inactivity
+        <span class="badge">Krippendorff Constraint Lattice</span>
+      </h1>
+      <p>
+        Signatures (combinations of constraints) form a lattice from an undifferentiated “economic inactivity”
+        constraint at the top down to separable constraints at the bottom. Entropy estimates approximate the
+        information content of each signature.
+      </p>
+    </header>
+
+    <div class="top-row">
+      <section class="card">
+        <div class="card-title">
+          <h2>Top-level constraint</h2>
+          <div class="top-constraint">
+            <span class="dot"></span>
+            <span>Undifferentiated</span>
+            <strong>Economic inactivity</strong>
+          </div>
+        </div>
+        <p style="font-size:0.8rem; color:var(--muted); margin-bottom:6px;">
+          All signatures in the lattice are progressively relaxed specialisations of this global constraint.
+          We start from a joint constraint on:
+        </p>
+        <div class="constraint-legend" id="constraint-legend"></div>
+        <div class="constraint-footer">
+          <button class="btn-reset" id="reset-highlight">
+            <span class="icon">⟲</span> Clear Highlight
+          </button>
+        </div>
+      </section>
+
+      <aside class="details-card" id="details-card">
+        <div class="details-title">Signature details</div>
+        <div class="details-main-label">No signature selected</div>
+        <div class="details-placeholder">
+          Click any node in the lattice to see which <span>constraints / predicates</span> define that signature,
+          how it is connected up and down, and what <span>entropy-based interventions</span> would move you along the lattice.
+        </div>
+      </aside>
+    </div>
+
+    <section class="lattice-shell">
+      <div class="lattice-container" id="lattice-container">
+        <svg id="edge-layer"></svg>
+        <div class="lattice-container-inner">
+          <div class="lattice-title-row">
+            <h2>
+              Constraint lattice
+              <span class="level-text">– progressive removal of constraints</span>
+            </h2>
+            <small>
+              Level 1 = all five core constraints; Level 5 = each constraint separable.
+            </small>
+          </div>
+          <div class="levels" id="levels"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // ---- Constraints with base entropies ----------------------------------
+    const CONSTRAINTS = [
+      {
+        id: "age",
+        label: "Age 50–69",
+        description: "Age50_59(p), Age60_69(p)",
+        predicates: ["Age50_59(p)", "Age60_69(p)"],
+        examples: "Ann, Carla, Bob, Derek",
+        baseEntropy: 0.9,
+        upIntervention: "Focus specifically on people aged 50–69.",
+        downIntervention: "Relax age focus to all working-age adults."
+      },
+      {
+        id: "pandemic",
+        label: "Pandemic period",
+        description: "InPandemic(t), InFirstWave2020(t)",
+        predicates: ["InPandemic(t)", "InFirstWave2020(t)"],
+        examples: "All cases traverse pandemic quarters",
+        baseEntropy: 0.6,
+        upIntervention: "Restrict attention to pandemic-era quarters.",
+        downIntervention: "Include pre- and post-pandemic periods together."
+      },
+      {
+        id: "workpattern",
+        label: "High-risk work pattern",
+        description: "SelfEmp(p) or PartTime(p)",
+        predicates: ["SelfEmp(p)", "PartTime(p)"],
+        examples: "Ann (part-time), Bob (self-employed)",
+        baseEntropy: 1.1,
+        upIntervention: "Target self-employed and part-time workers.",
+        downIntervention: "Include all work patterns, not just high-risk ones."
+      },
+      {
+        id: "caring",
+        label: "Caring responsibilities",
+        description: "CaringResponsibility(p)",
+        predicates: ["CaringResponsibility(p)"],
+        examples: "Ann exits due to caring",
+        baseEntropy: 0.7,
+        upIntervention: "Condition policy on caring responsibilities.",
+        downIntervention: "Treat carers and non-carers together."
+      },
+      {
+        id: "health",
+        label: "Long-term health condition",
+        description: "LongCondition(p), LT_SickAt(p,t)",
+        predicates: ["LongCondition(p)", "LT_SickAt(p,t)"],
+        examples: "Carla exits due to health",
+        baseEntropy: 1.0,
+        upIntervention: "Target long-term health conditions specifically.",
+        downIntervention: "Remove explicit health conditioning."
+      }
+    ];
+
+    const constraintById = {};
+    CONSTRAINTS.forEach(function(c) { constraintById[c.id] = c; });
+
+    function generateSubsets(constraints) {
+      const ids = constraints.map(function(c) { return c.id; });
+      const n = ids.length;
+      const subsets = [];
+      for (let mask = 1; mask < (1 << n); mask++) {
+        const subset = [];
+        for (let i = 0; i < n; i++) {
+          if (mask & (1 << i)) subset.push(ids[i]);
+        }
+        subsets.push(subset);
+      }
+      return subsets;
+    }
+
+    function nodeKeyFromIds(ids) {
+      return ids.slice().sort().join("|");
+    }
+
+    function describeLevel(level) {
+      if (level === 1) return "All 5 constraints jointly";
+      if (level === 2) return "One constraint removed (4-fold signatures)";
+      if (level === 3) return "Two constraints removed (3-fold signatures)";
+      if (level === 4) return "Three constraints removed (pairs)";
+      if (level === 5) return "Each constraint separable (singletons)";
+      return "";
+    }
+
+    const subsets = generateSubsets(CONSTRAINTS);
+
+    const nodes = [];
+    const nodesByKey = {};
+    const nodesById = {};
+
+    subsets.forEach(function(subsetIds) {
+      const size = subsetIds.length;
+      const level = 6 - size;
+      const sortedIds = subsetIds.slice().sort();
+      const id = "node-" + sortedIds.join("-");
+      const key = nodeKeyFromIds(sortedIds);
+      const constraintObjects = sortedIds.map(function(cid) { return constraintById[cid]; });
+      const entropy = constraintObjects.reduce(function(sum, c) {
+        return sum + (c.baseEntropy || 0);
+      }, 0);
+      const label = constraintObjects.map(function(c) { return c.label; }).join(" ∧ ");
+
+      const node = {
+        id: id,
+        key: key,
+        level: level,
+        size: size,
+        constraintIds: sortedIds,
+        label: label,
+        entropy: entropy
+      };
+      nodes.push(node);
+      nodesByKey[key] = node;
+      nodesById[id] = node;
+    });
+
+    const edges = [];
+    nodes.forEach(function(node) {
+      if (node.constraintIds.length <= 1) return;
+      node.constraintIds.forEach(function(dropId) {
+        const childIds = node.constraintIds.filter(function(c) { return c !== dropId; });
+        const childKey = nodeKeyFromIds(childIds);
+        const childNode = nodesByKey[childKey];
+        if (childNode) edges.push({ from: node.id, to: childNode.id });
+      });
+    });
+
+    function createConstraintLegend() {
+      const legend = document.getElementById("constraint-legend");
+      CONSTRAINTS.forEach(function(constraint) {
+        const chip = document.createElement("button");
+        chip.className = "constraint-chip";
+        chip.type = "button";
+        chip.dataset.constraintId = constraint.id;
+        chip.innerHTML = "<span class=\"key\"></span>" + constraint.label;
+        legend.appendChild(chip);
+      });
+    }
+
+    function createLevelsAndNodes() {
+      const levelsContainer = document.getElementById("levels");
+      for (let level = 1; level <= 5; level++) {
+        const levelEl = document.createElement("div");
+        levelEl.className = "level";
+        levelEl.dataset.level = String(level);
+
+        const labelEl = document.createElement("div");
+        labelEl.className = "level-label";
+        labelEl.innerHTML = "Level " + level + "<span class=\"tag\">" + describeLevel(level) + "</span>";
+
+        const nodesContainer = document.createElement("div");
+        nodesContainer.className = "level-nodes";
+        nodesContainer.dataset.levelNodes = String(level);
+
+        levelEl.appendChild(labelEl);
+        levelEl.appendChild(nodesContainer);
+        levelsContainer.appendChild(levelEl);
+      }
+
+      nodes.forEach(function(node) {
+        const nodesContainer = document.querySelector(".level-nodes[data-level-nodes=\"" + node.level + "\"]");
+        if (!nodesContainer) return;
+
+        const nodeEl = document.createElement("div");
+        nodeEl.className = "node";
+        nodeEl.id = node.id;
+        nodeEl.dataset.level = String(node.level);
+
+        const titleEl = document.createElement("div");
+        titleEl.className = "node-title";
+        const entropyText = "H ≈ " + node.entropy.toFixed(2) + " bits";
+        titleEl.innerHTML =
+          "<span>Σ-level signature</span>" +
+          "<span class=\"size\">" + node.size + " constraint" + (node.size > 1 ? "s" : "") + "</span>" +
+          "<span class=\"entropy\">" + entropyText + "</span>";
+
+        const constraintsEl = document.createElement("div");
+        constraintsEl.className = "node-constraints";
+
+        node.constraintIds.forEach(function(cid) {
+          const cObj = constraintById[cid];
+          const pill = document.createElement("div");
+          pill.className = "node-constraint-pill";
+          pill.textContent = cObj ? cObj.label : cid;
+          constraintsEl.appendChild(pill);
+        });
+
+        nodeEl.appendChild(titleEl);
+        nodeEl.appendChild(constraintsEl);
+        nodesContainer.appendChild(nodeEl);
+      });
+    }
+
+    function drawEdges() {
+      const lattice = document.getElementById("lattice-container");
+      const svg = document.getElementById("edge-layer");
+      if (!lattice || !svg) return;
+
+      const rect = lattice.getBoundingClientRect();
+      svg.setAttribute("width", rect.width);
+      svg.setAttribute("height", rect.height);
+      svg.innerHTML = "";
+
+      function centerOfElement(el) {
+        const r = el.getBoundingClientRect();
+        return { x: r.left + r.width / 2 - rect.left, y: r.top + r.height / 2 - rect.top };
+      }
+
+      edges.forEach(function(edge) {
+        const fromEl = document.getElementById(edge.from);
+        const toEl = document.getElementById(edge.to);
+        if (!fromEl || !toEl) return;
+
+        const c1 = centerOfElement(fromEl);
+        const c2 = centerOfElement(toEl);
+
+        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        line.setAttribute("x1", c1.x);
+        line.setAttribute("y1", c1.y);
+        line.setAttribute("x2", c2.x);
+        line.setAttribute("y2", c2.y);
+        line.classList.add("edge-line");
+        line.dataset.from = edge.from;
+        line.dataset.to = edge.to;
+        svg.appendChild(line);
+      });
+    }
+
+    function highlightConstraint(constraintId) {
+      const chips = document.querySelectorAll(".constraint-chip");
+      chips.forEach(function(chip) {
+        if (chip.dataset.constraintId === constraintId) chip.classList.add("active");
+        else chip.classList.remove("active");
+      });
+
+      const relevantNodeIds = nodes
+        .filter(function(n) { return n.constraintIds.indexOf(constraintId) !== -1; })
+        .map(function(n) { return n.id; });
+
+      document.querySelectorAll(".node").forEach(function(nodeEl) {
+        nodeEl.classList.remove("neighbour-up", "neighbour-down");
+        if (relevantNodeIds.indexOf(nodeEl.id) !== -1) {
+          nodeEl.classList.add("highlighted");
+          nodeEl.classList.remove("dimmed");
+        } else {
+          nodeEl.classList.remove("highlighted");
+          nodeEl.classList.add("dimmed");
+        }
+      });
+
+      document.querySelectorAll(".edge-line").forEach(function(line) {
+        const fromId = line.dataset.from;
+        const toId = line.dataset.to;
+        if (relevantNodeIds.indexOf(fromId) !== -1 && relevantNodeIds.indexOf(toId) !== -1) {
+          line.classList.add("highlighted");
+        } else {
+          line.classList.remove("highlighted");
+        }
+      });
+    }
+
+    function clearHighlight() {
+      document.querySelectorAll(".constraint-chip").forEach(function(chip) {
+        chip.classList.remove("active");
+      });
+      document.querySelectorAll(".node").forEach(function(nodeEl) {
+        nodeEl.classList.remove("highlighted", "dimmed", "neighbour-up", "neighbour-down");
+      });
+      document.querySelectorAll(".edge-line").forEach(function(line) {
+        line.classList.remove("highlighted");
+      });
+
+      const detailsCard = document.getElementById("details-card");
+      detailsCard.innerHTML =
+        "<div class=\"details-title\">Signature details</div>" +
+        "<div class=\"details-main-label\">No signature selected</div>" +
+        "<div class=\"details-placeholder\">" +
+        "Click any node in the lattice to see which <span>constraints / predicates</span> define that signature," +
+        " how it is connected up and down, and what <span>entropy-based interventions</span> would move you along the lattice." +
+        "</div>";
+    }
+
+    function getNeighbours(node) {
+      const up = [];
+      const down = [];
+      edges.forEach(function(edge) {
+        if (edge.to === node.id) up.push(nodesById[edge.from]);
+        if (edge.from === node.id) down.push(nodesById[edge.to]);
+      });
+      return { up: up, down: down };
+    }
+
+    function changedConstraint(fromNode, toNode) {
+      const fromSet = new Set(fromNode.constraintIds);
+      const toSet = new Set(toNode.constraintIds);
+      if (toNode.size === fromNode.size + 1) {
+        for (const cid of toSet) { if (!fromSet.has(cid)) return { id: cid, direction: "add" }; }
+      } else if (toNode.size === fromNode.size - 1) {
+        for (const cid of fromSet) { if (!toSet.has(cid)) return { id: cid, direction: "remove" }; }
+      }
+      return null;
+    }
+
+    function setDetailsForNode(nodeId) {
+      const detailsCard = document.getElementById("details-card");
+      const node = nodesById[nodeId];
+      if (!node) return;
+
+      const constraints = node.constraintIds.map(function(cid) { return constraintById[cid]; });
+      const neighbours = getNeighbours(node);
+      const upNeighbours = neighbours.up;
+      const downNeighbours = neighbours.down;
+
+      let html = "";
+      html += "<div class=\"details-title\">Signature details</div>";
+      html += "<div class=\"details-main-label\">Σ-level signature with " + node.size +
+              " constraint" + (node.size > 1 ? "s" : "") + "</div>";
+      html += "<div class=\"details-sub\">Estimated entropy H ≈ " + node.entropy.toFixed(2) +
+              " bits. Higher H means a more specific, information-rich description.</div>";
+      html += "<div class=\"details-sub\">This signature restricts sentences to the following constraints:</div>";
+
+      html += "<div class=\"details-section-title\">Constraints / predicates</div><ul class=\"details-list\">";
+      constraints.forEach(function(c) {
+        const preds = c.predicates.join(", ");
+        html += "<li><strong>" + c.label + "</strong> – " + c.description +
+                "<br/><span style=\"color:var(--muted); font-size:0.73rem;\">Predicates: " + preds +
+                "</span><br/><span style=\"color:var(--muted); font-size:0.73rem;\">Constraint entropy ≈ " +
+                c.baseEntropy.toFixed(2) + " bits</span></li>";
+      });
+      html += "</ul>";
+
+      html += "<div class=\"details-section-title\">Case-study connections</div>";
+      html += "<div class=\"details-examples\">" +
+              "<strong>Ann:</strong> 55, part-time with caring duties.<br/>" +
+              "<strong>Bob:</strong> 63, self-employed in low-demand occupation.<br/>" +
+              "<strong>Carla:</strong> 58, long-term health problems.<br/>" +
+              "<strong>Derek:</strong> 67, continues in employment.<br/></div>";
+
+      // Entropy-based interventions
+      const upInterventions = [];
+      upNeighbours.forEach(function(parent) {
+        const diff = changedConstraint(node, parent);
+        if (!diff) return;
+        const c = constraintById[diff.id];
+        const deltaH = parent.entropy - node.entropy;
+        upInterventions.push({ neighbour: parent, constraint: c, deltaH: deltaH });
+      });
+
+      const downInterventions = [];
+      downNeighbours.forEach(function(child) {
+        const diff = changedConstraint(node, child);
+        if (!diff) return;
+        const c = constraintById[diff.id];
+        const deltaH = child.entropy - node.entropy;
+        downInterventions.push({ neighbour: child, constraint: c, deltaH: deltaH });
+      });
+
+      html += "<div class=\"details-section-title\">Entropy-based interventions</div>";
+
+      if (upInterventions.length === 0 && downInterventions.length === 0) {
+        html += "<div class=\"details-sub\" style=\"font-size:0.74rem;\">" +
+                "This node has no immediate neighbours (top or bottom of the lattice)." +
+                "</div>";
+      } else {
+        if (upInterventions.length > 0) {
+          html += "<div style=\"margin-top:2px; font-size:0.75rem; color:var(--muted);\">" +
+                  "<strong>Upwards (more specific)</strong></div><ul class=\"intervention-list\">";
+          upInterventions.forEach(function(entry) {
+            html += "<li><span class=\"intervention-chip up\">" +
+                    "↑ Add " + entry.constraint.label +
+                    " (ΔH ≈ +" + entry.deltaH.toFixed(2) + " bits)</span><br/>" +
+                    "<span class=\"intervention-label\">" + entry.constraint.label +
+                    "</span> – " + entry.constraint.upIntervention + "</li>";
+          });
+          html += "</ul>";
+        }
+        if (downInterventions.length > 0) {
+          html += "<div style=\"margin-top:4px; font-size:0.75rem; color:var(--muted);\">" +
+                  "<strong>Downwards (less specific)</strong></div><ul class=\"intervention-list\">";
+          downInterventions.forEach(function(entry) {
+            html += "<li><span class=\"intervention-chip down\">" +
+                    "↓ Remove " + entry.constraint.label +
+                    " (ΔH ≈ " + entry.deltaH.toFixed(2) + " bits)</span><br/>" +
+                    "<span class=\"intervention-label\">" + entry.constraint.label +
+                    "</span> – " + entry.constraint.downIntervention + "</li>";
+          });
+          html += "</ul>";
+        }
+      }
+
+      // best interventions
+      let bestUp = null;
+      upInterventions.forEach(function(i) {
+        if (!bestUp || i.deltaH > bestUp.deltaH) bestUp = i;
+      });
+      let bestDown = null;
+      downInterventions.forEach(function(i) {
+        if (!bestDown || i.deltaH < bestDown.deltaH) bestDown = i;
+      });
+
+      if (bestUp || bestDown) {
+        html += "<div class=\"best-intervention\">";
+        if (bestUp) {
+          html += "Best upward move: add <strong>" + bestUp.constraint.label +
+                  "</strong> (ΔH ≈ +" + bestUp.deltaH.toFixed(2) + " bits).";
+        }
+        if (bestUp && bestDown) html += "<br/>";
+        if (bestDown) {
+          html += "Best downward move: remove <strong>" + bestDown.constraint.label +
+                  "</strong> (ΔH ≈ " + bestDown.deltaH.toFixed(2) + " bits).";
+        }
+        html += "</div>";
+      }
+
+      detailsCard.innerHTML = html;
+    }
+
+    function highlightNodeAndNeighbours(nodeId) {
+      const node = nodesById[nodeId];
+      if (!node) return;
+
+      const neighbours = getNeighbours(node);
+      const upIds = new Set(neighbours.up.map(function(n) { return n.id; }));
+      const downIds = new Set(neighbours.down.map(function(n) { return n.id; }));
+
+      document.querySelectorAll(".constraint-chip").forEach(function(chip) {
+        chip.classList.remove("active");
+      });
+
+      document.querySelectorAll(".node").forEach(function(nodeEl) {
+        nodeEl.classList.add("dimmed");
+        nodeEl.classList.remove("highlighted", "neighbour-up", "neighbour-down");
+      });
+
+      const clickedEl = document.getElementById(nodeId);
+      if (clickedEl) {
+        clickedEl.classList.remove("dimmed");
+        clickedEl.classList.add("highlighted");
+      }
+
+      document.querySelectorAll(".node").forEach(function(nodeEl) {
+        const id = nodeEl.id;
+        if (upIds.has(id)) {
+          nodeEl.classList.remove("dimmed");
+          nodeEl.classList.add("neighbour-up");
+        }
+        if (downIds.has(id)) {
+          nodeEl.classList.remove("dimmed");
+          nodeEl.classList.add("neighbour-down");
+        }
+      });
+
+      document.querySelectorAll(".edge-line").forEach(function(line) {
+        line.classList.remove("highlighted");
+        const fromId = line.dataset.from;
+        const toId = line.dataset.to;
+        if ((fromId === nodeId && downIds.has(toId)) ||
+            (toId === nodeId && upIds.has(fromId))) {
+          line.classList.add("highlighted");
+        }
+      });
+
+      setDetailsForNode(nodeId);
+    }
+
+    function attachEventHandlers() {
+      document.querySelectorAll(".constraint-chip").forEach(function(chip) {
+        chip.addEventListener("click", function(e) {
+          const cid = chip.dataset.constraintId;
+          highlightConstraint(cid);
+          e.stopPropagation();
+        });
+      });
+
+      const resetBtn = document.getElementById("reset-highlight");
+      resetBtn.addEventListener("click", function(e) {
+        clearHighlight();
+        e.stopPropagation();
+      });
+
+      document.querySelectorAll(".node").forEach(function(nodeEl) {
+        nodeEl.addEventListener("click", function(e) {
+          const nodeId = nodeEl.id;
+          highlightNodeAndNeighbours(nodeId);
+          e.stopPropagation();
+        });
+      });
+
+      window.addEventListener("resize", function() { drawEdges(); });
+
+      document.body.addEventListener("click", function(e) {
+        const isNode = e.target.closest(".node");
+        const isChip = e.target.closest(".constraint-chip");
+        const isReset = e.target.closest("#reset-highlight");
+        const isDetails = e.target.closest("#details-card");
+        if (!isNode && !isChip && !isReset && !isDetails) {
+          clearHighlight();
+        }
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+      createConstraintLegend();
+      createLevelsAndNodes();
+      drawEdges();
+      attachEventHandlers();
+    });
+  </script>
+</body>
+</html>
