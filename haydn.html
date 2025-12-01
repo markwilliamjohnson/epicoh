@@ -1,0 +1,1304 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Haydn Quartet – Constraint / Energy Lattice</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+      color-scheme: light dark;
+      --bg: #050816;
+      --panel-bg: rgba(15, 23, 42, 0.92);
+      --panel-border: rgba(148, 163, 184, 0.5);
+      --panel-soft: rgba(15, 23, 42, 0.7);
+      --accent: #38bdf8;
+      --accent-soft: rgba(56, 189, 248, 0.15);
+      --accent-strong: #0ea5e9;
+      --text-main: #e5e7eb;
+      --text-soft: #9ca3af;
+      --node-bg: #0b1220;
+      --node-border: #4b5563;
+      --node-hover: #1f2937;
+      --danger: #fb7185;
+      --radius-xl: 18px;
+      --shadow-soft: 0 18px 40px rgba(15, 23, 42, 0.6);
+      --shadow-subtle: 0 10px 25px rgba(15, 23, 42, 0.4);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at top, #0f172a 0, #020617 40%, #000 100%);
+      color: var(--text-main);
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+      padding: 24px;
+    }
+
+    .app-shell {
+      max-width: 1200px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.9));
+      border-radius: 24px;
+      padding: 20px 22px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: blur(16px);
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.4rem;
+      letter-spacing: 0.03em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    header h1 span.badge {
+      font-size: 0.75rem;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      color: var(--text-soft);
+      background: rgba(15, 23, 42, 0.9);
+    }
+
+    header .subtitle {
+      font-size: 0.82rem;
+      color: var(--text-soft);
+      max-width: 520px;
+      line-height: 1.4;
+    }
+
+    .main-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    @media (max-width: 900px) {
+      body {
+        padding: 12px;
+      }
+      .app-shell {
+        padding: 16px;
+      }
+      .main-layout {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    /* Left panel: explanation & controls */
+
+    .panel {
+      border-radius: var(--radius-xl);
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      box-shadow: var(--shadow-subtle);
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.12), transparent 55%);
+      mix-blend-mode: screen;
+      pointer-events: none;
+    }
+
+    .panel h2 {
+      margin: 0;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .panel h2 span.label {
+      padding: 2px 8px;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent-strong);
+      border: 1px solid rgba(56, 189, 248, 0.5);
+    }
+
+    .panel p {
+      margin: 0;
+      font-size: 0.85rem;
+      color: var(--text-soft);
+      line-height: 1.45;
+    }
+
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 2px;
+    }
+
+    .slider-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .slider-row label {
+      font-size: 0.78rem;
+      color: var(--text-soft);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .slider-row label span.step-name {
+      font-weight: 500;
+      color: var(--text-main);
+      font-size: 0.8rem;
+      max-width: 260px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent-strong);
+      appearance: none;
+      background: linear-gradient(to right, var(--accent), rgba(148, 163, 184, 0.5));
+      height: 4px;
+      border-radius: 999px;
+      outline: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #0f172a;
+      border: 2px solid var(--accent-strong);
+      box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.25);
+      cursor: pointer;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #0f172a;
+      border: 2px solid var(--accent-strong);
+      box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.25);
+      cursor: pointer;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    button {
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.18), #020617);
+      color: var(--text-main);
+      font-size: 0.8rem;
+      padding: 6px 14px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.7);
+      white-space: nowrap;
+    }
+
+    button.secondary {
+      background: rgba(15, 23, 42, 0.9);
+      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.6);
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 22px rgba(15, 23, 42, 0.9);
+      border-color: rgba(148, 163, 184, 0.8);
+      background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.25), #020617);
+    }
+
+    button:active {
+      transform: translateY(0);
+      box-shadow: 0 6px 15px rgba(15, 23, 42, 0.7);
+    }
+
+    button span.icon {
+      font-size: 0.95em;
+    }
+
+    .hint {
+      font-size: 0.74rem;
+      color: var(--text-soft);
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .pill {
+      border-radius: 999px;
+      padding: 2px 7px;
+      border: 1px dashed rgba(148, 163, 184, 0.6);
+      font-size: 0.68rem;
+      color: var(--text-soft);
+    }
+
+    .current-state {
+      margin-top: 4px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.14), rgba(15, 23, 42, 0.9));
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(0, 1.2fr);
+      gap: 10px;
+      align-items: flex-start;
+      font-size: 0.8rem;
+    }
+
+    @media (max-width: 700px) {
+      .current-state {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .current-state h3 {
+      margin: 0 0 4px 0;
+      font-size: 0.86rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .current-state h3 span.chip {
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      color: var(--text-soft);
+    }
+
+    .current-state p {
+      font-size: 0.78rem;
+      line-height: 1.45;
+      color: var(--text-soft);
+    }
+
+    .energy-indicator {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      align-items: stretch;
+    }
+
+    .energy-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+      color: var(--text-soft);
+    }
+
+    .energy-bar-shell {
+      position: relative;
+      height: 8px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: radial-gradient(circle at left, rgba(34, 197, 94, 0.45), rgba(30, 64, 175, 0.4));
+    }
+
+    .energy-fill {
+      position: absolute;
+      inset: 0;
+      width: 0%;
+      transition: width 0.3s ease;
+      background: linear-gradient(90deg, #22c55e, #eab308, #fb923c, #f97316);
+    }
+
+    .energy-caption {
+      font-size: 0.7rem;
+      color: var(--text-soft);
+    }
+
+    .constraints-list {
+      margin-top: 6px;
+      padding: 6px 8px;
+      border-radius: 10px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px dashed rgba(148, 163, 184, 0.4);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .constraints-list span {
+      font-size: 0.72rem;
+      padding: 3px 7px;
+      border-radius: 999px;
+      border: 1px solid rgba(75, 85, 99, 0.8);
+      color: var(--text-soft);
+      background: rgba(15, 23, 42, 0.9);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      opacity: 0.6;
+      transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+    }
+
+    .constraints-list span.active {
+      border-color: rgba(56, 189, 248, 0.9);
+      color: #e5f6ff;
+      background: rgba(15, 23, 42, 0.9);
+      opacity: 1;
+    }
+
+    .constraints-list span::before {
+      content: "●";
+      font-size: 0.6rem;
+      opacity: 0.75;
+    }
+
+    /* Right panel: lattice visualisation */
+
+    .lattice-wrapper {
+      position: relative;
+      min-height: 320px;
+      border-radius: var(--radius-xl);
+      background: radial-gradient(circle at top, rgba(30, 64, 175, 0.35), rgba(15, 23, 42, 0.92) 60%) padding-box,
+        linear-gradient(135deg, rgba(56, 189, 248, 0.7), rgba(59, 130, 246, 0.1)) border-box;
+      border: 1px solid transparent;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .lattice-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px 4px;
+      font-size: 0.78rem;
+      color: var(--text-soft);
+      gap: 8px;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      font-size: 0.72rem;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(148, 163, 184, 0.5);
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: #94a3b8;
+    }
+
+    .legend-dot.active {
+      background: linear-gradient(135deg, #22c55e, #eab308, #f97316);
+    }
+
+    .legend-dot.path {
+      border-radius: 4px;
+      width: 14px;
+      height: 4px;
+      background: linear-gradient(90deg, rgba(56, 189, 248, 0.9), rgba(94, 234, 212, 0.9));
+    }
+
+    .axes-labels {
+      display: flex;
+      justify-content: space-between;
+      padding: 0 12px 6px;
+      font-size: 0.74rem;
+      color: var(--text-soft);
+      opacity: 0.9;
+    }
+
+    .axes-labels span.small {
+      font-size: 0.7rem;
+      opacity: 0.75;
+    }
+
+    svg#lattice {
+      flex: 1;
+      width: 100%;
+      border-radius: 18px;
+      overflow: visible;
+    }
+
+    .node-circle {
+      cursor: pointer;
+      transition: transform 0.2s ease, filter 0.2s ease;
+    }
+
+    .node-circle:hover {
+      transform: translateY(-2px) scale(1.02);
+      filter: drop-shadow(0 0 12px rgba(56, 189, 248, 0.5));
+    }
+
+    .node-label {
+      font-size: 10px;
+      fill: #9ca3af;
+      pointer-events: none;
+    }
+
+    .node-label strong {
+      font-weight: 600;
+    }
+
+    .edge-line {
+      stroke: rgba(148, 163, 184, 0.6);
+      stroke-width: 1;
+      stroke-linecap: round;
+      opacity: 0.6;
+    }
+
+    .edge-line.path-edge {
+      stroke: url(#pathGradient);
+      stroke-width: 2.2;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .edge-line.path-edge.visible {
+      opacity: 1;
+    }
+
+    .node-circle.base {
+      fill: var(--node-bg);
+      stroke: var(--node-border);
+      stroke-width: 1.3;
+    }
+
+    .node-circle.active {
+      stroke-width: 2;
+    }
+
+    .node-circle.on-path {
+      stroke-width: 1.8;
+      stroke: rgba(56, 189, 248, 0.9);
+    }
+
+    .tooltip {
+      position: fixed;
+      pointer-events: none;
+      background: rgba(15, 23, 42, 0.96);
+      border-radius: 12px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      padding: 6px 8px;
+      font-size: 0.72rem;
+      color: var(--text-main);
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.85);
+      max-width: 240px;
+      z-index: 1000;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+      backdrop-filter: blur(10px);
+    }
+
+    .tooltip h4 {
+      margin: 0 0 3px 0;
+      font-size: 0.8rem;
+    }
+
+    .tooltip p {
+      margin: 0;
+      color: var(--text-soft);
+      line-height: 1.35;
+    }
+
+    .tooltip p span.muted {
+      opacity: 0.8;
+    }
+
+    .tooltip .mini-tags {
+      margin-top: 4px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .tooltip .mini-tags span {
+      padding: 1px 5px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      font-size: 0.65rem;
+      color: var(--text-soft);
+    }
+
+    footer {
+      margin-top: 4px;
+      font-size: 0.7rem;
+      color: var(--text-soft);
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    footer span {
+      opacity: 0.8;
+    }
+
+    footer code {
+      font-size: 0.7rem;
+      background: rgba(15, 23, 42, 0.9);
+      padding: 2px 6px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header>
+      <div>
+        <h1>
+          Haydn String Quartet
+          <span class="badge">Constraint / Energy Lattice</span>
+        </h1>
+        <div class="subtitle">
+          Explore a tiny Krippendorff-style lattice where each node is a musical state:
+          how constrained the music is, and how much “energy” or noise is in play.
+        </div>
+      </div>
+    </header>
+
+    <div class="main-layout">
+      <!-- LEFT: narrative & controls -->
+      <section class="panel">
+        <h2>
+          Narrative path
+          <span class="label">Haydn-like arc</span>
+        </h2>
+        <p>
+          Imagine a Haydn quartet that begins almost unconstrained, then gradually tightens
+          its possibilities, flares with energy, and occasionally dissolves one structure so
+          that another can begin. Use the slider to scrub through this path; or click directly
+          on the lattice to pick your own state.
+        </p>
+
+        <div class="controls">
+          <div class="slider-row">
+            <label for="stepSlider">
+              <span>Position in the piece</span>
+              <span class="step-name" id="stepTitleLabel"></span>
+            </label>
+            <input id="stepSlider" type="range" min="0" max="0" step="1" value="0" />
+          </div>
+
+          <div class="button-row">
+            <button id="playPauseBtn">
+              <span class="icon">▶</span>
+              <span class="label-text">Play narrative</span>
+            </button>
+            <button id="resetBtn" class="secondary">
+              <span class="icon">⟲</span>
+              Reset to unconstrained
+            </button>
+            <span class="hint">
+              <span class="pill">Tip</span>
+              Click any node in the lattice to explore a custom state.
+            </span>
+          </div>
+
+          <div class="current-state">
+            <div>
+              <h3>
+                <span id="stateTitle">Unconstrained silence</span>
+                <span class="chip" id="stateModeChip">Narrative path</span>
+              </h3>
+              <p id="stateDescription">
+                At the very beginning, all potential structures are present but undifferentiated.
+                Nothing has yet committed the music to a particular path.
+              </p>
+              <div class="constraints-list" id="constraintsList">
+                <!-- populated by JS -->
+              </div>
+            </div>
+            <div class="energy-indicator">
+              <div class="energy-label-row">
+                <span>Perceived energy</span>
+                <span id="energyValueLabel">0%</span>
+              </div>
+              <div class="energy-bar-shell">
+                <div class="energy-fill" id="energyFill"></div>
+              </div>
+              <div class="energy-caption" id="energyCaption">
+                Almost no motion; the music has not yet distinguished one possibility from another.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT: lattice visualisation -->
+      <section class="lattice-wrapper">
+        <div class="lattice-header">
+          <div>Krippendorff-like lattice of musical constraints</div>
+          <div class="legend">
+            <div class="legend-item">
+              <span class="legend-dot"></span>
+              State in the space
+            </div>
+            <div class="legend-item">
+              <span class="legend-dot active"></span>
+              Current musical state
+            </div>
+            <div class="legend-item">
+              <span class="legend-dot path"></span>
+              Narrative path edges
+            </div>
+          </div>
+        </div>
+        <div class="axes-labels">
+          <span><strong>Vertical:</strong> number of active constraints <span class="small">(more structure)</span></span>
+          <span><strong>Colour / glow:</strong> perceived energy / “noise”</span>
+        </div>
+
+        <svg id="lattice" viewBox="0 0 800 430" aria-label="Lattice of constraints">
+          <defs>
+            <linearGradient id="pathGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#38bdf8" />
+              <stop offset="50%" stop-color="#22c55e" />
+              <stop offset="100%" stop-color="#f97316" />
+            </linearGradient>
+          </defs>
+        </svg>
+      </section>
+    </div>
+
+    <footer>
+      <span>
+        Each node is a subset of musical constraints; edges show how one constraint at a time
+        is added or dropped.
+      </span>
+      <span>
+        Use: <code>click nodes</code>, <code>drag slider</code>, <code>play</code> to feel the
+        tension between structure (constraint) and energy.
+      </span>
+    </footer>
+
+    <div class="tooltip" id="tooltip" role="status" aria-hidden="true"></div>
+  </div>
+
+  <script>
+    // --- Musical / conceptual model -----------------------------------------
+
+    // The basic "dimensions" of musical constraint we'll use for the lattice.
+    const CONSTRAINTS = [
+      "Motivic profile fixed",
+      "Key centre stabilised",
+      "Texture settled",
+      "Dynamic character fixed"
+    ];
+    const NUM_BITS = CONSTRAINTS.length;
+
+    // A hand-crafted "Haydn-like" narrative across the lattice.
+    // bits = which constraints are "active" at this moment.
+    const STORY_STEPS = [
+      {
+        title: "0. Before the music",
+        bits: [0, 0, 0, 0],
+        energy: 0.05,
+        description:
+          "Pure potential. All options are present but undifferentiated; there is no commitment to any motif, key, texture or dynamic."
+      },
+      {
+        title: "1. First gesture",
+        bits: [1, 0, 0, 0],
+        energy: 0.25,
+        description:
+          "A recognisable motif appears. One constraint crystallises out of the undifferentiated field; other possibilities are temporarily excluded."
+      },
+      {
+        title: "2. Harmonic grounding",
+        bits: [1, 1, 0, 0],
+        energy: 0.4,
+        description:
+          "The motif is placed in a clear key. The music feels more constrained: expectations about where it can go harmonically are stronger."
+      },
+      {
+        title: "3. Texture tightens",
+        bits: [1, 1, 1, 0],
+        energy: 0.65,
+        description:
+          "The quartet locks into a stable texture — perhaps homophonic or tightly imitative. Options for textural contrast are momentarily reduced."
+      },
+      {
+        title: "4. High-energy passage",
+        bits: [1, 1, 1, 1],
+        energy: 0.95,
+        description:
+          "All four constraints are active: motif, key, texture and dynamic are tightly specified. The music feels intensely 'energised', but it is also highly constrained."
+      },
+      {
+        title: "5. Sudden dissolution",
+        bits: [0, 1, 0, 1],
+        energy: 0.55,
+        description:
+          "A dramatic change in surface — dynamics and key hints remain, but the texture loosens and the original motif evaporates. It sounds like a huge change, yet in the lattice it is just a small reconfiguration."
+      },
+      {
+        title: "6. New idea emerges",
+        bits: [1, 1, 0, 1],
+        energy: 0.7,
+        description:
+          "A new motivic pattern slots into the still-stable key and dynamic world. One structuring constraint is resolved to nothing and another takes its place."
+      },
+      {
+        title: "7. Release of tension",
+        bits: [1, 0, 0, 1],
+        energy: 0.45,
+        description:
+          "The key centre becomes ambiguous or modulates away, even as motif and dynamics hold. The music feels more open again: some constraints lift, others persist."
+      },
+      {
+        title: "8. Quiet closing",
+        bits: [1, 0, 0, 0],
+        energy: 0.2,
+        description:
+          "The music returns to a stripped-down idea: the motif alone, gently stated. Most constraints have been relaxed; options reopen even as the piece winds down."
+      },
+      {
+        title: "9. After-sound",
+        bits: [0, 0, 0, 0],
+        energy: 0.05,
+        description:
+          "The quartet falls silent, yet the listener's sense of pattern persists. Once again, all possibilities are latent and undifferentiated."
+      }
+    ];
+
+    // --- Lattice construction -----------------------------------------------
+
+    function popcount(n) {
+      let c = 0;
+      while (n) {
+        c += n & 1;
+        n >>= 1;
+      }
+      return c;
+    }
+
+    function bitsArray(n, numBits) {
+      const arr = [];
+      for (let i = 0; i < numBits; i++) {
+        arr.push((n >> i) & 1);
+      }
+      return arr;
+    }
+
+    function bitsToKey(bits) {
+      return bits.join("");
+    }
+
+    function hammingDistance(bitsA, bitsB) {
+      let d = 0;
+      for (let i = 0; i < bitsA.length; i++) {
+        if (bitsA[i] !== bitsB[i]) d++;
+      }
+      return d;
+    }
+
+    function generateNodes(numBits) {
+      const nodes = [];
+      const total = 1 << numBits;
+      for (let i = 0; i < total; i++) {
+        const bits = bitsArray(i, numBits);
+        const level = popcount(i);
+        nodes.push({
+          id: i,
+          bits,
+          level,
+          key: bitsToKey(bits),
+          x: 0,
+          y: 0,
+          svgGroup: null,
+          circle: null
+        });
+      }
+      return nodes;
+    }
+
+    function layoutNodes(nodes, width, height) {
+      const maxLevel = NUM_BITS;
+      const paddingX = 70;
+      const paddingTop = 40;
+      const paddingBottom = 34;
+      const usableHeight = height - paddingTop - paddingBottom;
+
+      const levels = Array.from({ length: maxLevel + 1 }, () => []);
+      nodes.forEach((node) => {
+        levels[node.level].push(node);
+      });
+
+      levels.forEach((levelNodes, level) => {
+        const count = levelNodes.length;
+        const rowY =
+          paddingTop + (usableHeight * level) / (maxLevel === 0 ? 1 : maxLevel);
+        levelNodes.forEach((node, i) => {
+          const frac = count === 1 ? 0.5 : i / (count - 1);
+          const x = paddingX + frac * (width - 2 * paddingX);
+          node.x = x;
+          node.y = rowY;
+        });
+      });
+    }
+
+    function generateEdges(nodes) {
+      const edges = [];
+      for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+          const a = nodes[i];
+          const b = nodes[j];
+          if (Math.abs(a.level - b.level) === 1 && hammingDistance(a.bits, b.bits) === 1) {
+            const up = a.level < b.level ? a : b;
+            const down = a.level > b.level ? a : b;
+            edges.push({ from: up, to: down, svgLine: null });
+          }
+        }
+      }
+      return edges;
+    }
+
+    // --- DOM references -----------------------------------------------------
+
+    const svg = document.getElementById("lattice");
+    const tooltip = document.getElementById("tooltip");
+    const stepSlider = document.getElementById("stepSlider");
+    const stepTitleLabel = document.getElementById("stepTitleLabel");
+    const playPauseBtn = document.getElementById("playPauseBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const stateTitleEl = document.getElementById("stateTitle");
+    const stateModeChip = document.getElementById("stateModeChip");
+    const stateDescriptionEl = document.getElementById("stateDescription");
+    const constraintsListEl = document.getElementById("constraintsList");
+    const energyFillEl = document.getElementById("energyFill");
+    const energyValueLabel = document.getElementById("energyValueLabel");
+    const energyCaptionEl = document.getElementById("energyCaption");
+
+    const viewBox = svg.viewBox.baseVal;
+    const nodes = generateNodes(NUM_BITS);
+    const edges = generateEdges(nodes);
+
+    layoutNodes(nodes, viewBox.width, viewBox.height);
+
+    const nodeByKey = new Map(nodes.map((n) => [n.key, n]));
+    const nodeById = new Map(nodes.map((n) => [n.id, n]));
+
+    // For highlighting the STORY path specifically
+    const storyNodeIds = STORY_STEPS.map((s) =>
+      nodeByKey.get(bitsToKey(s.bits))?.id ?? null
+    );
+
+    // --- SVG drawing --------------------------------------------------------
+
+function renderEdges() {
+  // Base lattice edges
+  edges.forEach((edge) => {
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    line.setAttribute("x1", edge.from.x);
+    line.setAttribute("y1", edge.from.y);
+    line.setAttribute("x2", edge.to.x);
+    line.setAttribute("y2", edge.to.y);
+    line.setAttribute("class", "edge-line");
+    svg.appendChild(line);
+    edge.svgLine = line;
+  });
+
+  // Overlay: edges showing just the narrative path
+  for (let i = 0; i < storyNodeIds.length - 1; i++) {
+    const a = nodeById.get(storyNodeIds[i]);
+    const b = nodeById.get(storyNodeIds[i + 1]);
+    if (!a || !b) continue;
+
+    const pathEdge = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "line"
+    );
+    pathEdge.setAttribute("x1", a.x);
+    pathEdge.setAttribute("y1", a.y);
+    pathEdge.setAttribute("x2", b.x);
+    pathEdge.setAttribute("y2", b.y);
+    pathEdge.setAttribute("class", "edge-line path-edge");
+    svg.appendChild(pathEdge);
+  }
+}
+
+    function renderNodes() {
+      nodes.forEach((node) => {
+        const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        g.setAttribute("transform", `translate(${node.x},${node.y})`);
+
+        const circle = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "circle"
+        );
+        circle.setAttribute("r", 15);
+        circle.setAttribute("class", "node-circle base");
+        circle.setAttribute("fill", "url(#dotGradient)"); // will be overridden shortly
+        circle.setAttribute("fill", "#020617");
+        circle.setAttribute("stroke", "#4b5563");
+
+        const label = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "text"
+        );
+        label.setAttribute("class", "node-label");
+        label.setAttribute("text-anchor", "middle");
+        label.setAttribute("dy", "3");
+        label.textContent = node.level.toString();
+
+        g.appendChild(circle);
+        g.appendChild(label);
+        svg.appendChild(g);
+
+        node.svgGroup = g;
+        node.circle = circle;
+
+        // Event handlers for hover / click
+        g.addEventListener("mouseenter", (evt) => {
+          showNodeTooltip(node, evt);
+        });
+        g.addEventListener("mousemove", (evt) => {
+          moveTooltip(evt);
+        });
+        g.addEventListener("mouseleave", () => {
+          hideTooltip();
+        });
+        g.addEventListener("click", () => {
+          stopPlayback();
+          applyCustomNodeState(node);
+        });
+      });
+    }
+
+    function showNodeTooltip(node, evt) {
+      const activeConstraints = activeConstraintNames(node.bits);
+      const title =
+        node.level === 0
+          ? "Unconstrained state"
+          : node.level === NUM_BITS
+            ? "Maximally constrained state"
+            : `${node.level} active constraint${node.level === 1 ? "" : "s"}`;
+      tooltip.innerHTML = `
+        <h4>${title}</h4>
+        <p>
+          <span class="muted">
+            This point represents a way the music might be organised at this moment.
+          </span>
+        </p>
+        <div class="mini-tags">
+          ${activeConstraints.length === 0
+            ? `<span>All constraints open</span>`
+            : activeConstraints.map((c) => `<span>${c}</span>`).join("")}
+        </div>
+      `;
+      tooltip.style.opacity = "1";
+      tooltip.setAttribute("aria-hidden", "false");
+      moveTooltip(evt);
+    }
+
+    function moveTooltip(evt) {
+      const padding = 10;
+      const tooltipRect = tooltip.getBoundingClientRect();
+      let x = evt.clientX + padding;
+      let y = evt.clientY + padding;
+
+      const maxX = window.innerWidth - tooltipRect.width - padding;
+      const maxY = window.innerHeight - tooltipRect.height - padding;
+      if (x > maxX) x = maxX;
+      if (y > maxY) y = maxY;
+
+      tooltip.style.left = `${x}px`;
+      tooltip.style.top = `${y}px`;
+    }
+
+    function hideTooltip() {
+      tooltip.style.opacity = "0";
+      tooltip.setAttribute("aria-hidden", "true");
+    }
+
+    // --- UI state & transitions --------------------------------------------
+
+    let currentIndex = 0; // index into STORY_STEPS
+    let isPlaying = false;
+    let playInterval = null;
+    let mode = "narrative"; // "narrative" | "custom"
+
+    function bitsEqual(a, b) {
+      if (!a || !b || a.length !== b.length) return false;
+      for (let i = 0; i < a.length; i++) {
+        if (a[i] !== b[i]) return false;
+      }
+      return true;
+    }
+
+    function energyToCaption(energy) {
+      if (energy < 0.15)
+        return "Almost no motion; the music has not yet distinguished one possibility from another.";
+      if (energy < 0.35)
+        return "A gentle stirring of structure: some choices are made, but many options remain open.";
+      if (energy < 0.55)
+        return "Balanced energy: constraints guide the music, yet there is still room for surprise.";
+      if (energy < 0.75)
+        return "The music feels urgent: several constraints work together to focus attention.";
+      if (energy < 0.9)
+        return "High energy: surface activity is intense, and the underlying structure is tightly specified.";
+      return "Peak intensity: it sounds almost chaotic, yet it arises from a highly constrained configuration.";
+    }
+
+    function energyToColor(energy) {
+      // Map 0..1 -> HSL from cool blue-green (190deg) to hot orange (30deg)
+      const startHue = 190;
+      const endHue = 30;
+      const hue = startHue + (endHue - startHue) * energy;
+      const saturation = 80;
+      const lightness = 50 + 10 * (1 - energy);
+      return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+    }
+
+    function setEnergyVisual(energy) {
+      const percentage = Math.round(energy * 100);
+      energyFillEl.style.width = `${percentage}%`;
+      energyValueLabel.textContent = `${percentage}%`;
+      energyCaptionEl.textContent = energyToCaption(energy);
+    }
+
+    function activeConstraintNames(bits) {
+      const names = [];
+      bits.forEach((bit, idx) => {
+        if (bit === 1) {
+          names.push(CONSTRAINTS[idx]);
+        }
+      });
+      return names;
+    }
+
+    function updateConstraintsDisplay(bits) {
+      constraintsListEl.innerHTML = "";
+      CONSTRAINTS.forEach((name, i) => {
+        const span = document.createElement("span");
+        span.textContent = name;
+        if (bits[i] === 1) {
+          span.classList.add("active");
+        }
+        constraintsListEl.appendChild(span);
+      });
+    }
+
+    function highlightActiveNode(bits, energy, markPath = true) {
+      const key = bitsToKey(bits);
+      const node = nodeByKey.get(key);
+      nodes.forEach((n) => {
+        if (!n.circle) return;
+        const isActive = n === node;
+        const onPath = storyNodeIds.includes(n.id);
+        const baseStroke = onPath ? "rgba(56,189,248,0.75)" : "#4b5563";
+        const baseFill = "#020617";
+
+        n.circle.setAttribute("stroke", baseStroke);
+        n.circle.setAttribute("fill", baseFill);
+        n.circle.classList.remove("active", "on-path");
+        n.circle.setAttribute("r", 15);
+        n.circle.style.filter = "none";
+
+        if (onPath && markPath) {
+          n.circle.classList.add("on-path");
+        }
+
+        if (isActive) {
+          const colour = energyToColor(energy);
+          n.circle.setAttribute("fill", colour);
+          n.circle.setAttribute("stroke", "rgba(15,23,42,0.9)");
+          n.circle.classList.add("active");
+          n.circle.setAttribute("r", 18);
+          n.circle.style.filter =
+            "drop-shadow(0 0 14px rgba(56, 189, 248, 0.7))";
+        }
+      });
+
+      // Highlight narrative edges if in narrative mode
+      const pathEdges = Array.from(
+        svg.querySelectorAll(".edge-line.path-edge")
+      );
+      pathEdges.forEach((line) => {
+        line.classList.toggle("visible", markPath);
+      });
+    }
+
+    function setNarrativeStep(index) {
+      const step = STORY_STEPS[index];
+      if (!step) return;
+
+      currentIndex = index;
+      mode = "narrative";
+      stateModeChip.textContent = "Narrative path";
+      stepSlider.value = String(index);
+      stepTitleLabel.textContent = step.title;
+      stateTitleEl.textContent = step.title.replace(/^\d+\.\s*/, "");
+      stateDescriptionEl.textContent = step.description;
+      updateConstraintsDisplay(step.bits);
+      setEnergyVisual(step.energy);
+      highlightActiveNode(step.bits, step.energy, true);
+    }
+
+    function applyCustomNodeState(node) {
+      mode = "custom";
+      stateModeChip.textContent = "Custom state";
+      const energyGuess = node.level / NUM_BITS || 0.05;
+      setEnergyVisual(energyGuess);
+      updateConstraintsDisplay(node.bits);
+
+      // Check if this exactly matches a narrative step:
+      const idx = STORY_STEPS.findIndex((s) => bitsEqual(s.bits, node.bits));
+      if (idx !== -1) {
+        // We can reuse that description, but mark it as 'seen via lattice'
+        const step = STORY_STEPS[idx];
+        stateTitleEl.textContent =
+          step.title.replace(/^\d+\.\s*/, "") + " (via lattice)";
+        stateDescriptionEl.textContent = step.description;
+        stepTitleLabel.textContent = step.title + " (matched)";
+        stepSlider.value = String(idx);
+      } else {
+        // Generic description
+        const activeNames = activeConstraintNames(node.bits);
+        if (activeNames.length === 0) {
+          stateTitleEl.textContent = "All constraints open";
+          stateDescriptionEl.textContent =
+            "No specific structural choice has been fixed. In principle, any motif, key, texture or dynamic could emerge next.";
+        } else {
+          stateTitleEl.textContent = `${activeNames.length} active constraint${activeNames.length === 1 ? "" : "s"}`;
+          stateDescriptionEl.textContent =
+            "This state keeps the following structural decisions in place: " +
+            activeNames.join(", ") +
+            ". Other dimensions remain open, so the music can still shift in those respects.";
+        }
+        stepTitleLabel.textContent = "Custom lattice point";
+      }
+
+      highlightActiveNode(node.bits, energyGuess, true);
+    }
+
+    function stopPlayback() {
+      if (playInterval) {
+        clearInterval(playInterval);
+        playInterval = null;
+      }
+      isPlaying = false;
+      playPauseBtn.querySelector(".icon").textContent = "▶";
+      playPauseBtn.querySelector(".label-text").textContent = "Play narrative";
+    }
+
+    function togglePlayback() {
+      if (isPlaying) {
+        stopPlayback();
+        return;
+      }
+      mode = "narrative";
+      stateModeChip.textContent = "Narrative path";
+      isPlaying = true;
+      playPauseBtn.querySelector(".icon").textContent = "⏸";
+      playPauseBtn.querySelector(".label-text").textContent = "Pause";
+
+      playInterval = setInterval(() => {
+        let nextIndex = currentIndex + 1;
+        if (nextIndex >= STORY_STEPS.length) {
+          nextIndex = 0;
+        }
+        setNarrativeStep(nextIndex);
+      }, 1400);
+    }
+
+    // --- Initialise UI ------------------------------------------------------
+
+    function initConstraintsPills() {
+      constraintsListEl.innerHTML = "";
+      CONSTRAINTS.forEach((name) => {
+        const span = document.createElement("span");
+        span.textContent = name;
+        constraintsListEl.appendChild(span);
+      });
+    }
+
+    function init() {
+      // Build constraints pills
+      initConstraintsPills();
+
+      // Render lattice
+      renderEdges();
+      renderNodes();
+
+      // Configure slider
+      stepSlider.min = "0";
+      stepSlider.max = String(STORY_STEPS.length - 1);
+      stepSlider.value = "0";
+
+      stepSlider.addEventListener("input", (e) => {
+        const idx = Number(e.target.value);
+        setNarrativeStep(idx);
+      });
+
+      playPauseBtn.addEventListener("click", togglePlayback);
+      resetBtn.addEventListener("click", () => {
+        stopPlayback();
+        setNarrativeStep(0);
+      });
+
+      // Start at first step
+      setNarrativeStep(0);
+    }
+
+    init();
+  </script>
+</body>
+</html>
