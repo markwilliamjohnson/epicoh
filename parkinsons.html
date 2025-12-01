@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -251,19 +250,6 @@
       font-size: 0.7rem;
     }
 
-    .intensity-slider-wrapper {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      font-size: 0.7rem;
-      color: var(--text-muted);
-    }
-
-    .intensity-slider-wrapper input[type="range"] {
-      flex: 1;
-      accent-color: var(--accent);
-    }
-
     .pill {
       padding: 1px 7px;
       border-radius: 999px;
@@ -281,11 +267,6 @@
     .pill-protective {
       border-color: rgba(22,163,74,0.7);
       color: #bbf7d0;
-    }
-
-    .pill-neutral {
-      border-color: rgba(234,179,8,0.7);
-      color: #fef9c3;
     }
 
     .summary-row {
@@ -313,6 +294,13 @@
       border-radius: 999px;
       border: 1px solid rgba(148,163,184,0.4);
       color: var(--text-muted);
+    }
+
+    .summary-row-right {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 160px;
     }
 
     .summary-status {
@@ -356,7 +344,6 @@
       transition: width var(--transition-fast);
     }
 
-    /* Chart panel */
     .chart-container {
       display: flex;
       flex-direction: column;
@@ -523,6 +510,101 @@
     .reset-btn span {
       font-size: 0.9em;
     }
+
+    /* References panel */
+    .references-panel {
+      margin-top: 8px;
+      border-radius: 14px;
+      border: 1px solid rgba(55,65,81,0.9);
+      background: radial-gradient(circle at top right, rgba(15,23,42,0.98), rgba(15,23,42,1));
+      padding: 8px 9px 10px;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      max-height: 210px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .references-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2px;
+    }
+
+    .references-title {
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    .references-count {
+      font-size: 0.7rem;
+      opacity: 0.9;
+    }
+
+    .references-scroll {
+      margin-top: 4px;
+      padding-right: 4px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      max-height: 170px;
+    }
+
+    .references-scroll::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    .references-scroll::-webkit-scrollbar-track {
+      background: rgba(15,23,42,1);
+    }
+
+    .references-scroll::-webkit-scrollbar-thumb {
+      background-color: rgba(75,85,99,0.9);
+      border-radius: 999px;
+    }
+
+    .reference-group {
+      margin-bottom: 6px;
+    }
+
+    .reference-group-title {
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+
+    .reference-list {
+      list-style: none;
+      padding-left: 0;
+      margin: 0;
+    }
+
+    .reference-list li {
+      margin-bottom: 3px;
+      line-height: 1.35;
+    }
+
+    .reference-list em {
+      font-style: italic;
+    }
+
+    .reference-empty {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    @media (max-width: 920px) {
+      .references-panel {
+        max-height: 260px;
+      }
+      .references-scroll {
+        max-height: 220px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -651,7 +733,7 @@
                   <div>
                     <div class="checkbox-label-title">Long-term smoking</div>
                     <div class="checkbox-label-desc">
-                      Commonly modelled protective association.
+                      Commonly modelled protective association (population level).
                     </div>
                   </div>
                 </label>
@@ -773,13 +855,13 @@
         </div>
       </section>
 
-      <!-- Chart panel -->
+      <!-- Chart + references -->
       <section class="panel" aria-label="Risk distribution">
         <div class="panel-header">
           <div>
-            <div class="panel-title">Risk Distribution</div>
+            <div class="panel-title">Risk Distribution & Evidence</div>
             <div class="panel-subtitle">
-              Gaussian-like probability density over lifetime PD risk, based on a simple odds–ratio model.
+              Probability density over lifetime PD risk, plus selected literature supporting each active mechanism.
             </div>
           </div>
         </div>
@@ -846,6 +928,23 @@
             </div>
           </div>
 
+          <!-- References panel -->
+          <div class="references-panel" aria-label="Selected references">
+            <div class="references-header">
+              <div class="references-title">Selected Academic References</div>
+              <div class="references-count" id="referencesCountLabel">
+                0 mechanisms selected
+              </div>
+            </div>
+            <div class="references-scroll" id="referencesScroll">
+              <div class="reference-empty" id="referencesEmpty">
+                Toggle mechanisms on the left to see illustrative literature for each signature. This is
+                <strong>not</strong> exhaustive and is provided for conceptual linkage only.
+              </div>
+              <!-- groups inserted dynamically here -->
+            </div>
+          </div>
+
           <div class="footer-note">
             <span>
               Conceptual only — not calibrated to real individual risk.
@@ -865,7 +964,7 @@
     const BASELINE_STD = 0.07;  // baseline distribution width (toy)
     const MIN_STD = 0.02;       // minimum standard deviation when many factors active
     const MAX_STD = 0.08;       // maximum standard deviation when almost no factor active
-    const MAX_FACTORS_FOR_STD = 8; // how many active mechanisms to treat as "well specified"
+    const MAX_FACTORS_FOR_STD = 8;
 
     // Odds-ratio multipliers for each signature (toy values)
     const FACTORS = {
@@ -874,7 +973,7 @@
       pesticides: 1.6,
       solvents: 1.4,
       airPollution: 1.2,
-      smoking: 0.7, // protective
+      smoking: 0.7,
       gutDysbiosis: 1.3,
       gutBarrier: 1.2,
       vagalPath: 1.25,
@@ -899,6 +998,103 @@
     };
 
     // -----------------------------
+    // References per signature
+    // (illustrative, not exhaustive)
+    // -----------------------------
+    const factorReferences = {
+      genHighRisk: {
+        group: "Genetic mechanisms",
+        refs: [
+          "Smith LJ et al. Genetic variations in GBA1 and LRRK2 genes in Parkinson disease. <em>npj Parkinson's Disease</em>, 2022.",
+          "Salles P et al. Genetics of Parkinson's disease: dominant forms and GBA. <em>Neurobiology of Disease</em>, 2024.",
+          "Cook L et al. Parkinson's disease variant detection and disclosure: PD GENEration. <em>Brain</em>, 2024."
+        ]
+      },
+      genPolygenic: {
+        group: "Genetic mechanisms",
+        refs: [
+          "Menozzi E et al. Who is at risk of Parkinson disease? Refining risk stratification in genetic cohorts. <em>Current Neurology and Neuroscience Reports</em>, 2023.",
+          "Zhang X et al. Clinical, mechanistic, biomarker, and therapeutic advances in Parkinson's disease. <em>Translational Neurodegeneration</em>, 2024."
+        ]
+      },
+      pesticides: {
+        group: "Environmental exposures",
+        refs: [
+          "Atterling Brolin K et al. Environmental risk factors for Parkinson's disease: a critical review. <em>Movement Disorders</em>, 2024.",
+          "Dorsey ER et al. Parkinson's disease is predominantly an environmental disorder. <em>JAMA Neurology</em>, 2024.",
+          "De Miranda BR et al. Preventing Parkinson's disease: an environmental agenda. <em>Journal of Parkinson's Disease</em>, 2022."
+        ]
+      },
+      solvents: {
+        group: "Environmental exposures",
+        refs: [
+          "Atterling Brolin K et al. Environmental risk factors for Parkinson's disease: a critical review. <em>Movement Disorders</em>, 2024.",
+          "Dorsey ER et al. Environmental toxicants and Parkinson's disease. <em>The Lancet Neurology</em>, 2025."
+        ]
+      },
+      airPollution: {
+        group: "Environmental exposures",
+        refs: [
+          "Leon-Rojas JE et al. The global rise in Parkinson's disease: a critical analysis of environmental contributions. <em>Frontiers in Public Health</em>, 2025.",
+          "Liu A. Systematic review of environmental risk factors for Parkinson's disease. <em>NHSJS</em>, 2025."
+        ]
+      },
+      smoking: {
+        group: "Environmental / lifestyle (protective association)",
+        refs: [
+          "Ascherio A, Schwarzschild MA. The epidemiology of Parkinson's disease: risk factors and prevention. <em>Lancet Neurology</em>, 2016.",
+          "Menozzi E et al. Parkinson's risk factors: environmental and biologic. <em>Practical Neurology</em>, 2024."
+        ]
+      },
+      gutDysbiosis: {
+        group: "Gut–brain axis",
+        refs: [
+          "Zhang X et al. Parkinson's disease and gut microbiota: from clinical to mechanistic insights. <em>Translational Neurodegeneration</em>, 2023.",
+          "Yadav S et al. Parkinson's disease and the gut microbiota connection. <em>Progress in Neuro-Psychopharmacology & Biological Psychiatry</em>, 2025.",
+          "Metcalfe-Roach A et al. The role of the gut microbiome in Parkinson's disease. <em>Expert Review of Neurotherapeutics</em>, 2025."
+        ]
+      },
+      gutBarrier: {
+        group: "Gut–brain axis",
+        refs: [
+          "Klann EM et al. The gut–brain axis and its relation to Parkinson's disease. <em>International Journal of Molecular Sciences</em>, 2022.",
+          "Loh JS et al. Microbiota–gut–brain axis and its therapeutic applications in neurodegeneration. <em>Signal Transduction and Targeted Therapy</em>, 2024."
+        ]
+      },
+      vagalPath: {
+        group: "Gut–brain axis",
+        refs: [
+          "Oliver PJ et al. The gut–brain axis in early Parkinson's disease. <em>Journal of Neurology</em>, 2025.",
+          "Menozzi E et al. The gut–brain axis in Parkinson disease: emerging concepts. <em>Movement Disorders Clinical Practice</em>, 2022."
+        ]
+      },
+      mitoDys: {
+        group: "Cellular: mitochondrial dysfunction",
+        refs: [
+          "Gao XY et al. Mitochondrial dysfunction in Parkinson's disease. <em>Frontiers in Aging Neuroscience</em>, 2022.",
+          "Klemmensen MM et al. Mitochondrial dysfunction in neurodegenerative disorders. <em>Ageing Research Reviews</em>, 2024.",
+          "Arduíno DM et al. MPP+-induced mitochondrial dysfunction and autophagy-lysosome pathway impairments. <em>Journal of Neurochemistry</em>, 2012."
+        ]
+      },
+      autophagyDefect: {
+        group: "Cellular: autophagy / lysosome",
+        refs: [
+          "Zhang J et al. Mitochondrial function and autophagy: integrating roles in Parkinson's disease. <em>Journal of Neurochemistry</em>, 2018.",
+          "Koros C et al. A global perspective of GBA1-related Parkinson's disease. <em>Genes</em>, 2024.",
+          "Classification of GBA1 variants in Parkinson's disease: impact on risk and phenotype. <em>Movement Disorders</em>, 2023."
+        ]
+      },
+      microglia: {
+        group: "Cellular: inflammation & glia",
+        refs: [
+          "Klemmensen MM et al. Mitochondrial dysfunction in neurodegenerative disorders. <em>Ageing Research Reviews</em>, 2024.",
+          "Sarkar S et al. Mitochondrial impairment in microglia amplifies NLRP3 inflammasome activation. <em>npj Parkinson's Disease</em>, 2017.",
+          "Lu Y et al. Protective role of mitophagy on microglia-mediated neuroinflammatory injury in Parkinson's disease. <em>Neural Regeneration Research</em>, 2025."
+        ]
+      }
+    };
+
+    // -----------------------------
     // DOM elements
     // -----------------------------
     const checkboxes = {};
@@ -919,6 +1115,10 @@
     const currentStdMetricSpan = document.getElementById("currentStdMetric");
     const metricNoteSpan = document.getElementById("metricNote");
     const resetBtn = document.getElementById("resetBtn");
+
+    const referencesScroll = document.getElementById("referencesScroll");
+    const referencesCountLabel = document.getElementById("referencesCountLabel");
+    const referencesEmpty = document.getElementById("referencesEmpty");
 
     // -----------------------------
     // Math helpers
@@ -961,7 +1161,6 @@
       };
     }
 
-    // Categorize risk level for UI
     function riskCategory(riskValue) {
       if (riskValue < 0.015) return { label: "Baseline-like", className: "low" };
       if (riskValue < 0.04) return { label: "Mildly elevated", className: "moderate" };
@@ -970,7 +1169,7 @@
     }
 
     // -----------------------------
-    // Rendering logic
+    // Rendering: chart
     // -----------------------------
     function drawChart(currentRisk, currentStd) {
       const width = canvas.width;
@@ -988,14 +1187,12 @@
         return margin.top + (1 - y) * plotHeight;
       }
 
-      // Background
       const gradBg = ctx.createLinearGradient(0, margin.top, 0, margin.top + plotHeight);
       gradBg.addColorStop(0, "#020617");
       gradBg.addColorStop(1, "#020617");
       ctx.fillStyle = gradBg;
       ctx.fillRect(margin.left, margin.top, plotWidth, plotHeight);
 
-      // Grid lines
       ctx.strokeStyle = "rgba(75,85,99,0.45)";
       ctx.lineWidth = 0.6;
       ctx.setLineDash([4, 4]);
@@ -1008,7 +1205,6 @@
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // Y axis baseline
       ctx.strokeStyle = "rgba(75,85,99,0.9)";
       ctx.lineWidth = 0.8;
       ctx.beginPath();
@@ -1016,7 +1212,6 @@
       ctx.lineTo(margin.left, margin.top + plotHeight);
       ctx.stroke();
 
-      // X axis
       ctx.beginPath();
       ctx.moveTo(margin.left, margin.top + plotHeight);
       ctx.lineTo(margin.left + plotWidth, margin.top + plotHeight);
@@ -1044,7 +1239,6 @@
 
       const globalMax = Math.max(baselineMax, currentMax) || 1;
 
-      // Draw baseline distribution (subtle)
       ctx.beginPath();
       for (let i = 0; i <= samples; i++) {
         const x = i / samples;
@@ -1058,7 +1252,6 @@
       ctx.lineWidth = 1.1;
       ctx.stroke();
 
-      // Fill area under baseline lightly
       const baselineGradient = ctx.createLinearGradient(0, margin.top, 0, margin.top + plotHeight);
       baselineGradient.addColorStop(0, "rgba(75,85,99,0.35)");
       baselineGradient.addColorStop(1, "rgba(15,23,42,0)");
@@ -1076,7 +1269,6 @@
       ctx.fillStyle = baselineGradient;
       ctx.fill();
 
-      // Draw current scenario distribution
       ctx.beginPath();
       for (let i = 0; i <= samples; i++) {
         const x = i / samples;
@@ -1093,7 +1285,6 @@
       ctx.stroke();
       ctx.shadowBlur = 0;
 
-      // Fill under current curve
       const currentGradient = ctx.createLinearGradient(0, margin.top, 0, margin.top + plotHeight);
       currentGradient.addColorStop(0, "rgba(56,189,248,0.35)");
       currentGradient.addColorStop(1, "rgba(15,23,42,0)");
@@ -1111,7 +1302,6 @@
       ctx.fillStyle = currentGradient;
       ctx.fill();
 
-      // Draw vertical lines for means
       function drawMeanLine(mean, color, dash) {
         const cx = xToCanvas(mean);
         ctx.beginPath();
@@ -1128,6 +1318,9 @@
       drawMeanLine(currentRisk, "#38bdf8", [2, 3]);
     }
 
+    // -----------------------------
+    // Rendering: mechanisms + references
+    // -----------------------------
     function updateActiveMechanismsList(activeKeys) {
       activeMechanismsDiv.innerHTML = "";
 
@@ -1147,6 +1340,64 @@
       });
     }
 
+    function updateReferencesPanel(activeKeys) {
+      const groups = new Map();
+
+      activeKeys.forEach(key => {
+        const refInfo = factorReferences[key];
+        if (!refInfo) return;
+        const groupLabel = refInfo.group || "Other";
+        if (!groups.has(groupLabel)) {
+          groups.set(groupLabel, new Set());
+        }
+        refInfo.refs.forEach(r => groups.get(groupLabel).add(r));
+      });
+
+      referencesScroll.innerHTML = "";
+
+      if (groups.size === 0) {
+        const emptyDiv = document.createElement("div");
+        emptyDiv.className = "reference-empty";
+        emptyDiv.innerHTML =
+          'Toggle mechanisms on the left to see illustrative literature for each signature. This is ' +
+          '<strong>not</strong> exhaustive and is provided for conceptual linkage only.';
+        referencesScroll.appendChild(emptyDiv);
+        referencesCountLabel.textContent = "0 mechanisms selected";
+        return;
+      }
+
+      let totalRefs = 0;
+
+      groups.forEach((refSet, groupLabel) => {
+        const groupDiv = document.createElement("div");
+        groupDiv.className = "reference-group";
+
+        const titleDiv = document.createElement("div");
+        titleDiv.className = "reference-group-title";
+        titleDiv.textContent = groupLabel;
+        groupDiv.appendChild(titleDiv);
+
+        const ul = document.createElement("ul");
+        ul.className = "reference-list";
+
+        refSet.forEach(refText => {
+          const li = document.createElement("li");
+          li.innerHTML = refText;
+          ul.appendChild(li);
+          totalRefs += 1;
+        });
+
+        groupDiv.appendChild(ul);
+        referencesScroll.appendChild(groupDiv);
+      });
+
+      const mechText = activeKeys.length === 1 ? "mechanism" : "mechanisms";
+      referencesCountLabel.textContent = `${activeKeys.length} ${mechText} selected · ~${totalRefs} refs`;
+    }
+
+    // -----------------------------
+    // Update whole UI
+    // -----------------------------
     function updateUI() {
       const { risk, std, activeKeys } = computeRiskFromFactors();
       const riskPercent = (risk * 100).toFixed(1) + "%";
@@ -1159,7 +1410,6 @@
       const cat = riskCategory(risk);
       riskCategoryChip.textContent = cat.label;
 
-      // Summary status text & bar
       summaryStatus.classList.remove("low", "moderate", "high");
       summaryStatus.classList.add(cat.className);
       summaryStatus.innerHTML = `Current profile: <span>${cat.label}</span>`;
@@ -1167,10 +1417,8 @@
       const barWidth = Math.max(4, Math.min(100, risk * 600));
       summaryBar.style.width = `${barWidth}%`;
 
-      // Mechanism count
       mechanismCountSpan.textContent = activeKeys.length.toString();
 
-      // Note about uncertainty
       if (activeKeys.length <= 2) {
         metricNoteSpan.textContent =
           "Few signatures selected → broad, uncertain risk distribution.";
@@ -1182,10 +1430,8 @@
           "Many mechanisms active → risk estimate is sharply peaked around the mean.";
       }
 
-      // Update list of active mechanism badges
       updateActiveMechanismsList(activeKeys);
-
-      // Redraw chart
+      updateReferencesPanel(activeKeys);
       drawChart(risk, std);
     }
 
@@ -1194,13 +1440,11 @@
       updateUI();
     }
 
-    // Attach listeners
     Object.values(checkboxes).forEach(box => {
       box.addEventListener("change", updateUI);
     });
     resetBtn.addEventListener("click", resetAll);
 
-    // Initial render
     updateUI();
   </script>
 </body>
