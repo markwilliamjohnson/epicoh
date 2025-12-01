@@ -1,0 +1,1207 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Parkinson's Risk Profile Explorer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root {
+      --bg: #0f172a;
+      --bg-elevated: #111827;
+      --panel: #020617;
+      --accent: #38bdf8;
+      --accent-soft: rgba(56,189,248,0.15);
+      --text: #e5e7eb;
+      --text-muted: #9ca3af;
+      --border: #1f2937;
+      --danger: #f97373;
+      --good: #22c55e;
+      --neutral: #eab308;
+      --radius-xl: 18px;
+      --radius-lg: 14px;
+      --radius-md: 10px;
+      --shadow-soft: 0 18px 45px rgba(0,0,0,0.45);
+      --shadow-light: 0 6px 20px rgba(15,23,42,0.8);
+      --transition-fast: 150ms ease-out;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #1e293b 0, #020617 55%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .app-shell {
+      max-width: 1200px;
+      width: 100%;
+      background: linear-gradient(145deg, rgba(15,23,42,0.98), rgba(15,23,42,0.98));
+      border-radius: 28px;
+      box-shadow: var(--shadow-soft);
+      border: 1px solid rgba(148,163,184,0.2);
+      display: flex;
+      flex-direction: column;
+      padding: 18px 18px 20px;
+      gap: 14px;
+    }
+
+    @media (min-width: 1024px) {
+      .app-shell {
+        padding: 22px 22px 24px;
+      }
+    }
+
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      border-radius: 18px;
+      padding: 14px 18px;
+      background: radial-gradient(circle at top left, rgba(56,189,248,0.15), transparent 60%);
+      border: 1px solid rgba(148,163,184,0.25);
+    }
+
+    .app-title-block h1 {
+      font-size: clamp(1.3rem, 2.1vw, 1.6rem);
+      margin: 0;
+      letter-spacing: 0.02em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .badge {
+      font-size: 0.68rem;
+      padding: 3px 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(56,189,248,0.6);
+      background: rgba(15,23,42,0.7);
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .app-title-block p {
+      margin: 2px 0 0;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      max-width: 520px;
+    }
+
+    .quick-metric {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+    }
+
+    .quick-metric-label {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    .quick-metric-value {
+      font-size: 1rem;
+      font-variant-numeric: tabular-nums;
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+
+    .quick-metric-chip {
+      font-size: 0.7rem;
+      padding: 3px 7px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.45);
+      color: var(--text-muted);
+    }
+
+    .main-layout {
+      display: grid;
+      gap: 16px;
+    }
+
+    @media (min-width: 920px) {
+      .main-layout {
+        grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.4fr);
+      }
+    }
+
+    .panel {
+      background: radial-gradient(circle at top left, rgba(15,23,42,0.9), rgba(2,6,23,0.98));
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-light);
+      padding: 14px 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .panel-title {
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.24em;
+      color: var(--text-muted);
+    }
+
+    .panel-subtitle {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .controls-grid {
+      display: grid;
+      gap: 10px;
+    }
+
+    @media (min-width: 600px) {
+      .controls-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    .control-section {
+      border-radius: var(--radius-lg);
+      background: radial-gradient(circle at top left, rgba(15,23,42,0.95), rgba(15,23,42,1));
+      border: 1px solid rgba(31,41,55,0.95);
+      padding: 10px 10px 12px;
+    }
+
+    .control-section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 6px;
+    }
+
+    .control-section-title {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--text-muted);
+    }
+
+    .control-section-tag {
+      font-size: 0.68rem;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: rgba(15,23,42,0.7);
+      border: 1px solid rgba(55,65,81,0.9);
+      color: var(--text-muted);
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-top: 3px;
+    }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 0.78rem;
+      padding: 3px 0;
+    }
+
+    .checkbox-row-main {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .checkbox-row input[type="checkbox"] {
+      width: 15px;
+      height: 15px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .checkbox-label-title {
+      font-weight: 500;
+    }
+
+    .checkbox-label-desc {
+      color: var(--text-muted);
+      font-size: 0.7rem;
+    }
+
+    .intensity-slider-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    .intensity-slider-wrapper input[type="range"] {
+      flex: 1;
+      accent-color: var(--accent);
+    }
+
+    .pill {
+      padding: 1px 7px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.4);
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+    }
+
+    .pill-risk {
+      border-color: rgba(248,113,113,0.6);
+      color: #fecaca;
+    }
+
+    .pill-protective {
+      border-color: rgba(22,163,74,0.7);
+      color: #bbf7d0;
+    }
+
+    .pill-neutral {
+      border-color: rgba(234,179,8,0.7);
+      color: #fef9c3;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.78rem;
+      background: radial-gradient(circle at center, rgba(15,23,42,0.9), rgba(15,23,42,1));
+      border-radius: 12px;
+      border: 1px dashed rgba(75,85,99,0.85);
+      padding: 7px 9px;
+      margin-top: 6px;
+    }
+
+    .summary-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .summary-pill {
+      font-size: 0.68rem;
+      padding: 2px 7px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.4);
+      color: var(--text-muted);
+    }
+
+    .summary-status {
+      font-size: 0.78rem;
+      font-variant-numeric: tabular-nums;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .summary-status span {
+      font-weight: 600;
+    }
+
+    .summary-status.low span {
+      color: var(--good);
+    }
+
+    .summary-status.moderate span {
+      color: var(--neutral);
+    }
+
+    .summary-status.high span {
+      color: var(--danger);
+    }
+
+    .summary-bar-wrapper {
+      flex: 1;
+      height: 5px;
+      border-radius: 999px;
+      background: radial-gradient(circle at left, rgba(15,23,42,1), rgba(15,23,42,0.95));
+      overflow: hidden;
+      border: 1px solid rgba(55,65,81,0.9);
+    }
+
+    .summary-bar-inner {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #22c55e, #eab308, #f97316, #ef4444);
+      transition: width var(--transition-fast);
+    }
+
+    /* Chart panel */
+    .chart-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      height: 100%;
+    }
+
+    .chart-main {
+      position: relative;
+      border-radius: var(--radius-xl);
+      border: 1px solid rgba(31,41,55,0.95);
+      background: radial-gradient(circle at top, rgba(15,23,42,1) 0, #020617 60%);
+      padding: 10px 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+      min-height: 280px;
+    }
+
+    .chart-legend-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    .legend-items {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: rgba(15,23,42,0.85);
+      border: 1px solid rgba(51,65,85,0.9);
+    }
+
+    .legend-swatch {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: #38bdf8;
+    }
+
+    .legend-swatch.baseline {
+      background: #4b5563;
+    }
+
+    .chart-wrapper {
+      position: relative;
+      border-radius: 14px;
+      background: radial-gradient(circle at top, rgba(15,23,42,0.96), rgba(15,23,42,1));
+      border: 1px solid rgba(30,64,175,0.85);
+      overflow: hidden;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .chart-x-axis-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      padding: 0 4px;
+      margin-top: 4px;
+    }
+
+    .risk-metrics-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .metric-card {
+      flex: 1;
+      min-width: 120px;
+      border-radius: 12px;
+      border: 1px solid rgba(55,65,81,0.9);
+      background: rgba(15,23,42,0.96);
+      padding: 6px 8px;
+    }
+
+    .metric-label {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+
+    .metric-value {
+      font-size: 0.85rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .metric-value strong {
+      font-weight: 600;
+    }
+
+    .metric-note {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      opacity: 0.9;
+      margin-top: 2px;
+    }
+
+    .footer-note {
+      margin-top: 4px;
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      text-align: right;
+    }
+
+    .footer-note span {
+      opacity: 0.8;
+    }
+
+    .footer-note strong {
+      font-weight: 600;
+    }
+
+    .reset-btn {
+      font-size: 0.72rem;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.45);
+      background: rgba(15,23,42,0.85);
+      color: var(--text-muted);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
+    }
+
+    .reset-btn:hover {
+      background: rgba(15,23,42,1);
+      border-color: rgba(148,163,184,0.8);
+      transform: translateY(-0.5px);
+    }
+
+    .reset-btn:active {
+      transform: translateY(1px);
+    }
+
+    .reset-btn span {
+      font-size: 0.9em;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      <div class="app-title-block">
+        <h1>
+          Parkinson’s Risk Profile Explorer
+          <span class="badge">Toy Model · Educational</span>
+        </h1>
+        <p>
+          Adjust simplified “signature” components (genetic, environmental, gut–brain, cellular) and
+          see how a hypothetical probability distribution over lifetime Parkinson’s disease risk changes.
+          This is <strong>not</strong> a medical or diagnostic tool.
+        </p>
+      </div>
+      <div class="quick-metric">
+        <div class="quick-metric-label">Mean Modelled Risk</div>
+        <div class="quick-metric-value">
+          <span id="meanRiskPercent">1.0%</span>
+          <span class="quick-metric-chip" id="riskCategoryChip">Baseline-like</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="main-layout">
+      <!-- Controls panel -->
+      <section class="panel" aria-label="Mechanism controls">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Mechanistic Signatures</div>
+            <div class="panel-subtitle">
+              Toggle which PD-related mechanisms and exposures are “active” in the toy model.
+            </div>
+          </div>
+          <button id="resetBtn" class="reset-btn" type="button">
+            <span>⟲</span> Reset
+          </button>
+        </div>
+
+        <div class="controls-grid">
+          <!-- Genetic -->
+          <section class="control-section" aria-label="Genetic factors">
+            <div class="control-section-header">
+              <div class="control-section-title">Genetic</div>
+              <div class="control-section-tag">HasVariant(Person, Gene)</div>
+            </div>
+            <div class="control-group">
+              <div class="checkbox-row">
+                <label class="checkbox-row-main">
+                  <input type="checkbox" id="genHighRisk" />
+                  <div>
+                    <div class="checkbox-label-title">High–impact variant</div>
+                    <div class="checkbox-label-desc">
+                      E.g. monogenic or strong risk allele in SNCA / LRRK2 / GBA1.
+                    </div>
+                  </div>
+                </label>
+                <span class="pill pill-risk">↑ odds × 3.0</span>
+              </div>
+
+              <div class="checkbox-row">
+                <label class="checkbox-row-main">
+                  <input type="checkbox" id="genPolygenic" />
+                  <div>
+                    <div class="checkbox-label-title">Polygenic background</div>
+                    <div class="checkbox-label-desc">
+                      Elevated polygenic risk score above population mean.
+                    </div>
+                  </div>
+                </label>
+                <span class="pill pill-risk">↑ odds × 1.4</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- Environmental -->
+          <section class="control-section" aria-label="Environmental and occupational exposures">
+            <div class="control-section-header">
+              <div class="control-section-title">Environmental</div>
+              <div class="control-section-tag">ChronicExposure(Person, Toxin)</div>
+            </div>
+            <div class="control-group">
+              <div class="checkbox-row">
+                <label class="checkbox-row-main">
+                  <input type="checkbox" id="pesticides" />
+                  <div>
+                    <div class="checkbox-label-title">Pesticides / herbicides</div>
+                    <div class="checkbox-label-desc">
+                      Paraquat / rotenone-like chronic exposure.
+                    </div>
+                  </div>
+                </label>
+                <span class="pill pill-risk">↑ odds × 1.6</span>
+              </div>
+
+              <div class="checkbox-row">
+                <label class="checkbox-row-main">
+                  <input type="checkbox" id="solvents" />
+                  <div>
+                    <div class="checkbox-label-title">Industrial solvents</div>
+                    <div class="checkbox-label-desc">
+                      Trichloroethylene, similar chlorinated solvents.
+                    </div>
+                  </div>
+                </label>
+                <span class="pill pill-risk">↑ odds × 1.4</span>
+              </div>
+
+              <div class="checkbox-row">
+                <label class="checkbox-row-main">
+                  <input type="checkbox" id="airPollution" />
+                  <div>
+                    <div class="checkbox-label-title">Air pollution / metals</div>
+                    <div class="checkbox-label-desc">
+                      Chronic fine particulate or heavy metal exposure.
+                    </div>
+                  </div>
+                </label>
+                <span class="pill pill-risk">↑ odds × 1.2</span>
+              </div>
+
+              <div class="checkbox-row">
+                <label class="checkbox-row-main">
+                  <input type="checkbox" id="smoking" />
+                  <div>
+                    <div class="checkbox-label-title">Long-term smoking</div>
+                    <div class="checkbox-label-desc">
+                      Commonly modelled protective association.
+                    </div>
+                  </div>
+                </label>
+                <span class="pill pill-protective">↓ odds × 0.7</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- Gut–brain -->
+          <section class="control-section" aria-label="Gut–brain axis">
+            <div class="control-section-header">
+              <div class="control-section-title">Gut–Brain</div>
+              <div class="control-section-tag">GutDysbiosis(Person, Time)</div>
+            </div>
+            <div class="control-group">
+              <div class="checkbox-row">
+                <label class="checkbox-row-main">
+                  <input type="checkbox" id="gutDysbiosis" />
+                  <div>
+                    <div class="checkbox-label-title">Gut dysbiosis</div>
+                    <div class="checkbox-label-desc">
+                      Altered microbiome linked to inflammation &amp; α-syn.
+                    </div>
+                  </div>
+                </label>
+                <span class="pill pill-risk">↑ odds × 1.3</span>
+              </div>
+
+              <div class="checkbox-row">
+                <label class="checkbox-row-main">
+                  <input type="checkbox" id="gutBarrier" />
+                  <div>
+                    <div class="checkbox-label-title">Leaky gut / barrier defect</div>
+                    <div class="checkbox-label-desc">
+                      Increased gut permeability &amp; immune activation.
+                    </div>
+                  </div>
+                </label>
+                <span class="pill pill-risk">↑ odds × 1.2</span>
+              </div>
+
+              <div class="checkbox-row">
+                <label class="checkbox-row-main">
+                  <input type="checkbox" id="vagalPath" />
+                  <div>
+                    <div class="checkbox-label-title">Vagal propagation path</div>
+                    <div class="checkbox-label-desc">
+                      Strong α-syn gut→brainstem propagation route.
+                    </div>
+                  </div>
+                </label>
+                <span class="pill pill-risk">↑ odds × 1.25</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- Cellular & inflammation -->
+          <section class="control-section" aria-label="Cellular mechanisms">
+            <div class="control-section-header">
+              <div class="control-section-title">Cellular</div>
+              <div class="control-section-tag">AggregatedSyn · Mitophagy · Inflammation</div>
+            </div>
+            <div class="control-group">
+              <div class="checkbox-row">
+                <label class="checkbox-row-main">
+                  <input type="checkbox" id="mitoDys" />
+                  <div>
+                    <div class="checkbox-label-title">Mitochondrial dysfunction</div>
+                    <div class="checkbox-label-desc">
+                      Complex I defects, ROS overload, bioenergetic stress.
+                    </div>
+                  </div>
+                </label>
+                <span class="pill pill-risk">↑ odds × 1.5</span>
+              </div>
+
+              <div class="checkbox-row">
+                <label class="checkbox-row-main">
+                  <input type="checkbox" id="autophagyDefect" />
+                  <div>
+                    <div class="checkbox-label-title">Autophagy / lysosomal defect</div>
+                    <div class="checkbox-label-desc">
+                      α-syn clearance impairment, GBA1 / LRRK2-like.
+                    </div>
+                  </div>
+                </label>
+                <span class="pill pill-risk">↑ odds × 1.6</span>
+              </div>
+
+              <div class="checkbox-row">
+                <label class="checkbox-row-main">
+                  <input type="checkbox" id="microglia" />
+                  <div>
+                    <div class="checkbox-label-title">Chronic neuroinflammation</div>
+                    <div class="checkbox-label-desc">
+                      Primed microglia &amp; cytokine exposure in nigrostriatal regions.
+                    </div>
+                  </div>
+                </label>
+                <span class="pill pill-risk">↑ odds × 1.3</span>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="summary-row">
+          <div class="summary-badges" id="activeMechanisms">
+            <!-- dynamically filled with active mechanism labels -->
+          </div>
+          <div class="summary-row-right">
+            <div class="summary-status" id="summaryStatus">
+              Current profile:
+              <span>~ baseline</span>
+            </div>
+            <div class="summary-bar-wrapper" aria-hidden="true">
+              <div class="summary-bar-inner" id="summaryBar"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Chart panel -->
+      <section class="panel" aria-label="Risk distribution">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Risk Distribution</div>
+            <div class="panel-subtitle">
+              Gaussian-like probability density over lifetime PD risk, based on a simple odds–ratio model.
+            </div>
+          </div>
+        </div>
+
+        <div class="chart-container">
+          <div class="chart-main">
+            <div class="chart-legend-row">
+              <div class="legend-items">
+                <div class="legend-item">
+                  <span class="legend-swatch baseline"></span>
+                  <span>Population baseline (1% mean)</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-swatch"></span>
+                  <span>Scenario with current signatures</span>
+                </div>
+              </div>
+              <div>
+                <span style="font-size:0.7rem;color:var(--text-muted);">
+                  Variance shrinks as more mechanisms are specified.
+                </span>
+              </div>
+            </div>
+
+            <div class="chart-wrapper">
+              <canvas id="riskCanvas" width="600" height="260" aria-label="Risk distribution chart"></canvas>
+            </div>
+
+            <div class="chart-x-axis-labels">
+              <span>0% risk</span>
+              <span>50%</span>
+              <span>100% risk</span>
+            </div>
+
+            <div class="risk-metrics-row">
+              <div class="metric-card">
+                <div class="metric-label">Baseline</div>
+                <div class="metric-value">
+                  <strong>1.0%</strong> mean risk (population)
+                </div>
+                <div class="metric-note">
+                  Used as a reference prior before applying mechanisms.
+                </div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">Current scenario</div>
+                <div class="metric-value">
+                  <strong id="currentMeanMetric">1.0%</strong> mean ·
+                  <span id="currentStdMetric">σ ≈ 7.0%</span>
+                </div>
+                <div class="metric-note" id="metricNote">
+                  Few signatures selected → broad, uncertain risk distribution.
+                </div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">Mechanism loading</div>
+                <div class="metric-value">
+                  <span id="mechanismCount">0</span> active signatures
+                </div>
+                <div class="metric-note">
+                  More mechanisms → stronger deviation from baseline.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="footer-note">
+            <span>
+              Conceptual only — not calibrated to real individual risk.
+              <strong>Do not use for medical decisions.</strong>
+            </span>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    // -----------------------------
+    // Core model parameters
+    // -----------------------------
+    const BASELINE_RISK = 0.01; // 1% lifetime risk (toy baseline)
+    const BASELINE_STD = 0.07;  // baseline distribution width (toy)
+    const MIN_STD = 0.02;       // minimum standard deviation when many factors active
+    const MAX_STD = 0.08;       // maximum standard deviation when almost no factor active
+    const MAX_FACTORS_FOR_STD = 8; // how many active mechanisms to treat as "well specified"
+
+    // Odds-ratio multipliers for each signature (toy values)
+    const FACTORS = {
+      genHighRisk: 3.0,
+      genPolygenic: 1.4,
+      pesticides: 1.6,
+      solvents: 1.4,
+      airPollution: 1.2,
+      smoking: 0.7, // protective
+      gutDysbiosis: 1.3,
+      gutBarrier: 1.2,
+      vagalPath: 1.25,
+      mitoDys: 1.5,
+      autophagyDefect: 1.6,
+      microglia: 1.3
+    };
+
+    const factorLabels = {
+      genHighRisk: "High-impact genetic variant",
+      genPolygenic: "Polygenic risk ↑",
+      pesticides: "Chronic pesticides",
+      solvents: "Industrial solvents",
+      airPollution: "Air pollution / metals",
+      smoking: "Long-term smoking",
+      gutDysbiosis: "Gut dysbiosis",
+      gutBarrier: "Leaky gut barrier",
+      vagalPath: "Vagal propagation route",
+      mitoDys: "Mitochondrial dysfunction",
+      autophagyDefect: "Autophagy / lysosomal defect",
+      microglia: "Chronic neuroinflammation"
+    };
+
+    // -----------------------------
+    // DOM elements
+    // -----------------------------
+    const checkboxes = {};
+    Object.keys(FACTORS).forEach(key => {
+      checkboxes[key] = document.getElementById(key);
+    });
+
+    const canvas = document.getElementById("riskCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const meanRiskSpan = document.getElementById("meanRiskPercent");
+    const riskCategoryChip = document.getElementById("riskCategoryChip");
+    const summaryStatus = document.getElementById("summaryStatus");
+    const summaryBar = document.getElementById("summaryBar");
+    const activeMechanismsDiv = document.getElementById("activeMechanisms");
+    const mechanismCountSpan = document.getElementById("mechanismCount");
+    const currentMeanMetricSpan = document.getElementById("currentMeanMetric");
+    const currentStdMetricSpan = document.getElementById("currentStdMetric");
+    const metricNoteSpan = document.getElementById("metricNote");
+    const resetBtn = document.getElementById("resetBtn");
+
+    // -----------------------------
+    // Math helpers
+    // -----------------------------
+    function logisticFromOdds(odds) {
+      return odds / (1 + odds);
+    }
+
+    function normalPdf(x, mean, std) {
+      if (std <= 0) return 0;
+      const z = (x - mean) / std;
+      return Math.exp(-0.5 * z * z) / (std * Math.sqrt(2 * Math.PI));
+    }
+
+    // -----------------------------
+    // Risk model logic
+    // -----------------------------
+    function computeRiskFromFactors() {
+      let activeKeys = [];
+      let combinedOdds = BASELINE_RISK / (1 - BASELINE_RISK);
+
+      Object.entries(FACTORS).forEach(([key, orValue]) => {
+        const box = checkboxes[key];
+        if (box && box.checked) {
+          combinedOdds *= orValue;
+          activeKeys.push(key);
+        }
+      });
+
+      const risk = logisticFromOdds(combinedOdds);
+
+      const factorCount = activeKeys.length;
+      const factorFraction = Math.min(factorCount / MAX_FACTORS_FOR_STD, 1.0);
+      const std = MAX_STD - (MAX_STD - MIN_STD) * factorFraction;
+
+      return {
+        risk,
+        std,
+        activeKeys
+      };
+    }
+
+    // Categorize risk level for UI
+    function riskCategory(riskValue) {
+      if (riskValue < 0.015) return { label: "Baseline-like", className: "low" };
+      if (riskValue < 0.04) return { label: "Mildly elevated", className: "moderate" };
+      if (riskValue < 0.10) return { label: "Moderate elevation", className: "high" };
+      return { label: "High elevation", className: "high" };
+    }
+
+    // -----------------------------
+    // Rendering logic
+    // -----------------------------
+    function drawChart(currentRisk, currentStd) {
+      const width = canvas.width;
+      const height = canvas.height;
+      ctx.clearRect(0, 0, width, height);
+
+      const margin = { left: 35, right: 15, top: 15, bottom: 25 };
+      const plotWidth = width - margin.left - margin.right;
+      const plotHeight = height - margin.top - margin.bottom;
+
+      function xToCanvas(x) {
+        return margin.left + x * plotWidth;
+      }
+      function yToCanvas(y) {
+        return margin.top + (1 - y) * plotHeight;
+      }
+
+      // Background
+      const gradBg = ctx.createLinearGradient(0, margin.top, 0, margin.top + plotHeight);
+      gradBg.addColorStop(0, "#020617");
+      gradBg.addColorStop(1, "#020617");
+      ctx.fillStyle = gradBg;
+      ctx.fillRect(margin.left, margin.top, plotWidth, plotHeight);
+
+      // Grid lines
+      ctx.strokeStyle = "rgba(75,85,99,0.45)";
+      ctx.lineWidth = 0.6;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      for (let i = 0; i <= 10; i += 2) {
+        const x = xToCanvas(i / 10);
+        ctx.moveTo(x, margin.top);
+        ctx.lineTo(x, margin.top + plotHeight);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Y axis baseline
+      ctx.strokeStyle = "rgba(75,85,99,0.9)";
+      ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      ctx.moveTo(margin.left, margin.top);
+      ctx.lineTo(margin.left, margin.top + plotHeight);
+      ctx.stroke();
+
+      // X axis
+      ctx.beginPath();
+      ctx.moveTo(margin.left, margin.top + plotHeight);
+      ctx.lineTo(margin.left + plotWidth, margin.top + plotHeight);
+      ctx.stroke();
+
+      const baselineMean = BASELINE_RISK;
+      const baselineStd = BASELINE_STD;
+
+      const samples = 200;
+      let baselineMax = 0;
+      let currentMax = 0;
+
+      const baselineYs = [];
+      const currentYs = [];
+
+      for (let i = 0; i <= samples; i++) {
+        const x = i / samples;
+        const b = normalPdf(x, baselineMean, baselineStd);
+        const c = normalPdf(x, currentRisk, currentStd);
+        baselineYs.push(b);
+        currentYs.push(c);
+        if (b > baselineMax) baselineMax = b;
+        if (c > currentMax) currentMax = c;
+      }
+
+      const globalMax = Math.max(baselineMax, currentMax) || 1;
+
+      // Draw baseline distribution (subtle)
+      ctx.beginPath();
+      for (let i = 0; i <= samples; i++) {
+        const x = i / samples;
+        const y = baselineYs[i] / globalMax;
+        const cx = xToCanvas(x);
+        const cy = yToCanvas(y * 0.9);
+        if (i === 0) ctx.moveTo(cx, cy);
+        else ctx.lineTo(cx, cy);
+      }
+      ctx.strokeStyle = "rgba(107,114,128,0.8)";
+      ctx.lineWidth = 1.1;
+      ctx.stroke();
+
+      // Fill area under baseline lightly
+      const baselineGradient = ctx.createLinearGradient(0, margin.top, 0, margin.top + plotHeight);
+      baselineGradient.addColorStop(0, "rgba(75,85,99,0.35)");
+      baselineGradient.addColorStop(1, "rgba(15,23,42,0)");
+      ctx.beginPath();
+      for (let i = 0; i <= samples; i++) {
+        const x = i / samples;
+        const y = baselineYs[i] / globalMax;
+        const cx = xToCanvas(x);
+        const cy = yToCanvas(y * 0.9);
+        if (i === 0) ctx.moveTo(cx, margin.top + plotHeight);
+        ctx.lineTo(cx, cy);
+      }
+      ctx.lineTo(xToCanvas(1), margin.top + plotHeight);
+      ctx.closePath();
+      ctx.fillStyle = baselineGradient;
+      ctx.fill();
+
+      // Draw current scenario distribution
+      ctx.beginPath();
+      for (let i = 0; i <= samples; i++) {
+        const x = i / samples;
+        const y = currentYs[i] / globalMax;
+        const cx = xToCanvas(x);
+        const cy = yToCanvas(y * 0.9);
+        if (i === 0) ctx.moveTo(cx, cy);
+        else ctx.lineTo(cx, cy);
+      }
+      ctx.strokeStyle = "#38bdf8";
+      ctx.lineWidth = 1.6;
+      ctx.shadowColor = "rgba(56,189,248,0.7)";
+      ctx.shadowBlur = 8;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      // Fill under current curve
+      const currentGradient = ctx.createLinearGradient(0, margin.top, 0, margin.top + plotHeight);
+      currentGradient.addColorStop(0, "rgba(56,189,248,0.35)");
+      currentGradient.addColorStop(1, "rgba(15,23,42,0)");
+      ctx.beginPath();
+      for (let i = 0; i <= samples; i++) {
+        const x = i / samples;
+        const y = currentYs[i] / globalMax;
+        const cx = xToCanvas(x);
+        const cy = yToCanvas(y * 0.9);
+        if (i === 0) ctx.moveTo(cx, margin.top + plotHeight);
+        ctx.lineTo(cx, cy);
+      }
+      ctx.lineTo(xToCanvas(1), margin.top + plotHeight);
+      ctx.closePath();
+      ctx.fillStyle = currentGradient;
+      ctx.fill();
+
+      // Draw vertical lines for means
+      function drawMeanLine(mean, color, dash) {
+        const cx = xToCanvas(mean);
+        ctx.beginPath();
+        ctx.moveTo(cx, margin.top);
+        ctx.lineTo(cx, margin.top + plotHeight);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1;
+        ctx.setLineDash(dash);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      drawMeanLine(baselineMean, "rgba(156,163,175,0.75)", [4, 4]);
+      drawMeanLine(currentRisk, "#38bdf8", [2, 3]);
+    }
+
+    function updateActiveMechanismsList(activeKeys) {
+      activeMechanismsDiv.innerHTML = "";
+
+      if (activeKeys.length === 0) {
+        const span = document.createElement("span");
+        span.className = "summary-pill";
+        span.textContent = "No active mechanisms — pure baseline";
+        activeMechanismsDiv.appendChild(span);
+        return;
+      }
+
+      activeKeys.forEach(key => {
+        const span = document.createElement("span");
+        span.className = "summary-pill";
+        span.textContent = factorLabels[key] || key;
+        activeMechanismsDiv.appendChild(span);
+      });
+    }
+
+    function updateUI() {
+      const { risk, std, activeKeys } = computeRiskFromFactors();
+      const riskPercent = (risk * 100).toFixed(1) + "%";
+      const stdPercent = (std * 100).toFixed(1) + "%";
+
+      meanRiskSpan.textContent = riskPercent;
+      currentMeanMetricSpan.textContent = riskPercent;
+      currentStdMetricSpan.textContent = `σ ≈ ${stdPercent}`;
+
+      const cat = riskCategory(risk);
+      riskCategoryChip.textContent = cat.label;
+
+      // Summary status text & bar
+      summaryStatus.classList.remove("low", "moderate", "high");
+      summaryStatus.classList.add(cat.className);
+      summaryStatus.innerHTML = `Current profile: <span>${cat.label}</span>`;
+
+      const barWidth = Math.max(4, Math.min(100, risk * 600));
+      summaryBar.style.width = `${barWidth}%`;
+
+      // Mechanism count
+      mechanismCountSpan.textContent = activeKeys.length.toString();
+
+      // Note about uncertainty
+      if (activeKeys.length <= 2) {
+        metricNoteSpan.textContent =
+          "Few signatures selected → broad, uncertain risk distribution.";
+      } else if (activeKeys.length <= 6) {
+        metricNoteSpan.textContent =
+          "Several mechanisms active → more concentrated distribution.";
+      } else {
+        metricNoteSpan.textContent =
+          "Many mechanisms active → risk estimate is sharply peaked around the mean.";
+      }
+
+      // Update list of active mechanism badges
+      updateActiveMechanismsList(activeKeys);
+
+      // Redraw chart
+      drawChart(risk, std);
+    }
+
+    function resetAll() {
+      Object.values(checkboxes).forEach(box => (box.checked = false));
+      updateUI();
+    }
+
+    // Attach listeners
+    Object.values(checkboxes).forEach(box => {
+      box.addEventListener("change", updateUI);
+    });
+    resetBtn.addEventListener("click", resetAll);
+
+    // Initial render
+    updateUI();
+  </script>
+</body>
+</html>
