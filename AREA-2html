@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>TRIPOD-AI Dashboard & Viability Explorer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --bg: #020617;
+      --card-bg: #020617;
+      --accent: #38bdf8;
+      --accent-soft: rgba(56, 189, 248, 0.18);
+      --border-subtle: rgba(148, 163, 184, 0.35);
+      --text-main: #e5e7eb;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 1.5rem;
+      background: radial-gradient(circle at top, #1e293b 0, #020617 55%);
+      color: var(--text-main);
+    }
+
+    .app-container {
+      max-width: 1300px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+      gap: 1.5rem;
+    }
+
+    @media (max-width: 960px) {
+      .app-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.98));
+      border-radius: 1.2rem;
+      border: 1px solid var(--border-subtle);
+      padding: 1.25rem 1.4rem;
+      box-shadow:
+        0 18px 45px rgba(15, 23, 42, 0.9),
+        0 0 0 1px rgba(15, 23, 42, 0.9);
+      backdrop-filter: blur(18px);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.8rem;
+      margin-bottom: 0.85rem;
+    }
+
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .pill {
+      border-radius: 999px;
+      padding: 0.12rem 0.6rem;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .upload-area {
+      border-radius: 0.9rem;
+      border: 1px dashed rgba(148, 163, 184, 0.6);
+      padding: 0.7rem 0.8rem;
+      background: rgba(15, 23, 42, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 0.7rem;
+    }
+
+    .upload-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    input[type="file"] {
+      font-size: 0.75rem;
+      color: var(--text-main);
+    }
+
+    .section-title {
+      margin-top: 0.7rem;
+      margin-bottom: 0.35rem;
+      font-size: 0.88rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      color: #e2e8f0;
+    }
+
+    .section-title .icon {
+      display: inline-flex;
+      width: 18px;
+      height: 18px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      font-size: 0.65rem;
+      background: var(--accent-soft);
+      color: var(--accent);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+      gap: 0.7rem;
+    }
+
+    @media (max-width: 960px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .small-card {
+      border-radius: 0.9rem;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      padding: 0.5rem 0.7rem;
+      background: rgba(15, 23, 42, 0.95);
+      max-height: 210px;
+      overflow: auto;
+    }
+
+    .small-card-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 0.3rem;
+      color: #e5e7f9;
+    }
+
+    .small-card-body {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      line-height: 1.35;
+    }
+
+    .slider-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      margin-bottom: 0.7rem;
+    }
+
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .slider-label-block {
+      flex: 1.1;
+      min-width: 0;
+    }
+
+    .slider-label {
+      font-size: 0.83rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.25rem;
+    }
+
+    .slider-label .hint {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .slider-value {
+      width: 52px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      font-size: 0.8rem;
+      color: #cbd5f5;
+    }
+
+    input[type="range"] {
+      flex: 2;
+      appearance: none;
+      height: 6px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 0, var(--accent-soft), rgba(15, 23, 42, 0.9));
+      outline: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #e0f2fe, var(--accent));
+      border: 1px solid rgba(15, 23, 42, 0.9);
+      box-shadow:
+        0 0 0 3px rgba(56, 189, 248, 0.25),
+        0 8px 14px rgba(15, 23, 42, 0.85);
+      cursor: pointer;
+      margin-top: -5px;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #e0f2fe, var(--accent));
+      border: 1px solid rgba(15, 23, 42, 0.9);
+      box-shadow:
+        0 0 0 3px rgba(56, 189, 248, 0.25),
+        0 8px 14px rgba(15, 23, 42, 0.85);
+      cursor: pointer;
+    }
+
+    input[type="range"]::-moz-range-track {
+      height: 6px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 0, var(--accent-soft), rgba(15, 23, 42, 0.9));
+    }
+
+    .comment-row {
+      margin: 0.15rem 0 0.45rem;
+    }
+
+    .comment-input {
+      width: 100%;
+      resize: vertical;
+      min-height: 40px;
+      max-height: 100px;
+      border-radius: 0.65rem;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      background: rgba(15, 23, 42, 0.95);
+      color: var(--text-main);
+      font-size: 0.78rem;
+      padding: 0.3rem 0.55rem;
+      font-family: inherit;
+    }
+
+    .comment-input::placeholder {
+      color: rgba(148, 163, 184, 0.7);
+    }
+
+    .comment-input:focus {
+      outline: none;
+      border-color: rgba(56, 189, 248, 0.85);
+      box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.5);
+    }
+
+    .results-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 0.9rem;
+      margin-top: 0.5rem;
+    }
+
+    .result-card {
+      border-radius: 1rem;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      padding: 0.6rem 0.75rem 0.7rem;
+      background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.95), #020617);
+    }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      margin-bottom: 0.55rem;
+    }
+
+    .result-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: #e5e7f9;
+    }
+
+    .result-mean {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .distribution-row {
+      display: grid;
+      grid-template-columns: 0.9fr 2.4fr 0.7fr;
+      align-items: center;
+      gap: 0.35rem;
+      margin-bottom: 0.2rem;
+    }
+
+    .distribution-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .dist-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .dist-bar-container {
+      position: relative;
+      width: 100%;
+      height: 9px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(51, 65, 85, 0.9);
+    }
+
+    .dist-bar-fill {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(56, 189, 248, 0.15), var(--accent));
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+      transition: width 120ms ease-out;
+    }
+
+    .dist-value {
+      font-size: 0.75rem;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      color: #cbd5f5;
+    }
+
+    .summary-text {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 0.4rem;
+      line-height: 1.4;
+    }
+
+    .summary-highlight {
+      color: #e5e7eb;
+    }
+
+    .badge {
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+    }
+
+    .badge.good {
+      border-color: rgba(34, 197, 94, 0.5);
+      color: #bbf7d0;
+    }
+
+    .badge.warn {
+      border-color: rgba(249, 115, 22, 0.6);
+      color: #fed7aa;
+    }
+
+    .badge.risk {
+      border-color: rgba(248, 113, 113, 0.7);
+      color: #fecaca;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+      margin-top: 0.45rem;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      background: rgba(15, 23, 42, 0.9);
+    }
+
+    .legend-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--accent);
+    }
+
+    .export-controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-top: 0.9rem;
+      margin-bottom: 0.35rem;
+    }
+
+    .export-button {
+      border-radius: 999px;
+      border: 1px solid rgba(56, 189, 248, 0.9);
+      padding: 0.45rem 0.9rem;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      background: radial-gradient(circle at 30% 0, rgba(56, 189, 248, 0.3), rgba(15, 23, 42, 0.95));
+      color: #e0f2fe;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .export-button:hover {
+      box-shadow: 0 0 18px rgba(56, 189, 248, 0.65);
+    }
+
+    .export-button:active {
+      transform: translateY(1px);
+    }
+
+    .export-box {
+      width: 100%;
+      min-height: 140px;
+      max-height: 220px;
+      resize: vertical;
+      border-radius: 0.85rem;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      background: rgba(15, 23, 42, 0.85);
+      color: #e5e7eb;
+      font-size: 0.78rem;
+      padding: 0.5rem 0.7rem;
+      font-family: "SF Mono", ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      white-space: pre;
+    }
+
+    .export-hint {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    .status-text {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.15rem;
+    }
+
+    .status-text strong {
+      color: #e5e7eb;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- LEFT: Dashboard & TRIPOD-AI sliders -->
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Imported Anticipation Snapshot</div>
+          <div class="subtitle">
+            Load the JSON from the first app, review the dashboard, then refine your assessment using TRIPOD-AI–style questions.
+          </div>
+        </div>
+        <span class="pill">Baseline → TRIPOD-AI</span>
+      </div>
+
+      <div class="upload-area">
+        <div class="upload-label">
+          <strong>1.</strong> Upload JSON snapshot from the previous app
+        </div>
+        <input type="file" id="fileInput" accept="application/json" />
+      </div>
+      <div class="status-text" id="statusText">
+        No file loaded yet. You can still use the TRIPOD-AI sliders, but importing helps link back to the original institution model.
+      </div>
+
+      <div class="section-title">
+        <span class="icon">D</span> Dashboard: Original Snapshot
+      </div>
+      <div class="dashboard-grid">
+        <div class="small-card">
+          <div class="small-card-title">Original sliders & comments</div>
+          <div class="small-card-body" id="originalSliders">
+            Waiting for JSON upload…
+          </div>
+        </div>
+        <div class="small-card">
+          <div class="small-card-title">Original outcome estimates</div>
+          <div class="small-card-body" id="originalOutcomes">
+            Waiting for JSON upload…
+          </div>
+        </div>
+      </div>
+
+      <div class="section-title">
+        <span class="icon">T</span> TRIPOD-AI – Reporting & Study Design
+      </div>
+      <div class="slider-group">
+        <div class="slider-row">
+          <div class="slider-label-block">
+            <div class="slider-label">
+              Reporting completeness
+              <span class="hint">Title, abstract, methods, results</span>
+            </div>
+          </div>
+          <input type="range" min="0" max="100" value="60" id="reportingCompleteness" />
+          <div class="slider-value" data-value-for="reportingCompleteness"></div>
+        </div>
+        <div class="comment-row">
+          <textarea
+            id="reportingCompleteness_comment"
+            class="comment-input"
+            placeholder="Which TRIPOD-AI items are fully addressed? Where are there gaps?"
+          ></textarea>
+        </div>
+
+        <div class="slider-row">
+          <div class="slider-label-block">
+            <div class="slider-label">
+              Data & participants clarity
+              <span class="hint">source, inclusion/exclusion, handling</span>
+            </div>
+          </div>
+          <input type="range" min="0" max="100" value="65" id="dataClarity" />
+          <div class="slider-value" data-value-for="dataClarity"></div>
+        </div>
+        <div class="comment-row">
+          <textarea
+            id="dataClarity_comment"
+            class="comment-input"
+            placeholder="How clearly are datasets, cohorts, and missing data described?"
+          ></textarea>
+        </div>
+
+        <div class="slider-row">
+          <div class="slider-label-block">
+            <div class="slider-label">
+              Model specification transparency
+              <span class="hint">architecture, tuning, training</span>
+            </div>
+          </div>
+          <input type="range" min="0" max="100" value="55" id="modelTransparency" />
+          <div class="slider-value" data-value-for="modelTransparency"></div>
+        </div>
+        <div class="comment-row">
+          <textarea
+            id="modelTransparency_comment"
+            class="comment-input"
+            placeholder="Architecture details, hyperparameters, software stack, reproducibility notes…"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="section-title">
+        <span class="icon">V</span> TRIPOD-AI – Validation & Performance
+      </div>
+      <div class="slider-group">
+        <div class="slider-row">
+          <div class="slider-label-block">
+            <div class="slider-label">
+              Internal & external validation
+              <span class="hint">data splits, external sites</span>
+            </div>
+          </div>
+          <input type="range" min="0" max="100" value="50" id="validationRigour" />
+          <div class="slider-value" data-value-for="validationRigour"></div>
+        </div>
+        <div class="comment-row">
+          <textarea
+            id="validationRigour_comment"
+            class="comment-input"
+            placeholder="Describe how the model has been validated (internal, temporal, external…)."
+          ></textarea>
+        </div>
+
+        <div class="slider-row">
+          <div class="slider-label-block">
+            <div class="slider-label">
+              Calibration & performance reporting
+              <span class="hint">calibration, discrimination, uncertainty</span>
+            </div>
+          </div>
+          <input type="range" min="0" max="100" value="55" id="performanceReporting" />
+          <div class="slider-value" data-value-for="performanceReporting"></div>
+        </div>
+        <div class="comment-row">
+          <textarea
+            id="performanceReporting_comment"
+            class="comment-input"
+            placeholder="Which metrics are reported? Are CIs, calibration plots, and decision curves included?"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="section-title">
+        <span class="icon">E</span> TRIPOD-AI – Ethics, Bias & Use Context
+      </div>
+      <div class="slider-group">
+        <div class="slider-row">
+          <div class="slider-label-block">
+            <div class="slider-label">
+              Bias & fairness assessment
+              <span class="hint">subgroup analyses, harms</span>
+            </div>
+          </div>
+          <input type="range" min="0" max="100" value="50" id="biasAssessment" />
+          <div class="slider-value" data-value-for="biasAssessment"></div>
+        </div>
+        <div class="comment-row">
+          <textarea
+            id="biasAssessment_comment"
+            class="comment-input"
+            placeholder="What bias/fairness analyses are reported? Residual ethical concerns?"
+          ></textarea>
+        </div>
+
+        <div class="slider-row">
+          <div class="slider-label-block">
+            <div class="slider-label">
+              Clinical / workflow integration
+              <span class="hint">intended use & setting</span>
+            </div>
+          </div>
+          <input type="range" min="0" max="100" value="60" id="workflowIntegration" />
+          <div class="slider-value" data-value-for="workflowIntegration"></div>
+        </div>
+        <div class="comment-row">
+          <textarea
+            id="workflowIntegration_comment"
+            class="comment-input"
+            placeholder="How clearly is the intended workflow, decision role, and human oversight described?"
+          ></textarea>
+        </div>
+
+        <div class="slider-row">
+          <div class="slider-label-block">
+            <div class="slider-label">
+              Governance & oversight
+              <span class="hint">monitoring, updates, accountability</span>
+            </div>
+          </div>
+          <input type="range" min="0" max="100" value="55" id="governance" />
+          <div class="slider-value" data-value-for="governance"></div>
+        </div>
+        <div class="comment-row">
+          <textarea
+            id="governance_comment"
+            class="comment-input"
+            placeholder="Post-deployment monitoring, update policy, incident handling, accountability structures…"
+          ></textarea>
+        </div>
+
+        <div class="slider-row">
+          <div class="slider-label-block">
+            <div class="slider-label">
+              Stakeholder & patient involvement
+              <span class="hint">PPIE / user engagement</span>
+            </div>
+          </div>
+          <input type="range" min="0" max="100" value="45" id="stakeholderInvolvement" />
+          <div class="slider-value" data-value-for="stakeholderInvolvement"></div>
+        </div>
+        <div class="comment-row">
+          <textarea
+            id="stakeholderInvolvement_comment"
+            class="comment-input"
+            placeholder="How have patients, clinicians, and other stakeholders been involved or consulted?"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="section-title">
+        <span class="icon">U</span> Overall uncertainty
+      </div>
+      <div class="slider-group">
+        <div class="slider-row">
+          <div class="slider-label-block">
+            <div class="slider-label">
+              Confidence in TRIPOD-AI assessment
+              <span class="hint">0 = very unsure, 100 = very confident</span>
+            </div>
+          </div>
+          <input type="range" min="0" max="100" value="50" id="uncertainty" />
+          <div class="slider-value" data-value-for="uncertainty"></div>
+        </div>
+        <div class="comment-row">
+          <textarea
+            id="uncertainty_comment"
+            class="comment-input"
+            placeholder="Where are you most uncertain in the above ratings (e.g., missing details, ongoing work)?"
+          ></textarea>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT: Distributions + Export -->
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">TRIPOD-AI Outcome Distributions</div>
+          <div class="subtitle">
+            Estimated probability distributions for viability, feasibility, ethics and sustainability,
+            given your TRIPOD-AI ratings.
+          </div>
+        </div>
+        <span class="pill">Viability • Feasibility • Ethics • Sustainability</span>
+      </div>
+
+      <div class="results-grid" id="resultsGrid">
+        <!-- Populated by JS -->
+      </div>
+
+      <div class="legend">
+        <div class="legend-item">
+          <span class="legend-dot"></span>
+          <span>Bar length = probability mass in that band</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot" style="opacity:0.4;"></span>
+          <span>Bands: Very Low, Low, Medium, High, Very High</span>
+        </div>
+      </div>
+
+      <div class="summary-text" id="summaryText"></div>
+
+      <div class="export-controls">
+        <button id="exportButton" class="export-button">
+          <span>⇩</span> Export Combined JSON
+        </button>
+        <div class="export-hint">
+          Exports the original snapshot (if loaded) plus all TRIPOD-AI sliders, comments, and new distributions.
+        </div>
+      </div>
+
+      <textarea
+        id="exportBox"
+        class="export-box"
+        placeholder="Your exported JSON will appear here after export. You can also download it as a file."
+        readonly
+      ></textarea>
+    </section>
+  </div>
+
+  <script>
+    // --- core modelling helpers ---
+
+    const OUTCOMES = [
+      { key: "viability", label: "Viability" },
+      { key: "feasibility", label: "Feasibility" },
+      { key: "ethics", label: "Ethics" },
+      { key: "sustainability", label: "Sustainability" }
+    ];
+
+    const BANDS = [
+      { key: "veryLow", label: "Very Low", center: 0.1 },
+      { key: "low", label: "Low", center: 0.3 },
+      { key: "medium", label: "Medium", center: 0.5 },
+      { key: "high", label: "High", center: 0.7 },
+      { key: "veryHigh", label: "Very High", center: 0.9 }
+    ];
+
+    let baseSnapshot = null;      // imported JSON from previous app
+    let lastTripodSummary = null; // latest computed outcome data
+
+    const tripodSliderIds = [
+      "reportingCompleteness",
+      "dataClarity",
+      "modelTransparency",
+      "validationRigour",
+      "performanceReporting",
+      "biasAssessment",
+      "workflowIntegration",
+      "governance",
+      "stakeholderInvolvement",
+      "uncertainty"
+    ];
+
+    function clamp01(x) {
+      return Math.min(1, Math.max(0, x));
+    }
+
+    // Gaussian-shaped distribution per band, controlled by mean and uncertainty
+    function computeDistribution(mean, uncertainty) {
+      mean = clamp01(mean);
+      const u = clamp01(uncertainty);
+      const sigma = 0.13 + 0.27 * (1 - u); // high confidence -> narrower; low -> wider
+
+      const probs = [];
+      let sum = 0;
+      for (const band of BANDS) {
+        const z = (band.center - mean) / sigma;
+        const density = Math.exp(-0.5 * z * z);
+        probs.push(density);
+        sum += density;
+      }
+
+      if (sum <= 0) {
+        return BANDS.map(() => 1 / BANDS.length);
+      }
+      return probs.map(p => p / sum);
+    }
+
+    function expectedValueFromDistribution(dist) {
+      let ev = 0;
+      for (let i = 0; i < BANDS.length; i++) {
+        ev += BANDS[i].center * dist[i];
+      }
+      return ev;
+    }
+
+    // Map TRIPOD sliders to outcome means (0–1)
+    function computeTripodOutcomeMeans(params) {
+      const v = {};
+      for (const [key, val] of Object.entries(params)) {
+        v[key] = clamp01(val / 100);
+      }
+
+      // Viability: how likely the project is to be implementable and worthwhile
+      const viability =
+        (v.reportingCompleteness +
+          v.dataClarity +
+          v.validationRigour +
+          v.performanceReporting +
+          v.workflowIntegration) / 5;
+
+      // Feasibility: practical and technical feasibility from reporting details
+      const feasibility =
+        (v.dataClarity +
+          v.modelTransparency +
+          v.validationRigour +
+          v.workflowIntegration +
+          v.governance) / 5;
+
+      // Ethics: bias assessment, governance, stakeholder involvement, model transparency
+      const ethics =
+        (v.biasAssessment +
+          v.governance +
+          v.stakeholderInvolvement +
+          v.modelTransparency) / 4;
+
+      // Sustainability: governance, workflow integration, reporting completeness, bias assessment
+      const sustainability =
+        (v.governance +
+          v.workflowIntegration +
+          v.reportingCompleteness +
+          v.biasAssessment) / 4;
+
+      return {
+        viability: clamp01(viability),
+        feasibility: clamp01(feasibility),
+        ethics: clamp01(ethics),
+        sustainability: clamp01(sustainability)
+      };
+    }
+
+    // Read TRIPOD slider values & comments
+    function readTripodParams() {
+      const result = {};
+      for (const id of tripodSliderIds) {
+        const el = document.getElementById(id);
+        result[id] = el ? parseInt(el.value, 10) || 0 : 0;
+      }
+      return result;
+    }
+
+    function readTripodComments() {
+      const comments = {};
+      for (const id of tripodSliderIds) {
+        const cEl = document.getElementById(id + "_comment");
+        comments[id] = cEl ? cEl.value || "" : "";
+      }
+      return comments;
+    }
+
+    // UI helpers
+    function updateSliderValueLabels() {
+      for (const id of tripodSliderIds) {
+        const slider = document.getElementById(id);
+        const valSpan = document.querySelector(`[data-value-for="${id}"]`);
+        if (slider && valSpan) {
+          valSpan.textContent = slider.value.padStart(3, " ");
+        }
+      }
+    }
+
+    function classifyBadge(evV, evF, evE, evS) {
+      const strong =
+        evV > 0.6 &&
+        evF > 0.6 &&
+        evE > 0.55 &&
+        evS > 0.55;
+      const ethicallyRisky = evE < 0.45 && evS < 0.5;
+      if (ethicallyRisky) return { label: "Ethical / sustainability concerns", cls: "risk" };
+      if (strong) return { label: "Well reported & promising", cls: "good" };
+      return { label: "Mixed – refine TRIPOD-AI reporting", cls: "warn" };
+    }
+
+    function renderDistributions() {
+      const params = readTripodParams();
+      const comments = readTripodComments(); // not used for calculation but kept for export
+      const confidence = params.uncertainty / 100; // 0–1
+
+      const outcomeMeans = computeTripodOutcomeMeans(params);
+      const resultsGrid = document.getElementById("resultsGrid");
+      resultsGrid.innerHTML = "";
+
+      const summary = {};
+
+      for (const outcome of OUTCOMES) {
+        const mean = outcomeMeans[outcome.key];
+        const dist = computeDistribution(mean, confidence);
+        const ev = expectedValueFromDistribution(dist);
+        summary[outcome.key] = { mean, dist, ev };
+
+        const card = document.createElement("div");
+        card.className = "result-card";
+
+        const header = document.createElement("div");
+        header.className = "result-header";
+        const title = document.createElement("div");
+        title.className = "result-title";
+        title.textContent = outcome.label;
+
+        const meanLabel = document.createElement("div");
+        meanLabel.className = "result-mean";
+        meanLabel.textContent = `Expected level: ${(ev * 100).toFixed(1)}%`;
+
+        header.appendChild(title);
+        header.appendChild(meanLabel);
+        card.appendChild(header);
+
+        for (let i = 0; i < BANDS.length; i++) {
+          const band = BANDS[i];
+          const prob = dist[i];
+
+          const row = document.createElement("div");
+          row.className = "distribution-row";
+
+          const label = document.createElement("div");
+          label.className = "dist-label";
+          label.textContent = band.label;
+
+          const barContainer = document.createElement("div");
+          barContainer.className = "dist-bar-container";
+          const barFill = document.createElement("div");
+          barFill.className = "dist-bar-fill";
+          barFill.style.width = `${(prob * 100).toFixed(1)}%`;
+          barContainer.appendChild(barFill);
+
+          const value = document.createElement("div");
+          value.className = "dist-value";
+          value.textContent = `${(prob * 100).toFixed(1)}%`;
+
+          row.appendChild(label);
+          row.appendChild(barContainer);
+          row.appendChild(value);
+          card.appendChild(row);
+        }
+
+        resultsGrid.appendChild(card);
+      }
+
+      lastTripodSummary = summary;
+
+      const summaryEl = document.getElementById("summaryText");
+      const v = summary.viability.ev;
+      const f = summary.feasibility.ev;
+      const e = summary.ethics.ev;
+      const s = summary.sustainability.ev;
+
+      const badge = classifyBadge(v, f, e, s);
+
+      summaryEl.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;margin-bottom:0.25rem;">
+          <div class="badge ${badge.cls}">${badge.label}</div>
+          <div class="badge">Confidence: ${(confidence * 100).toFixed(0)}%</div>
+        </div>
+        <div>
+          <span class="summary-highlight">Viability</span> ≈ ${(v * 100).toFixed(0)}%,
+          <span class="summary-highlight">Feasibility</span> ≈ ${(f * 100).toFixed(0)}%,
+          <span class="summary-highlight">Ethics</span> ≈ ${(e * 100).toFixed(0)}%,
+          <span class="summary-highlight">Sustainability</span> ≈ ${(s * 100).toFixed(0)}%.
+        </div>
+        <div style="margin-top:0.25rem;">
+          Use these as TRIPOD-AI–conditioned satisfaction checks: if viability/feasibility look high but ethics or sustainability lag,
+          that indicates where reporting and study design need strengthening before deployment.
+        </div>
+      `;
+    }
+
+    // Render imported snapshot dashboard
+    function renderDashboard() {
+      const slidersEl = document.getElementById("originalSliders");
+      const outcomesEl = document.getElementById("originalOutcomes");
+
+      if (!baseSnapshot) {
+        slidersEl.textContent = "Waiting for JSON upload…";
+        outcomesEl.textContent = "Waiting for JSON upload…";
+        return;
+      }
+
+      const sliders = baseSnapshot.sliders || {};
+      const derived = baseSnapshot.derivedOutcomes || null;
+
+      if (!Object.keys(sliders).length) {
+        slidersEl.textContent = "No slider data found in snapshot.";
+      } else {
+        const items = Object.entries(sliders)
+          .map(([id, obj]) => {
+            const v = obj && typeof obj.value === "number" ? obj.value : "?";
+            const c = obj && obj.comment ? String(obj.comment) : "";
+            const shortComment = c.length > 80 ? c.slice(0, 77) + "…" : c;
+            return `<div><strong>${id}</strong> → ${v} ` +
+                   (shortComment ? `<br><span style="color:#64748b;">“${shortComment}”</span>` : "") +
+                   `</div>`;
+          })
+          .join("<hr style='border:none;border-top:1px dashed rgba(51,65,85,0.8);margin:0.3rem 0;' />");
+
+        slidersEl.innerHTML = items || "No slider data found.";
+      }
+
+      if (!derived) {
+        outcomesEl.textContent = "No derived outcomes found in snapshot.";
+      } else {
+        const items = Object.entries(derived)
+          .map(([key, obj]) => {
+            const ev = obj && typeof obj.expectedValue === "number" ? obj.expectedValue : null;
+            const mean = obj && typeof obj.mean === "number" ? obj.mean : null;
+            return `<div>
+              <strong>${key}</strong> – expected level ≈ ${
+                ev !== null ? (ev * 100).toFixed(1) + "%" : "?"
+              }${mean !== null ? ` (mean=${(mean * 100).toFixed(1)}%)` : ""}
+            </div>`;
+          })
+          .join("<hr style='border:none;border-top:1px dashed rgba(51,65,85,0.8);margin:0.3rem 0;' />");
+
+        outcomesEl.innerHTML = items || "No derived outcome data found.";
+      }
+    }
+
+    // Handle file upload
+    function handleFileUpload(event) {
+      const file = event.target.files && event.target.files[0];
+      const statusText = document.getElementById("statusText");
+
+      if (!file) {
+        baseSnapshot = null;
+        statusText.innerHTML = "No file selected.";
+        renderDashboard();
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const text = e.target.result;
+          const parsed = JSON.parse(text);
+          baseSnapshot = parsed;
+          statusText.innerHTML = `
+            Loaded <strong>${file.name}</strong> (${file.size} bytes).
+            Generated at: <strong>${parsed.generatedAt || "unknown"}</strong>.
+          `;
+          renderDashboard();
+        } catch (err) {
+          baseSnapshot = null;
+          statusText.innerHTML = `<span style="color:#fecaca;">Error parsing JSON: ${err.message}</span>`;
+          renderDashboard();
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // Export combined JSON
+    function exportJson() {
+      const sliderValues = readTripodParams();
+      const comments = readTripodComments();
+
+      const tripodSliders = {};
+      for (const id of tripodSliderIds) {
+        tripodSliders[id] = {
+          value: sliderValues[id],
+          comment: comments[id]
+        };
+      }
+
+      const snapshot = {
+        generatedAt: new Date().toISOString(),
+        baseSnapshot: baseSnapshot || null,
+        tripodAssessment: {
+          sliders: tripodSliders,
+          outcomes: lastTripodSummary
+            ? Object.fromEntries(
+                Object.entries(lastTripodSummary).map(([key, val]) => [
+                  key,
+                  {
+                    mean: val.mean,
+                    expectedValue: val.ev,
+                    distributionBands: BANDS.map((b, i) => ({
+                      bandKey: b.key,
+                      bandLabel: b.label,
+                      probability: val.dist[i]
+                    }))
+                  }
+                ])
+              )
+            : null
+        }
+      };
+
+      const jsonText = JSON.stringify(snapshot, null, 2);
+
+      // Show in textbox
+      const exportBox = document.getElementById("exportBox");
+      exportBox.value = jsonText;
+
+      // Download as file
+      const blob = new Blob([jsonText], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "tripod_ai_assessment.json";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    // Initialise
+    function init() {
+      updateSliderValueLabels();
+      tripodSliderIds.forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.addEventListener("input", () => {
+            updateSliderValueLabels();
+            renderDistributions();
+          });
+        }
+      });
+
+      const fileInput = document.getElementById("fileInput");
+      if (fileInput) {
+        fileInput.addEventListener("change", handleFileUpload);
+      }
+
+      const exportButton = document.getElementById("exportButton");
+      if (exportButton) {
+        exportButton.addEventListener("click", exportJson);
+      }
+
+      renderDashboard();
+      renderDistributions();
+    }
+
+    document.addEventListener("DOMContentLoaded", init);
+  </script>
+</body>
+</html>
