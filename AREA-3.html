@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ENGAGE Institution – Multilayer Constraint Lattice</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f5f5f7;
+      color: #222;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    #app {
+      display: flex;
+      flex: 1;
+    }
+
+    /* Left side: lattice visualization */
+    #lattice-container {
+      flex: 2;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      padding: 16px;
+      box-sizing: border-box;
+      border-right: 1px solid #ddd;
+      background: #ffffff;
+    }
+
+    #title-bar {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    #title-bar h1 {
+      font-size: 18px;
+      margin: 0;
+    }
+
+    #title-bar small {
+      color: #777;
+    }
+
+    #legend {
+      display: flex;
+      gap: 16px;
+      font-size: 12px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend-node {
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      border: 1px solid #555;
+    }
+
+    .legend-node.fo { background: #e0f2ff; }
+    .legend-node.norm { background: #e9ffe0; }
+    .legend-node.conflict { background: #ffe4e0; }
+    .legend-node.dynamic { background: #f2e0ff; }
+
+    #lattice {
+      flex: 1;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      background: radial-gradient(circle at top left, #f9fbff, #ffffff);
+    }
+
+    .layer-label {
+      font-size: 11px;
+      fill: #888;
+    }
+
+    .node-circle {
+      cursor: pointer;
+      stroke-width: 1.5;
+      transition: transform 0.15s ease, stroke 0.15s ease, stroke-width 0.15s ease, opacity 0.15s ease;
+    }
+
+    .node-label {
+      font-size: 11px;
+      pointer-events: none;
+      fill: #222;
+    }
+
+    .edge {
+      stroke: #bbb;
+      stroke-width: 1.2;
+      opacity: 0.7;
+      pointer-events: none;
+    }
+
+    .edge.conflict-edge {
+      stroke-dasharray: 4 2;
+      stroke: #e57373;
+    }
+
+    .edge.dynamic-edge {
+      stroke-dasharray: 2 2;
+      stroke: #7e57c2;
+    }
+
+    .node-circle.fo { fill: #e0f2ff; stroke: #1e88e5; }
+    .node-circle.norm { fill: #e9ffe0; stroke: #43a047; }
+    .node-circle.conflict { fill: #ffe4e0; stroke: #e53935; }
+    .node-circle.dynamic { fill: #f2e0ff; stroke: #8e24aa; }
+
+    .node-circle.selected {
+      stroke-width: 3;
+      stroke: #ff8f00;
+      transform: scale(1.1);
+      z-index: 10;
+    }
+
+    .node-circle.related {
+      stroke-width: 2;
+      stroke: #ffca28;
+    }
+
+    .node-circle.dimmed {
+      opacity: 0.25;
+    }
+
+    .edge.highlight {
+      stroke-width: 2.4;
+      stroke: #ffca28;
+      opacity: 1;
+    }
+
+    .edge.dimmed {
+      opacity: 0.2;
+    }
+
+    /* Right side: details panel */
+    #details-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 16px;
+      box-sizing: border-box;
+      background: #fafafa;
+    }
+
+    #details-panel h2 {
+      margin-top: 0;
+      font-size: 16px;
+      margin-bottom: 8px;
+    }
+
+    #selected-node-name {
+      font-weight: 600;
+    }
+
+    .detail-row {
+      margin-bottom: 10px;
+      font-size: 13px;
+    }
+
+    .detail-label {
+      font-weight: 600;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .badge {
+      display: inline-flex;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .badge.fo { background: #e0f2ff; color: #1565c0; }
+    .badge.norm { background: #e9ffe0; color: #2e7d32; }
+    .badge.conflict { background: #ffe4e0; color: #c62828; }
+    .badge.dynamic { background: #f2e0ff; color: #6a1b9a; }
+
+    .slider-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    input[type="range"] {
+      flex: 1;
+    }
+
+    .slider-value {
+      font-size: 12px;
+      min-width: 28px;
+      text-align: right;
+      color: #444;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 80px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      padding: 8px;
+      font-family: inherit;
+      font-size: 13px;
+      resize: vertical;
+      box-sizing: border-box;
+    }
+
+    button {
+      border: none;
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 13px;
+      cursor: pointer;
+      background: #1e88e5;
+      color: #fff;
+      font-weight: 600;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+      transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.1s ease;
+    }
+
+    button:hover {
+      background: #1565c0;
+      transform: translateY(-1px);
+      box-shadow: 0 3px 6px rgba(0,0,0,0.18);
+    }
+
+    button:active {
+      transform: translateY(0);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    }
+
+    #status-message {
+      font-size: 12px;
+      color: #777;
+      margin-top: 6px;
+      min-height: 16px;
+    }
+
+    #no-selection {
+      font-size: 13px;
+      color: #666;
+      margin-top: 8px;
+    }
+
+    /* Scroll for details if needed */
+    #details-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #ccc;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div id="lattice-container">
+      <div id="title-bar">
+        <h1>ENGAGE Institution – Constraint Lattice</h1>
+        <small>Click nodes to explore signatures, norms, conflicts &amp; dynamics</small>
+      </div>
+
+      <div id="legend">
+        <div class="legend-item">
+          <span class="legend-node fo"></span> FO / Signatures
+        </div>
+        <div class="legend-item">
+          <span class="legend-node norm"></span> Norms / Obligations
+        </div>
+        <div class="legend-item">
+          <span class="legend-node conflict"></span> Conflicts
+        </div>
+        <div class="legend-item">
+          <span class="legend-node dynamic"></span> Dynamics / Reachability
+        </div>
+      </div>
+
+      <svg id="lattice"></svg>
+    </div>
+
+    <div id="details-panel">
+      <h2>Node Details</h2>
+      <div id="details-scroll">
+        <div id="no-selection">
+          Select a node in the lattice to inspect its role in the ENGAGE institution,
+          set degrees of constraint/conflict, and add comments.
+        </div>
+
+        <div id="selection-details" style="display:none;">
+          <div class="detail-row">
+            <span class="detail-label">Name</span>
+            <span id="selected-node-name"></span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Layer &amp; Type</span>
+            <span id="selected-node-layer"></span>
+            &nbsp;
+            <span id="selected-node-type"></span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Description</span>
+            <div id="selected-node-description" style="font-size:13px;"></div>
+          </div>
+
+          <hr />
+
+          <div class="detail-row">
+            <span class="detail-label">Degree of Constraint</span>
+            <div class="slider-container">
+              <input type="range" id="constraint-slider" min="0" max="100" step="1" />
+              <span class="slider-value" id="constraint-value">0</span>
+            </div>
+            <small style="color:#777;">How strongly does this node constrain others
+              (0 = negligible, 100 = very strong)?</small>
+          </div>
+
+          <div class="detail-row">
+            <span class="detail-label">Degree of Conflict</span>
+            <div class="slider-container">
+              <input type="range" id="conflict-slider" min="0" max="100" step="1" />
+              <span class="slider-value" id="conflict-value">0</span>
+            </div>
+            <small style="color:#777;">How strongly is this node implicated in conflicts?</small>
+          </div>
+
+          <div class="detail-row">
+            <span class="detail-label">Comment on this node</span>
+            <textarea id="node-comment" placeholder="Add your interpretation, concerns, or notes on this node..."></textarea>
+          </div>
+
+          <div class="detail-row">
+            <button id="save-node-state">Save Node Annotation</button>
+            <div id="status-message"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const svg = document.getElementById('lattice');
+      const width = svg.clientWidth || svg.parentElement.clientWidth || 800;
+      const height = svg.clientHeight || 500;
+
+      svg.setAttribute('width', width);
+      svg.setAttribute('height', height);
+
+      // ----------------------------------------------------------------------
+      // DATA MODEL
+      // ----------------------------------------------------------------------
+      // Layers correspond to “multilayer” Krippendorff-style constraint structure
+      const layers = [
+        { id: 'fo',        name: 'FO / Signatures' },
+        { id: 'norms',     name: 'Norms / Obligations' },
+        { id: 'conflicts', name: 'Conflicts' },
+        { id: 'dynamics',  name: 'Dynamics / Reachability' }
+      ];
+
+      // Example nodes (you can extend/replace this part with your real institution data)
+      const nodes = [
+        // FO / signature layer
+        { id: 'Stakeholder', label: 'Sort: Stakeholder',
+          layer: 'fo', type: 'sort',
+          description: 'Carrier of individual stakeholders affected or involved in ENGAGE.' },
+        { id: 'Issue', label: 'Sort: Issue',
+          layer: 'fo', type: 'sort',
+          description: 'Social, ethical or technical issue that engagement addresses.' },
+        { id: 'Event', label: 'Sort: Event',
+          layer: 'fo', type: 'sort',
+          description: 'Concrete engagement events (workshops, dialogues, etc.).' },
+        { id: 'Inclusive', label: 'Predicate: Inclusive(e)',
+          layer: 'fo', type: 'predicate',
+          description: 'Marks engagement events that include diverse affected stakeholders.' },
+        { id: 'Bidirectional', label: 'Predicate: Bidirectional(e)',
+          layer: 'fo', type: 'predicate',
+          description: 'Marks events where dialogue is two-way, not just informational.' },
+
+        // Norms layer
+        { id: 'O_inclusive', label: 'Norm: O(inclusive coverage)',
+          layer: 'norms', type: 'obligation',
+          description: 'Obligation: all affected stakeholders for controversial issues must be engaged inclusively and bidirectionally.' },
+        { id: 'O_timely', label: 'Norm: O(early influence)',
+          layer: 'norms', type: 'obligation',
+          description: 'Obligation: engagement should occur early enough to influence design decisions.' },
+        { id: 'O_variety_local', label: 'Norm: O(local variety match)',
+          layer: 'norms', type: 'obligation',
+          description: 'Obligation: frontline units should have enough variety to respond to local disturbances and concerns.' },
+        { id: 'O_variety_budget', label: 'Norm: O(variety budget)',
+          layer: 'norms', type: 'obligation',
+          description: 'Obligation: units should not exceed an organisational variety budget to maintain stability.' },
+
+        // Conflicts layer
+        { id: 'Conflict_local_vs_budget',
+          label: 'Conflict: local vs budget',
+          layer: 'conflicts', type: 'conflict',
+          description: 'Conflict between fully responsive local engagement and global variety budget constraints.' },
+        { id: 'Conflict_inclusive_vs_attenuation',
+          label: 'Conflict: inclusive vs attenuation',
+          layer: 'conflicts', type: 'conflict',
+          description: 'Conflict between broad inclusion of stakeholder concerns and strong attenuation in information channels.' },
+
+        // Dynamics layer
+        { id: 'Reachable_compliant',
+          label: 'Dynamic: reachable compliant config',
+          layer: 'dynamics', type: 'world',
+          description: 'A reachable configuration where ENGAGE norms and variety management are jointly satisfied.' },
+        { id: 'Reachable_noncompliant',
+          label: 'Dynamic: reachable non-compliant config',
+          layer: 'dynamics', type: 'world',
+          description: 'A reachable configuration where some obligations are violated, used for diagnosis.' }
+      ];
+
+      // Edges represent constraints, entailments, conflicts, dynamic reachability, etc.
+      const edges = [
+        // FO to Norms (what norms talk about)
+        { source: 'Stakeholder', target: 'O_inclusive', type: 'constrains' },
+        { source: 'Issue',       target: 'O_inclusive', type: 'constrains' },
+        { source: 'Event',       target: 'O_inclusive', type: 'constrains' },
+        { source: 'Inclusive',   target: 'O_inclusive', type: 'constrains' },
+        { source: 'Bidirectional', target: 'O_inclusive', type: 'constrains' },
+
+        { source: 'Event',  target: 'O_timely', type: 'constrains' },
+
+        // Norm-to-conflict edges
+        { source: 'O_variety_local',   target: 'Conflict_local_vs_budget', type: 'in_conflict' },
+        { source: 'O_variety_budget',  target: 'Conflict_local_vs_budget', type: 'in_conflict' },
+        { source: 'O_inclusive',       target: 'Conflict_inclusive_vs_attenuation', type: 'in_conflict' },
+
+        // Conflict to dynamics
+        { source: 'Conflict_local_vs_budget',      target: 'Reachable_noncompliant', type: 'dynamic' },
+        { source: 'Conflict_inclusive_vs_attenuation', target: 'Reachable_noncompliant', type: 'dynamic' },
+
+        // Norms to compliant dynamics
+        { source: 'O_inclusive',       target: 'Reachable_compliant', type: 'dynamic' },
+        { source: 'O_timely',          target: 'Reachable_compliant', type: 'dynamic' },
+        { source: 'O_variety_local',   target: 'Reachable_compliant', type: 'dynamic' }
+      ];
+
+      // ----------------------------------------------------------------------
+      // LAYOUT: multilayer lattice (simple layered layout, not force-based)
+      // ----------------------------------------------------------------------
+      const padding = { top: 40, right: 40, bottom: 40, left: 40 };
+      const usableWidth = width - padding.left - padding.right;
+      const usableHeight = height - padding.top - padding.bottom;
+
+      // Compute y positions by layer
+      const layerCount = layers.length;
+      const layerY = {};
+      layers.forEach((layer, i) => {
+        // Evenly distribute layers vertically
+        layerY[layer.id] = padding.top + (usableHeight / (layerCount - 1)) * i;
+      });
+
+      // Group nodes by layer for x positioning
+      const nodesByLayer = {};
+      layers.forEach(layer => { nodesByLayer[layer.id] = []; });
+      nodes.forEach(n => {
+        if (nodesByLayer[n.layer]) {
+          nodesByLayer[n.layer].push(n);
+        } else {
+          nodesByLayer[n.layer] = [n];
+        }
+      });
+
+      // Assign coordinates to nodes
+      const nodeIndexById = {};
+      nodes.forEach((n, idx) => {
+        nodeIndexById[n.id] = idx;
+      });
+
+      nodes.forEach(layeredNode => {
+        const layerNodes = nodesByLayer[layeredNode.layer] || [];
+        const index = layerNodes.indexOf(layeredNode);
+        const count = layerNodes.length || 1;
+        const x = padding.left + ((index + 1) / (count + 1)) * usableWidth;
+        const y = layerY[layeredNode.layer];
+        layeredNode.x = x;
+        layeredNode.y = y;
+      });
+
+      // ----------------------------------------------------------------------
+      // SVG ELEMENTS
+      // ----------------------------------------------------------------------
+      const svgns = "http://www.w3.org/2000/svg";
+
+      // Layer labels (left side)
+      layers.forEach(layer => {
+        const label = document.createElementNS(svgns, 'text');
+        label.setAttribute('x', 8);
+        label.setAttribute('y', layerY[layer.id] + 4);
+        label.setAttribute('class', 'layer-label');
+        label.textContent = layer.name;
+        svg.appendChild(label);
+
+        // subtle horizontal guide line
+        const line = document.createElementNS(svgns, 'line');
+        line.setAttribute('x1', padding.left);
+        line.setAttribute('y1', layerY[layer.id]);
+        line.setAttribute('x2', width - padding.right);
+        line.setAttribute('y2', layerY[layer.id]);
+        line.setAttribute('stroke', '#eee');
+        line.setAttribute('stroke-width', '1');
+        svg.appendChild(line);
+      });
+
+      // Draw edges first (so they are behind nodes)
+      const edgeElems = [];
+      edges.forEach(edge => {
+        const srcNode = nodes[nodeIndexById[edge.source]];
+        const tgtNode = nodes[nodeIndexById[edge.target]];
+        if (!srcNode || !tgtNode) return;
+
+        const line = document.createElementNS(svgns, 'line');
+        line.setAttribute('x1', srcNode.x);
+        line.setAttribute('y1', srcNode.y);
+        line.setAttribute('x2', tgtNode.x);
+        line.setAttribute('y2', tgtNode.y);
+        line.setAttribute('class', 'edge');
+
+        if (edge.type === 'in_conflict') {
+          line.classList.add('conflict-edge');
+        } else if (edge.type === 'dynamic') {
+          line.classList.add('dynamic-edge');
+        }
+
+        svg.appendChild(line);
+        edgeElems.push({ edge, elem: line });
+      });
+
+      // Draw nodes
+      const nodeElems = [];
+      nodes.forEach(node => {
+        const group = document.createElementNS(svgns, 'g');
+        group.setAttribute('transform', `translate(${node.x}, ${node.y})`);
+
+        const circle = document.createElementNS(svgns, 'circle');
+        circle.setAttribute('r', 16);
+        circle.setAttribute('class', `node-circle ${node.layerClass || nodeLayerToClass(node.layer)}`);
+        circle.dataset.nodeId = node.id;
+
+        const text = document.createElementNS(svgns, 'text');
+        text.setAttribute('class', 'node-label');
+        text.setAttribute('x', 0);
+        text.setAttribute('y', 30); // label below node
+        text.setAttribute('text-anchor', 'middle');
+        text.textContent = node.label;
+
+        group.appendChild(circle);
+        group.appendChild(text);
+        svg.appendChild(group);
+        nodeElems.push({ node, group, circle, text });
+      });
+
+      function nodeLayerToClass(layerId) {
+        if (layerId === 'fo') return 'fo';
+        if (layerId === 'norms') return 'norm';
+        if (layerId === 'conflicts') return 'conflict';
+        if (layerId === 'dynamics') return 'dynamic';
+        return '';
+      }
+
+      // ----------------------------------------------------------------------
+      // INTERACTION: selection, highlighting, and comments
+      // ----------------------------------------------------------------------
+      const nodeState = {}; // nodeId -> { constraint, conflict, comment }
+
+      let selectedNodeId = null;
+
+      const noSelectionEl = document.getElementById('no-selection');
+      const detailsEl = document.getElementById('selection-details');
+      const nameEl = document.getElementById('selected-node-name');
+      const layerEl = document.getElementById('selected-node-layer');
+      const typeEl = document.getElementById('selected-node-type');
+      const descEl = document.getElementById('selected-node-description');
+      const constraintSlider = document.getElementById('constraint-slider');
+      const conflictSlider = document.getElementById('conflict-slider');
+      const constraintValue = document.getElementById('constraint-value');
+      const conflictValue = document.getElementById('conflict-value');
+      const commentEl = document.getElementById('node-comment');
+      const saveBtn = document.getElementById('save-node-state');
+      const statusEl = document.getElementById('status-message');
+
+      function updateDetailsPanel(nodeId) {
+        if (!nodeId) {
+          noSelectionEl.style.display = '';
+          detailsEl.style.display = 'none';
+          return;
+        }
+        const node = nodes[nodeIndexById[nodeId]];
+        if (!node) return;
+
+        noSelectionEl.style.display = 'none';
+        detailsEl.style.display = '';
+
+        nameEl.textContent = node.label;
+        layerEl.innerHTML = `<span class="badge ${nodeLayerToClass(node.layer)}">${layerName(node.layer)}</span>`;
+        typeEl.textContent = node.type ? `(${node.type})` : '';
+        descEl.textContent = node.description || '';
+
+        const state = nodeState[nodeId] || { constraint: 0, conflict: 0, comment: '' };
+        constraintSlider.value = state.constraint;
+        conflictSlider.value = state.conflict;
+        constraintValue.textContent = state.constraint;
+        conflictValue.textContent = state.conflict;
+        commentEl.value = state.comment || '';
+        statusEl.textContent = '';
+      }
+
+      function layerName(id) {
+        const layer = layers.find(l => l.id === id);
+        return layer ? layer.name : id;
+      }
+
+      function highlightSelection(nodeId) {
+        // Reset all nodes/edges
+        nodeElems.forEach(({ circle }) => {
+          circle.classList.remove('selected', 'related', 'dimmed');
+        });
+        edgeElems.forEach(({ elem }) => {
+          elem.classList.remove('highlight', 'dimmed');
+        });
+
+        if (!nodeId) return;
+
+        const neighbors = new Set();
+        const incidentEdges = [];
+
+        // Gather neighbors via edges
+        edges.forEach((edge, i) => {
+          if (edge.source === nodeId) {
+            neighbors.add(edge.target);
+            incidentEdges.push(edgeElems[i]);
+          } else if (edge.target === nodeId) {
+            neighbors.add(edge.source);
+            incidentEdges.push(edgeElems[i]);
+          }
+        });
+
+        // Highlight selected node
+        nodeElems.forEach(({ node, circle }) => {
+          if (node.id === nodeId) {
+            circle.classList.add('selected');
+          } else if (neighbors.has(node.id)) {
+            circle.classList.add('related');
+          } else {
+            circle.classList.add('dimmed');
+          }
+        });
+
+        // Highlight edges incident to selected node, dim others
+        edgeElems.forEach((edgeObj) => {
+          const { edge, elem } = edgeObj;
+          const incident = (edge.source === nodeId || edge.target === nodeId);
+          if (incident) {
+            elem.classList.add('highlight');
+          } else {
+            elem.classList.add('dimmed');
+          }
+        });
+      }
+
+      // Attach click handlers
+      nodeElems.forEach(({ node, circle }) => {
+        circle.addEventListener('click', () => {
+          selectedNodeId = node.id;
+          highlightSelection(node.id);
+          updateDetailsPanel(node.id);
+        });
+      });
+
+      // Sliders: update numeric labels
+      constraintSlider.addEventListener('input', () => {
+        constraintValue.textContent = constraintSlider.value;
+      });
+      conflictSlider.addEventListener('input', () => {
+        conflictValue.textContent = conflictSlider.value;
+      });
+
+      // Save state for the selected node
+      saveBtn.addEventListener('click', () => {
+        if (!selectedNodeId) return;
+        nodeState[selectedNodeId] = {
+          constraint: parseInt(constraintSlider.value, 10) || 0,
+          conflict: parseInt(conflictSlider.value, 10) || 0,
+          comment: commentEl.value.trim()
+        };
+        statusEl.textContent = 'Annotation saved for this node.';
+        setTimeout(() => {
+          statusEl.textContent = '';
+        }, 1500);
+      });
+    });
+  </script>
+</body>
+</html>
