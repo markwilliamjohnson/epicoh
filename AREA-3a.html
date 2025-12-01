@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ENGAGE Institution – Probabilistic Explorer</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f5f5f7;
+      color: #222;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    #app {
+      display: flex;
+      flex: 1;
+    }
+
+    /* Left: structure browser */
+    #sidebar {
+      flex: 1.1;
+      border-right: 1px solid #ddd;
+      background: #ffffff;
+      padding: 14px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    h1 {
+      font-size: 18px;
+      margin: 0 0 4px 0;
+    }
+
+    h2 {
+      font-size: 14px;
+      margin: 12px 0 6px 0;
+    }
+
+    select, textarea {
+      width: 100%;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      padding: 6px 8px;
+      font-size: 13px;
+      box-sizing: border-box;
+      font-family: inherit;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .section {
+      font-size: 13px;
+    }
+
+    .section-block {
+      margin-bottom: 8px;
+    }
+
+    .badge {
+      display: inline-flex;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .badge.signature { background: #e0f2ff; color: #1565c0; }
+    .badge.sentence { background: #e9ffe0; color: #2e7d32; }
+    .badge.model { background: #f2e0ff; color: #6a1b9a; }
+
+    .meta-list {
+      margin: 0;
+      padding-left: 18px;
+      font-size: 12px;
+      color: #444;
+    }
+
+    .meta-list li {
+      margin-bottom: 2px;
+    }
+
+    .label-inline {
+      font-size: 12px;
+      font-weight: 600;
+      margin-right: 4px;
+    }
+
+    /* Right: probability chart & details */
+    #main {
+      flex: 2;
+      display: flex;
+      flex-direction: column;
+      padding: 14px;
+      box-sizing: border-box;
+      gap: 8px;
+    }
+
+    #controls-top {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    #controls-top > div {
+      font-size: 13px;
+    }
+
+    #chart-container {
+      flex: 1;
+      border-radius: 12px;
+      background: #ffffff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      padding: 12px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #chart-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    #chart {
+      flex: 1;
+      border-radius: 8px;
+      background: radial-gradient(circle at top left, #f9fbff, #ffffff);
+      border: 1px solid #eee;
+      position: relative;
+    }
+
+    #chart svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    #chart-footer {
+      font-size: 11px;
+      color: #777;
+      margin-top: 4px;
+    }
+
+    #details-bottom {
+      border-radius: 10px;
+      background: #ffffff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      padding: 10px;
+      font-size: 12px;
+    }
+
+    #details-bottom p {
+      margin: 4px 0;
+    }
+
+    #dist-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 4px;
+      font-size: 11px;
+    }
+
+    #dist-table th,
+    #dist-table td {
+      border: 1px solid #eee;
+      padding: 4px 6px;
+      text-align: left;
+    }
+
+    #dist-table th {
+      background: #fafafa;
+    }
+
+    .bar-rect {
+      transition: all 0.15s ease;
+    }
+
+    .bar-rect:hover {
+      opacity: 0.85;
+    }
+
+    .bar-label {
+      font-size: 10px;
+      fill: #333;
+    }
+
+    .axis-label {
+      font-size: 10px;
+      fill: #777;
+    }
+
+    .mode-select {
+      font-size: 12px;
+      padding: 4px 6px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    .inline-select {
+      font-size: 12px;
+      padding: 3px 6px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- Left side: structure browser -->
+    <div id="sidebar">
+      <h1>ENGAGE – Probabilistic Institution Explorer</h1>
+      <div style="font-size:12px;color:#555;margin-bottom:6px;">
+        Explore signatures, sentences, models, and view their satisfaction as probability distributions.
+      </div>
+
+      <!-- Signature selection -->
+      <div class="section">
+        <h2>Signature</h2>
+        <div class="section-block">
+          <select id="signature-select"></select>
+        </div>
+        <div class="section-block">
+          <span class="badge signature">Signature</span>
+          <div id="signature-description" style="margin-top:4px;font-size:12px;color:#444;"></div>
+        </div>
+        <div class="section-block">
+          <div class="label-inline">Sorts:</div>
+          <ul id="signature-sorts" class="meta-list"></ul>
+        </div>
+        <div class="section-block">
+          <div class="label-inline">Predicates / Functions:</div>
+          <ul id="signature-preds" class="meta-list"></ul>
+        </div>
+        <div class="section-block">
+          <div class="label-inline">Modal/Deontic:</div>
+          <ul id="signature-modal" class="meta-list"></ul>
+        </div>
+      </div>
+
+      <!-- Sentence selection -->
+      <div class="section">
+        <h2>Sentence</h2>
+        <div class="section-block">
+          <select id="sentence-select"></select>
+        </div>
+        <div class="section-block">
+          <span class="badge sentence">Sentence</span>
+          <div id="sentence-description" style="margin-top:4px;font-size:12px;color:#444;"></div>
+        </div>
+        <div class="section-block">
+          <div class="label-inline">Formal:</div>
+          <div id="sentence-formula" style="font-family:monospace;font-size:11px;color:#333;"></div>
+        </div>
+      </div>
+
+      <!-- Model selection / description -->
+      <div class="section">
+        <h2>Model</h2>
+        <div class="section-block">
+          <select id="model-select"></select>
+        </div>
+        <div class="section-block">
+          <span class="badge model">Model</span>
+          <div id="model-description" style="margin-top:4px;font-size:12px;color:#444;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right side: probability chart & details -->
+    <div id="main">
+      <div id="controls-top">
+        <div>
+          <span class="label-inline">View mode:</span>
+          <select id="view-mode" class="mode-select">
+            <option value="sentence-over-models">
+              Selected sentence across models
+            </option>
+            <option value="model-over-sentences">
+              Selected model across sentences
+            </option>
+          </select>
+        </div>
+        <div style="font-size:12px;color:#666;">
+          The y-axis shows P(truth) in [0,1] for the selected configuration.
+        </div>
+      </div>
+
+      <div id="chart-container">
+        <div id="chart-title"></div>
+        <div id="chart">
+          <!-- SVG chart is inserted here -->
+        </div>
+        <div id="chart-footer">
+          Bars represent probability of satisfaction given a finite probability distribution over worlds in the chosen model.
+        </div>
+      </div>
+
+      <div id="details-bottom">
+        <p><strong>Distribution details</strong></p>
+        <table id="dist-table">
+          <thead>
+          <tr>
+            <th>Label</th>
+            <th>Probability</th>
+          </tr>
+          </thead>
+          <tbody id="dist-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ------------------------------------------------------------------------
+    // DATA: toy ENGAGE institution with probabilistic models
+    // ------------------------------------------------------------------------
+
+    // Signatures
+    const signatures = [
+      {
+        id: 'Sigma_Engage',
+        name: 'Σ_Engage (base ENGAGE + org)',
+        description: 'Base first-order modal/deontic signature for ENGAGE with stakeholder, issue, event and organisational/variety structure.',
+        sorts: [
+          'Stakeholder', 'Group', 'Issue', 'Channel', 'Event', 'Artefact', 'Time',
+          'Unit', 'Role', 'EnvSeg', 'Disturbance', 'Signal', 'Nat'
+        ],
+        predicates: [
+          'MemberOf(Stakeholder, Group)',
+          'AffectedBy(Stakeholder, Issue)',
+          'Participates(Stakeholder, Event)',
+          'Discusses(Event, Issue)',
+          'Inclusive(Event)',
+          'Bidirectional(Event)',
+          'Early(Event)',
+          'Influential(Event)',
+          'FrontlineUnit(Unit)',
+          'CoordinationUnit(Unit)',
+          'VarUnit(Unit, Nat)',
+          'VarDist(Disturbance, Nat)'
+        ],
+        functions: [
+          'IssueOf(Disturbance) : Issue',
+          'CurrentLoad(Unit) : Nat'
+        ],
+        modalOperators: ['□', '◇', 'O', 'P']
+      }
+    ];
+
+    // Sentences (formulas)
+    const sentences = [
+      {
+        id: 'phi_inclusive',
+        signatureId: 'Sigma_Engage',
+        name: 'φ_inclusive (inclusive coverage)',
+        description: 'All stakeholders affected by controversial issues participate in an inclusive and bidirectional event discussing that issue.',
+        formula: '∀s, i. AffectedBy(s, i) ∧ Controversial(i) → ∃e. Participates(s,e) ∧ Discusses(e,i) ∧ Inclusive(e) ∧ Bidirectional(e)'
+      },
+      {
+        id: 'phi_timely',
+        signatureId: 'Sigma_Engage',
+        name: 'φ_timely (early influence)',
+        description: 'Every decision on a controversial issue is preceded by at least one early, influential engagement event on that issue.',
+        formula: '∀i, d. Decision(d) ∧ Discusses(d, i) ∧ Controversial(i) → ∃e. Discusses(e, i) ∧ Early(e) ∧ Influential(e)'
+      },
+      {
+        id: 'phi_variety_local',
+        signatureId: 'Sigma_Engage',
+        name: 'φ_variety_local (local variety matches disturbance)',
+        description: 'Frontline units that face a disturbance have enough variety to respond to it or escalate to a unit that does.',
+        formula: '∀u, d. FrontlineUnit(u) ∧ Faces(u,d) → VarDist(d) ≤ VarUnit(u) ∨ ∃u\'. CoordUnit(u\') ∧ Escalates(u,d,u\') ∧ VarDist(d) ≤ VarUnit(u\')'
+      },
+      {
+        id: 'phi_budget',
+        signatureId: 'Sigma_Engage',
+        name: 'φ_budget (variety budget respected)',
+        description: 'Each unit respects an upper bound B on its effective variety.',
+        formula: '∀u. CurrentLoad(u) ≤ B'
+      },
+      {
+        id: 'O_phi_inclusive',
+        signatureId: 'Sigma_Engage',
+        name: 'O φ_inclusive',
+        description: 'It is obligatory that inclusive coverage holds.',
+        formula: 'O φ_inclusive'
+      },
+      {
+        id: 'O_phi_variety_local',
+        signatureId: 'Sigma_Engage',
+        name: 'O φ_variety_local',
+        description: 'It is obligatory that local variety matches or is properly escalated.',
+        formula: 'O φ_variety_local'
+      }
+    ];
+
+    // Models: each model is a Kripke model with a finite set of worlds and a
+    // probability distribution over worlds. For this UI, we store directly:
+    //
+    //   probabilities[ sentenceId ] = P(sentence true)
+    //
+    // so we don’t have to implement a full logical evaluator in the browser.
+    //
+    // Intuitively:
+    //   - "Ideal" model: norms almost always satisfied
+    //   - "Stressed" model: norms often violated
+    //   - "Mixed" model: intermediate situation
+
+    const models = [
+      {
+        id: 'M_ideal',
+        name: 'M_ideal (highly compliant)',
+        description: 'A model where ENGAGE obligations and variety-management constraints are almost always fulfilled across possible worlds.',
+        signatureId: 'Sigma_Engage',
+        probabilities: {
+          phi_inclusive: 0.96,
+          phi_timely: 0.91,
+          phi_variety_local: 0.93,
+          phi_budget: 0.88,
+          O_phi_inclusive: 1.0,          // obligation holds in all worlds
+          O_phi_variety_local: 1.0       // obligation holds in all worlds
+        }
+      },
+      {
+        id: 'M_stressed',
+        name: 'M_stressed (frequent conflict)',
+        description: 'A model where variety constraints and resource limits regularly undermine inclusive local engagement.',
+        signatureId: 'Sigma_Engage',
+        probabilities: {
+          phi_inclusive: 0.45,
+          phi_timely: 0.55,
+          phi_variety_local: 0.60,
+          phi_budget: 0.92,
+          O_phi_inclusive: 1.0,
+          O_phi_variety_local: 1.0
+        }
+      },
+      {
+        id: 'M_mixed',
+        name: 'M_mixed (partial compliance)',
+        description: 'A model with intermediate behaviour: some trajectories satisfy ENGAGE principles, others fail due to variety bottlenecks.',
+        signatureId: 'Sigma_Engage',
+        probabilities: {
+          phi_inclusive: 0.70,
+          phi_timely: 0.75,
+          phi_variety_local: 0.68,
+          phi_budget: 0.80,
+          O_phi_inclusive: 1.0,
+          O_phi_variety_local: 1.0
+        }
+      }
+    ];
+
+    // ------------------------------------------------------------------------
+    // UI logic
+    // ------------------------------------------------------------------------
+    document.addEventListener('DOMContentLoaded', () => {
+      // Elements
+      const signatureSelect = document.getElementById('signature-select');
+      const sentenceSelect = document.getElementById('sentence-select');
+      const modelSelect = document.getElementById('model-select');
+
+      const signatureDescEl = document.getElementById('signature-description');
+      const signatureSortsEl = document.getElementById('signature-sorts');
+      const signaturePredsEl = document.getElementById('signature-preds');
+      const signatureModalEl = document.getElementById('signature-modal');
+
+      const sentenceDescEl = document.getElementById('sentence-description');
+      const sentenceFormulaEl = document.getElementById('sentence-formula');
+
+      const modelDescEl = document.getElementById('model-description');
+
+      const viewModeSelect = document.getElementById('view-mode');
+      const chartContainer = document.getElementById('chart');
+      const chartTitleEl = document.getElementById('chart-title');
+      const distTableBody = document.getElementById('dist-table-body');
+
+      // Populate signature select
+      signatures.forEach(sig => {
+        const opt = document.createElement('option');
+        opt.value = sig.id;
+        opt.textContent = sig.name;
+        signatureSelect.appendChild(opt);
+      });
+
+      // Populate sentence select
+      sentences.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.id;
+        opt.textContent = s.name;
+        sentenceSelect.appendChild(opt);
+      });
+
+      // Populate model select
+      models.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m.id;
+        opt.textContent = m.name;
+        modelSelect.appendChild(opt);
+      });
+
+      // Helpers to find objects
+      function getSignature(id) {
+        return signatures.find(s => s.id === id) || signatures[0];
+      }
+
+      function getSentence(id) {
+        return sentences.find(s => s.id === id) || sentences[0];
+      }
+
+      function getModel(id) {
+        return models.find(m => m.id === id) || models[0];
+      }
+
+      // Update signature UI
+      function updateSignatureUI() {
+        const sigId = signatureSelect.value || signatures[0].id;
+        const sig = getSignature(sigId);
+
+        signatureDescEl.textContent = sig.description || '';
+
+        signatureSortsEl.innerHTML = '';
+        (sig.sorts || []).forEach(sort => {
+          const li = document.createElement('li');
+          li.textContent = sort;
+          signatureSortsEl.appendChild(li);
+        });
+
+        signaturePredsEl.innerHTML = '';
+        const allPreds = (sig.predicates || []).concat(sig.functions || []);
+        allPreds.forEach(p => {
+          const li = document.createElement('li');
+          li.textContent = p;
+          signaturePredsEl.appendChild(li);
+        });
+
+        signatureModalEl.innerHTML = '';
+        (sig.modalOperators || []).forEach(op => {
+          const li = document.createElement('li');
+          li.textContent = op;
+          signatureModalEl.appendChild(li);
+        });
+      }
+
+      // Update sentence UI
+      function updateSentenceUI() {
+        const sentenceId = sentenceSelect.value || sentences[0].id;
+        const sentence = getSentence(sentenceId);
+        sentenceDescEl.textContent = sentence.description || '';
+        sentenceFormulaEl.textContent = sentence.formula || '';
+      }
+
+      // Update model UI
+      function updateModelUI() {
+        const modelId = modelSelect.value || models[0].id;
+        const model = getModel(modelId);
+        modelDescEl.textContent = model.description || '';
+      }
+
+      // Draw probability chart
+      function drawChart() {
+        chartContainer.innerHTML = ''; // clear
+
+        const viewMode = viewModeSelect.value;
+        const signatureId = signatureSelect.value || signatures[0].id;
+        const sentenceId = sentenceSelect.value || sentences[0].id;
+        const modelId = modelSelect.value || models[0].id;
+
+        const sentence = getSentence(sentenceId);
+        const model = getModel(modelId);
+
+        let labels = [];
+        let probs = [];
+        let title = '';
+
+        if (viewMode === 'sentence-over-models') {
+          // Fix sentence; show P(sentence true) across models
+          title = `P(${sentence.name} is true) across models`;
+          labels = models
+            .filter(m => m.signatureId === signatureId)
+            .map(m => m.name);
+          probs = models
+            .filter(m => m.signatureId === signatureId)
+            .map(m => (m.probabilities[sentence.id] ?? 0));
+        } else {
+          // Fix model; show P(sentence true) across sentences
+          title = `P(sentences true) in model ${model.name}`;
+          labels = sentences
+            .filter(s => s.signatureId === signatureId)
+            .map(s => s.name);
+          probs = sentences
+            .filter(s => s.signatureId === signatureId)
+            .map(s => (model.probabilities[s.id] ?? 0));
+        }
+
+        chartTitleEl.textContent = title;
+
+        // Render table
+        distTableBody.innerHTML = '';
+        for (let i = 0; i < labels.length; i++) {
+          const tr = document.createElement('tr');
+          const tdLabel = document.createElement('td');
+          const tdProb = document.createElement('td');
+          tdLabel.textContent = labels[i];
+          tdProb.textContent = probs[i].toFixed(2);
+          tr.appendChild(tdLabel);
+          tr.appendChild(tdProb);
+          distTableBody.appendChild(tr);
+        }
+
+        // SVG bar chart
+        const svgNS = 'http://www.w3.org/2000/svg';
+        const svg = document.createElementNS(svgNS, 'svg');
+        svg.setAttribute('width', '100%');
+        svg.setAttribute('height', '100%');
+
+        const bbox = chartContainer.getBoundingClientRect();
+        const width = bbox.width || 600;
+        const height = bbox.height || 260;
+
+        const padding = { left: 50, right: 20, top: 10, bottom: 50 };
+        const innerWidth = width - padding.left - padding.right;
+        const innerHeight = height - padding.top - padding.bottom;
+
+        // Compute scales
+        const maxProb = 1.0;
+        const n = probs.length || 1;
+        const barWidth = innerWidth / Math.max(n, 1) * 0.6;
+        const barGap = innerWidth / Math.max(n, 1) * 0.4;
+
+        // Draw axes (y = probability)
+        const axis = document.createElementNS(svgNS, 'line');
+        axis.setAttribute('x1', padding.left);
+        axis.setAttribute('y1', padding.top);
+        axis.setAttribute('x2', padding.left);
+        axis.setAttribute('y2', padding.top + innerHeight);
+        axis.setAttribute('stroke', '#ccc');
+        axis.setAttribute('stroke-width', '1');
+        svg.appendChild(axis);
+
+        // Y-axis ticks at 0, 0.25, 0.5, 0.75, 1.0
+        const ticks = [0, 0.25, 0.5, 0.75, 1.0];
+        ticks.forEach(t => {
+          const y = padding.top + innerHeight * (1 - t / maxProb);
+
+          const tick = document.createElementNS(svgNS, 'line');
+          tick.setAttribute('x1', padding.left - 4);
+          tick.setAttribute('y1', y);
+          tick.setAttribute('x2', padding.left);
+          tick.setAttribute('y2', y);
+          tick.setAttribute('stroke', '#aaa');
+          tick.setAttribute('stroke-width', '1');
+          svg.appendChild(tick);
+
+          const text = document.createElementNS(svgNS, 'text');
+          text.setAttribute('x', padding.left - 8);
+          text.setAttribute('y', y + 3);
+          text.setAttribute('text-anchor', 'end');
+          text.setAttribute('class', 'axis-label');
+          text.textContent = t.toFixed(2);
+          svg.appendChild(text);
+        });
+
+        // Bars
+        for (let i = 0; i < n; i++) {
+          const prob = probs[i];
+          const barHeight = innerHeight * (prob / maxProb);
+          const x = padding.left + i * (barWidth + barGap) + barGap / 2;
+          const y = padding.top + innerHeight - barHeight;
+
+          const rect = document.createElementNS(svgNS, 'rect');
+          rect.setAttribute('x', x);
+          rect.setAttribute('y', y);
+          rect.setAttribute('width', barWidth);
+          rect.setAttribute('height', barHeight);
+          rect.setAttribute('class', 'bar-rect');
+          rect.setAttribute('fill', '#1e88e5');
+          rect.setAttribute('opacity', '0.8');
+          svg.appendChild(rect);
+
+          // label under each bar (trim if long)
+          const label = labels[i];
+          const shortLabel = label.length > 18 ? label.slice(0, 15) + '…' : label;
+          const text = document.createElementNS(svgNS, 'text');
+          text.setAttribute('x', x + barWidth / 2);
+          text.setAttribute('y', padding.top + innerHeight + 14);
+          text.setAttribute('text-anchor', 'middle');
+          text.setAttribute('class', 'bar-label');
+          text.textContent = shortLabel;
+          svg.appendChild(text);
+        }
+
+        chartContainer.appendChild(svg);
+      }
+
+      // Event listeners
+      signatureSelect.addEventListener('change', () => {
+        updateSignatureUI();
+        drawChart();
+      });
+
+      sentenceSelect.addEventListener('change', () => {
+        updateSentenceUI();
+        drawChart();
+      });
+
+      modelSelect.addEventListener('change', () => {
+        updateModelUI();
+        drawChart();
+      });
+
+      viewModeSelect.addEventListener('change', () => {
+        drawChart();
+      });
+
+      // Initial UI state
+      if (signatures.length > 0) {
+        signatureSelect.value = signatures[0].id;
+      }
+      if (sentences.length > 0) {
+        sentenceSelect.value = sentences[0].id;
+      }
+      if (models.length > 0) {
+        modelSelect.value = models[0].id;
+      }
+
+      updateSignatureUI();
+      updateSentenceUI();
+      updateModelUI();
+      drawChart();
+    });
+  </script>
+</body>
+</html>
