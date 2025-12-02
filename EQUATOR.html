@@ -1,0 +1,1565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>EQUATOR Interactive Explorer + Guided Tour</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --bg: #020617;
+      --card-bg: #020617;
+      --accent: #38bdf8;
+      --accent-soft: rgba(56, 189, 248, 0.18);
+      --border-subtle: rgba(148, 163, 184, 0.35);
+      --text-main: #e5e7eb;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 1.25rem;
+      background: radial-gradient(circle at top, #1e293b 0, #020617 55%);
+      color: var(--text-main);
+    }
+
+    .app-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+      gap: 1.4rem;
+    }
+
+    @media (max-width: 1024px) {
+      .app-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.94), rgba(15, 23, 42, 0.99));
+      border-radius: 1.1rem;
+      border: 1px solid var(--border-subtle);
+      padding: 1.1rem 1.3rem;
+      box-shadow:
+        0 18px 45px rgba(15, 23, 42, 0.9),
+        0 0 0 1px rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(16px);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.8rem;
+      margin-bottom: 0.85rem;
+    }
+
+    .card-title {
+      font-size: 1.15rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .pill {
+      border-radius: 999px;
+      padding: 0.12rem 0.6rem;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .project-form {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.6rem;
+      margin-bottom: 0.7rem;
+    }
+
+    @media (max-width: 900px) {
+      .project-form {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .field-label {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-bottom: 0.2rem;
+    }
+
+    .text-input, .text-area, .select-input {
+      width: 100%;
+      border-radius: 0.7rem;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      background: rgba(15, 23, 42, 0.96);
+      color: var(--text-main);
+      padding: 0.35rem 0.5rem;
+      font-size: 0.8rem;
+      font-family: inherit;
+    }
+
+    .text-input::placeholder,
+    .text-area::placeholder {
+      color: rgba(148, 163, 184, 0.75);
+    }
+
+    .text-input:focus,
+    .text-area:focus,
+    .select-input:focus {
+      outline: none;
+      border-color: rgba(56, 189, 248, 0.9);
+      box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.6);
+    }
+
+    .text-area {
+      min-height: 80px;
+      resize: vertical;
+      grid-column: 1 / -1;
+    }
+
+    .section-title {
+      margin-top: 0.8rem;
+      margin-bottom: 0.35rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      color: #e2e8f0;
+    }
+
+    .section-title .icon {
+      display: inline-flex;
+      width: 18px;
+      height: 18px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      font-size: 0.65rem;
+      background: var(--accent-soft);
+      color: var(--accent);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+    }
+
+    .checklist {
+      margin-top: 0.4rem;
+      max-height: calc(100vh - 220px);
+      overflow: auto;
+      padding-right: 0.4rem;
+    }
+
+    .item-card {
+      border-radius: 0.9rem;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      background: rgba(15, 23, 42, 0.97);
+      padding: 0.6rem 0.7rem 0.65rem;
+      margin-bottom: 0.55rem;
+      transition: box-shadow 0.12s ease-out, border-color 0.12s ease-out, transform 0.12s ease-out;
+    }
+
+    .item-card.tour-highlight {
+      border-color: rgba(251, 191, 36, 0.9);
+      box-shadow:
+        0 0 0 1px rgba(251, 191, 36, 0.8),
+        0 0 22px rgba(251, 191, 36, 0.45);
+      transform: translateY(-1px);
+    }
+
+    .item-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.4rem;
+      margin-bottom: 0.35rem;
+    }
+
+    .item-title {
+      font-size: 0.83rem;
+      font-weight: 600;
+    }
+
+    .item-tag {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      padding: 0.1rem 0.4rem;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      white-space: nowrap;
+    }
+
+    .item-description {
+      font-size: 0.77rem;
+      color: var(--text-muted);
+      margin-bottom: 0.35rem;
+    }
+
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .slider-label-block {
+      flex: 1.3;
+      min-width: 0;
+    }
+
+    .slider-label {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .slider-value {
+      width: 68px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      font-size: 0.8rem;
+      color: #cbd5f5;
+    }
+
+    input[type="range"] {
+      flex: 2;
+      appearance: none;
+      height: 6px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 0, var(--accent-soft), rgba(15, 23, 42, 0.9));
+      outline: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #e0f2fe, var(--accent));
+      border: 1px solid rgba(15, 23, 42, 0.9);
+      box-shadow:
+        0 0 0 3px rgba(56, 189, 248, 0.25),
+        0 8px 14px rgba(15, 23, 42, 0.85);
+      cursor: pointer;
+      margin-top: -5px;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #e0f2fe, var(--accent));
+      border: 1px solid rgba(15, 23, 42, 0.9);
+      box-shadow:
+        0 0 0 3px rgba(56, 189, 248, 0.25),
+        0 8px 14px rgba(15, 23, 42, 0.85);
+      cursor: pointer;
+    }
+
+    input[type="range"]::-moz-range-track {
+      height: 6px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 0, var(--accent-soft), rgba(15, 23, 42, 0.9));
+    }
+
+    .comment-input {
+      width: 100%;
+      resize: vertical;
+      min-height: 38px;
+      max-height: 80px;
+      border-radius: 0.65rem;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      background: rgba(15, 23, 42, 0.97);
+      color: var(--text-main);
+      font-size: 0.78rem;
+      padding: 0.3rem 0.45rem;
+      font-family: inherit;
+      margin-bottom: 0.25rem;
+    }
+
+    .comment-input::placeholder {
+      color: rgba(148, 163, 184, 0.75);
+    }
+
+    .comment-input:focus {
+      outline: none;
+      border-color: rgba(56, 189, 248, 0.9);
+      box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.6);
+    }
+
+    details {
+      font-size: 0.74rem;
+      color: var(--text-muted);
+    }
+
+    details summary {
+      cursor: pointer;
+      list-style: none;
+    }
+
+    details summary::-webkit-details-marker {
+      display: none;
+    }
+
+    details summary::before {
+      content: "❯";
+      display: inline-block;
+      margin-right: 0.35rem;
+      font-size: 0.7rem;
+      transition: transform 0.15s ease-out;
+    }
+
+    details[open] summary::before {
+      transform: rotate(90deg);
+    }
+
+    details[open] {
+      color: #cbd5f5;
+    }
+
+    .results-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 0.9rem;
+      margin-top: 0.5rem;
+    }
+
+    .result-card {
+      border-radius: 0.95rem;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      padding: 0.6rem 0.75rem 0.7rem;
+      background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.95), #020617);
+    }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      margin-bottom: 0.55rem;
+    }
+
+    .result-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: #e5e7f9;
+    }
+
+    .result-mean {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .distribution-row {
+      display: grid;
+      grid-template-columns: 0.9fr 2.4fr 0.7fr;
+      align-items: center;
+      gap: 0.35rem;
+      margin-bottom: 0.2rem;
+    }
+
+    .distribution-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .dist-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .dist-bar-container {
+      position: relative;
+      width: 100%;
+      height: 9px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(51, 65, 85, 0.9);
+    }
+
+    .dist-bar-fill {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(56, 189, 248, 0.15), var(--accent));
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+      transition: width 120ms ease-out;
+    }
+
+    .dist-value {
+      font-size: 0.75rem;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      color: #cbd5f5;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+      margin-top: 0.45rem;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      background: rgba(15, 23, 42, 0.9);
+    }
+
+    .legend-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--accent);
+    }
+
+    .summary-text {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 0.4rem;
+      line-height: 1.4;
+    }
+
+    .summary-highlight {
+      color: #e5e7eb;
+    }
+
+    .badge {
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+    }
+
+    .badge.good {
+      border-color: rgba(34, 197, 94, 0.5);
+      color: #bbf7d0;
+    }
+
+    .badge.warn {
+      border-color: rgba(249, 115, 22, 0.6);
+      color: #fed7aa;
+    }
+
+    .badge.risk {
+      border-color: rgba(248, 113, 113, 0.7);
+      color: #fecaca;
+    }
+
+    .export-controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-top: 0.9rem;
+      margin-bottom: 0.35rem;
+    }
+
+    .export-button,
+    .tour-button,
+    .tour-nav-btn {
+      border-radius: 999px;
+      border: 1px solid rgba(56, 189, 248, 0.9);
+      padding: 0.45rem 0.9rem;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      background: radial-gradient(circle at 30% 0, rgba(56, 189, 248, 0.3), rgba(15, 23, 42, 0.95));
+      color: #e0f2fe;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .tour-button {
+      padding: 0.35rem 0.8rem;
+      font-size: 0.72rem;
+    }
+
+    .tour-nav-btn {
+      padding: 0.25rem 0.7rem;
+      font-size: 0.7rem;
+    }
+
+    .export-button:hover,
+    .tour-button:hover,
+    .tour-nav-btn:hover {
+      box-shadow: 0 0 18px rgba(56, 189, 248, 0.65);
+    }
+
+    .export-button:active,
+    .tour-button:active,
+    .tour-nav-btn:active {
+      transform: translateY(1px);
+    }
+
+    .tour-nav-btn.secondary {
+      border-color: rgba(148, 163, 184, 0.7);
+      background: rgba(15, 23, 42, 0.95);
+      color: #e5e7eb;
+    }
+
+    .tour-nav-btn.secondary:hover {
+      box-shadow: 0 0 12px rgba(148, 163, 184, 0.7);
+    }
+
+    .export-box {
+      width: 100%;
+      min-height: 150px;
+      max-height: 220px;
+      resize: vertical;
+      border-radius: 0.85rem;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      background: rgba(15, 23, 42, 0.9);
+      color: #e5e7eb;
+      font-size: 0.78rem;
+      padding: 0.5rem 0.7rem;
+      font-family: "SF Mono", ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      white-space: pre;
+    }
+
+    .export-hint {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    .uncertainty-block {
+      margin-top: 0.35rem;
+      padding: 0.4rem 0.55rem;
+      border-radius: 0.8rem;
+      border: 1px dashed rgba(148, 163, 184, 0.55);
+      background: rgba(15, 23, 42, 0.95);
+    }
+
+    .uncertainty-label {
+      font-size: 0.78rem;
+      margin-bottom: 0.3rem;
+      color: var(--text-muted);
+    }
+
+    .uncertainty-row {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+    }
+
+    .uncertainty-value {
+      font-size: 0.8rem;
+      font-variant-numeric: tabular-nums;
+      color: #cbd5f5;
+      min-width: 60px;
+      text-align: right;
+    }
+
+    /* Guided tour panel */
+    .tour-panel {
+      margin-top: 0.7rem;
+      padding: 0.55rem 0.65rem 0.55rem;
+      border-radius: 0.9rem;
+      border: 1px solid rgba(248, 250, 252, 0.3);
+      background: radial-gradient(circle at top left, rgba(30, 64, 175, 0.7), rgba(15, 23, 42, 0.98));
+      box-shadow:
+        0 18px 35px rgba(15, 23, 42, 0.95),
+        0 0 0 1px rgba(30, 64, 175, 0.8);
+    }
+
+    .tour-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      margin-bottom: 0.3rem;
+    }
+
+    .tour-title {
+      font-size: 0.86rem;
+      font-weight: 600;
+    }
+
+    .tour-step-indicator {
+      font-size: 0.7rem;
+      opacity: 0.9;
+    }
+
+    .tour-body {
+      font-size: 0.76rem;
+      color: #e5e7eb;
+      margin-bottom: 0.35rem;
+      line-height: 1.45;
+    }
+
+    .tour-body p {
+      margin: 0.1rem 0;
+    }
+
+    .tour-body-cta {
+      font-size: 0.74rem;
+      opacity: 0.9;
+    }
+
+    .tour-controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.4rem;
+      margin-top: 0.2rem;
+    }
+
+    .tour-nav-group {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .tour-hint {
+      font-size: 0.68rem;
+      opacity: 0.9;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- LEFT: Project & EQUATOR checklist -->
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">EQUATOR Interactive Explorer</div>
+          <div class="subtitle">
+            Use the EQUATOR spirit of “better reporting for better research” to
+            interrogate your project. Rate each item and reflect on what still needs work.
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.35rem;">
+          <span class="pill">Project ↔ EQUATOR ↔ Reflection</span>
+          <button id="tourStartButton" class="tour-button">
+            <span>★</span> Start guided tour
+          </button>
+        </div>
+      </div>
+
+      <div class="project-form">
+        <div>
+          <div class="field-label">Project title</div>
+          <input id="projectTitle" class="text-input" placeholder="e.g. ICU sepsis RCT with ML decision support" />
+        </div>
+        <div>
+          <div class="field-label">Study design</div>
+          <select id="projectDesign" class="select-input">
+            <option value="">Select a broad design…</option>
+            <option>Randomised trial (CONSORT)</option>
+            <option>Observational cohort / case-control (STROBE)</option>
+            <option>Systematic review / meta-analysis (PRISMA)</option>
+            <option>Prediction model study (TRIPOD)</option>
+            <option>Diagnostic accuracy (STARD)</option>
+            <option>Qualitative study (COREQ / SRQR)</option>
+            <option>Other / mixed-methods</option>
+          </select>
+        </div>
+        <div>
+          <div class="field-label">Setting / domain</div>
+          <input id="projectSetting" class="text-input" placeholder="e.g. Hospital, primary care, community…" />
+        </div>
+        <div style="grid-column: 1 / -1;">
+          <div class="field-label">Brief description of the study</div>
+          <textarea
+            id="projectSummary"
+            class="text-area"
+            placeholder="In a few sentences: population, interventions/exposures, comparators (if relevant), outcomes, and the role of AI/ML if present."
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="section-title">
+        <span class="icon">✓</span> EQUATOR-aligned checklist mapped to your project
+      </div>
+
+      <div class="checklist" id="checklistContainer">
+        <!-- Populated via JS -->
+      </div>
+    </section>
+
+    <!-- RIGHT: Distributions + Uncertainty + Guided tour panel + Export -->
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Outcome Distributions from Your EQUATOR Profile</div>
+          <div class="subtitle">
+            As you move the sliders, we estimate how reporting quality shapes
+            the likely viability, feasibility, ethics and sustainability of your project.
+          </div>
+        </div>
+        <span class="pill">Viability • Feasibility • Ethics • Sustainability</span>
+      </div>
+
+      <div class="uncertainty-block">
+        <div class="uncertainty-label">
+          Overall confidence in your EQUATOR ratings
+          <span style="opacity:0.85;">(0 = very unsure, 100 = very confident)</span>
+        </div>
+        <div class="uncertainty-row">
+          <input type="range" min="0" max="100" value="60" id="uncertaintyGlobal" />
+          <div class="uncertainty-value" id="uncertaintyValue"></div>
+        </div>
+      </div>
+
+      <!-- Guided tour panel -->
+      <div class="tour-panel" id="tourPanel">
+        <div class="tour-header">
+          <div class="tour-title">Guided tour: EQUATOR in practice</div>
+          <div class="tour-step-indicator" id="tourStepIndicator">
+            Tour not started
+          </div>
+        </div>
+        <div class="tour-body" id="tourBody">
+          <p>
+            Click <strong>“Start guided tour”</strong> on the left to walk through key
+            EQUATOR-inspired items. We’ll highlight each card, suggest what to check,
+            and show how your ratings affect the distributions below.
+          </p>
+        </div>
+        <div class="tour-controls">
+          <div class="tour-nav-group">
+            <button id="tourPrev" class="tour-nav-btn secondary" disabled>Back</button>
+            <button id="tourNext" class="tour-nav-btn">Next</button>
+          </div>
+          <div class="tour-nav-group">
+            <button id="tourEnd" class="tour-nav-btn secondary">End tour</button>
+            <div class="tour-hint" id="tourHint">Tour is idle – press “Start guided tour”.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="results-grid" id="resultsGrid">
+        <!-- Populated via JS -->
+      </div>
+
+      <div class="legend">
+        <div class="legend-item">
+          <span class="legend-dot"></span>
+          <span>Bar length = probability mass in that band</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot" style="opacity:0.4;"></span>
+          <span>Bands: Very Low, Low, Medium, High, Very High</span>
+        </div>
+      </div>
+
+      <div class="summary-text" id="summaryText"></div>
+
+      <div class="export-controls">
+        <button id="exportButton" class="export-button">
+          <span>⇩</span> Export JSON snapshot
+        </button>
+        <div class="export-hint">
+          Export all EQUATOR sliders, comments, project info and current outcome distributions.
+        </div>
+      </div>
+
+      <textarea
+        id="exportBox"
+        class="export-box"
+        placeholder="Your exported JSON will appear here after export. You can also download it as a file."
+        readonly
+      ></textarea>
+    </section>
+  </div>
+
+  <script>
+    // --- EQUATOR-style checklist items (generic across CONSORT/STROBE/PRISMA/TRIPOD/etc.) ---
+
+    const EQUATOR_ITEMS = [
+      // Title & abstract
+      {
+        id: "title_design_identified",
+        section: "Title & Abstract",
+        tag: "Title",
+        label: "Does the title clearly identify the study design?",
+        prompt: "Title states the broad design (e.g. randomised trial, cohort study, systematic review) and, if relevant, that AI/ML is involved.",
+        why: "Clear identification of study design in the title supports indexing, searchability and immediate recognition by readers."
+      },
+      {
+        id: "abstract_structure_completeness",
+        section: "Title & Abstract",
+        tag: "Abstract",
+        label: "Is the abstract structured and complete?",
+        prompt: "Abstract summarises background, objectives, design, participants, interventions/exposures, outcomes, methods and key results.",
+        why: "The abstract is the most visible part of the report; EQUATOR-aligned guidelines expect it to convey enough detail for basic appraisal."
+      },
+
+      // Introduction
+      {
+        id: "intro_background_rationale",
+        section: "Introduction",
+        tag: "Background",
+        label: "Is the scientific and practical rationale clearly explained?",
+        prompt: "Introduction explains what is already known, gaps in the literature, and why this study is needed now.",
+        why: "A clear rationale prevents redundant research and situates the study within the broader evidence landscape."
+      },
+      {
+        id: "intro_objectives_hypotheses",
+        section: "Introduction",
+        tag: "Objectives",
+        label: "Are objectives (and hypotheses, if applicable) clearly stated?",
+        prompt: "Primary and secondary objectives are specified, along with any prespecified hypotheses.",
+        why: "Transparent objectives link directly to outcomes, analyses and interpretation; vague aims invite outcome switching."
+      },
+
+      // Methods – design, setting, participants
+      {
+        id: "methods_design_setting",
+        section: "Methods",
+        tag: "Design & setting",
+        label: "Are the study design and setting explicitly described?",
+        prompt: "Clear description of design (e.g. RCT, cohort, case-control, review) and setting (e.g. hospitals, clinics, countries, dates).",
+        why: "Readers must understand where and how the study was done to judge external validity and applicability."
+      },
+      {
+        id: "methods_eligibility_participants",
+        section: "Methods",
+        tag: "Participants",
+        label: "Are eligibility criteria and recruitment methods reported?",
+        prompt: "Inclusion/exclusion criteria, how participants were identified/recruited, and any important subgroups.",
+        why: "Selection processes influence both internal and external validity; opaque criteria hide spectrum and selection bias."
+      },
+      {
+        id: "methods_interventions_exposures",
+        section: "Methods",
+        tag: "Interventions / exposures",
+        label: "Are interventions/exposures and comparators described in detail?",
+        prompt: "What was done, to whom, when and how, including dose, frequency, and co-interventions where relevant.",
+        why: "Detailed description supports replication and helps clinicians understand how closely the study mirrors their practice."
+      },
+
+      // Methods – outcomes and data handling
+      {
+        id: "methods_outcomes",
+        section: "Methods",
+        tag: "Outcomes",
+        label: "Are primary and secondary outcomes clearly defined?",
+        prompt: "Outcome definitions, measurement methods, timing and who assessed them are reported.",
+        why: "Poorly defined or inconsistently measured outcomes threaten interpretability and comparability."
+      },
+      {
+        id: "methods_sample_size",
+        section: "Methods",
+        tag: "Sample size",
+        label: "Is the sample size rationale or power calculation reported?",
+        prompt: "Explanation of how sample size was chosen, including assumptions and parameters for any power calculations.",
+        why: "Underpowered or unjustified sample sizes reduce credibility of null findings and increase imprecision."
+      },
+      {
+        id: "methods_missing_data",
+        section: "Methods",
+        tag: "Missing data",
+        label: "Is handling of missing data described?",
+        prompt: "Extent and patterns of missing data, and methods used to address them (e.g. imputation, exclusions).",
+        why: "Missingness can bias results; methods must be transparent so readers can judge robustness."
+      },
+      {
+        id: "methods_bias",
+        section: "Methods",
+        tag: "Bias",
+        label: "Are strategies to address potential sources of bias described?",
+        prompt: "Measures such as blinding, randomisation, adjustment for confounders, or sensitivity analyses are reported.",
+        why: "Bias undermines trust; planned strategies to reduce and explore bias are central to EQUATOR-aligned reporting."
+      },
+
+      // Methods – analysis & registration
+      {
+        id: "methods_statistical_analysis",
+        section: "Methods",
+        tag: "Statistical methods",
+        label: "Are statistical methods clearly described and appropriate?",
+        prompt: "Analytical models, handling of confounders, subgroup and sensitivity analyses, and any multiplicity adjustments.",
+        why: "Transparent analysis plans allow replication, critique and understanding of how conclusions were drawn."
+      },
+      {
+        id: "methods_protocol_registration",
+        section: "Methods",
+        tag: "Protocol & registration",
+        label: "Is there a protocol, registration or pre-specification?",
+        prompt: "Reference to protocol or registry (e.g. clinicaltrials.gov, PROSPERO), and disclosure of deviations.",
+        why: "Registration guards against selective reporting and undisclosed outcome switching."
+      },
+      {
+        id: "methods_ethics_ppi",
+        section: "Methods",
+        tag: "Ethics & PPI",
+        label: "Are ethics approval and patient/public involvement reported?",
+        prompt: "Ethics committee approval, consent procedures, and whether patients/the public were involved in design or conduct.",
+        why: "Ethical oversight and meaningful involvement support legitimacy, acceptability and alignment with societal values."
+      },
+
+      // Results
+      {
+        id: "results_flow",
+        section: "Results",
+        tag: "Participant/record flow",
+        label: "Is the flow of participants/records through the study reported?",
+        prompt: "Numbers screened, eligible, enrolled, followed up, and analysed, ideally with a flow diagram.",
+        why: "Flow figures reveal attrition, exclusions and potential selection bias."
+      },
+      {
+        id: "results_baseline_data",
+        section: "Results",
+        tag: "Baseline data",
+        label: "Are baseline characteristics or descriptive data reported?",
+        prompt: "Key demographic/clinical characteristics by group, and missingness for important variables.",
+        why: "Baseline data allow assessment of comparability between groups and relevance to local populations."
+      },
+      {
+        id: "results_outcomes_effects",
+        section: "Results",
+        tag: "Outcomes & estimates",
+        label: "Are outcomes and effect estimates clearly reported with precision?",
+        prompt: "Effect estimates (e.g. risk ratios, mean differences) with confidence intervals or equivalent measures of precision.",
+        why: "Reporting point estimates with uncertainty supports proper interpretation and decision-making."
+      },
+      {
+        id: "results_harms",
+        section: "Results",
+        tag: "Harms",
+        label: "Are harms and unintended effects reported?",
+        prompt: "Adverse events, unintended consequences or negative findings are explicitly described.",
+        why: "Selective reporting of benefits without harms misleads readers and decision-makers."
+      },
+
+      // Discussion & other information
+      {
+        id: "discussion_limitations",
+        section: "Discussion",
+        tag: "Limitations",
+        label: "Are key limitations and sources of uncertainty discussed?",
+        prompt: "Study limitations, potential biases, imprecision, and generalisability issues are acknowledged.",
+        why: "Honest limitations discussions help others use the results appropriately and identify future work."
+      },
+      {
+        id: "discussion_interpretation",
+        section: "Discussion",
+        tag: "Interpretation",
+        label: "Is the interpretation balanced and contextualised?",
+        prompt: "Findings are interpreted in light of objectives, prior evidence, limitations and implications for practice or policy.",
+        why: "Overstated conclusions or spin undermine trust; EQUATOR emphasises balanced, evidence-based interpretation."
+      },
+      {
+        id: "funding_conflicts",
+        section: "Other Information",
+        tag: "Funding & conflicts",
+        label: "Are funding sources and conflicts of interest transparently reported?",
+        prompt: "Financial and non-financial support, roles of funders, and conflicts for all key contributors.",
+        why: "Transparency around funding and conflicts helps readers assess potential influence on design, analysis and reporting."
+      },
+      {
+        id: "data_code_sharing",
+        section: "Other Information",
+        tag: "Data & code sharing",
+        label: "Are data, materials or code availability statements provided?",
+        prompt: "Availability of datasets, analysis scripts, protocols or other materials, with reasons if not shareable.",
+        why: "Sharing supports verification, reuse and cumulative science, in line with EQUATOR’s emphasis on transparency."
+      }
+    ];
+
+    const OUTCOMES = [
+      { key: "viability", label: "Viability" },
+      { key: "feasibility", label: "Feasibility" },
+      { key: "ethics", label: "Ethics" },
+      { key: "sustainability", label: "Sustainability" }
+    ];
+
+    const BANDS = [
+      { key: "veryLow", label: "Very Low", center: 0.1 },
+      { key: "low", label: "Low", center: 0.3 },
+      { key: "medium", label: "Medium", center: 0.5 },
+      { key: "high", label: "High", center: 0.7 },
+      { key: "veryHigh", label: "Very High", center: 0.9 }
+    ];
+
+    // Guided tour: pick a subset of EQUATOR items
+    const TOUR_STEPS = [
+      {
+        itemId: "title_design_identified",
+        title: "Start by naming your design",
+        text: [
+          "EQUATOR emphasises choosing and declaring the right reporting guideline for your design.",
+          "If a reader can’t see the design from the title, they can’t easily map it to CONSORT, STROBE, PRISMA, etc."
+        ],
+        cta: "Adjust your title so the design is visible, then move the slider and note in the comment which guideline you think applies."
+      },
+      {
+        itemId: "methods_design_setting",
+        title: "Make design and setting explicit",
+        text: [
+          "Readers need to know where and how the study took place to judge external validity.",
+          "This is a core expectation across EQUATOR guidelines."
+        ],
+        cta: "Describe your setting in one sentence in the comment box (where, when, who). Rate how well your current report does this."
+      },
+      {
+        itemId: "methods_eligibility_participants",
+        title: "Show how people entered the study",
+        text: [
+          "Eligibility criteria and recruitment methods drive who your results actually apply to.",
+          "Vague criteria make it impossible to know if your population matches someone else’s."
+        ],
+        cta: "List one inclusion and one exclusion criterion that you currently use. Adjust the slider to reflect how clear these are in your write-up."
+      },
+      {
+        itemId: "methods_missing_data",
+        title: "Face missing data honestly",
+        text: [
+          "Missing data are ubiquitous and can quietly bias findings.",
+          "EQUATOR guidelines expect you to describe the extent and how you handled it."
+        ],
+        cta: "Write how you currently deal with missing data (even if it’s just complete-case analysis). Move the slider to match reality."
+      },
+      {
+        itemId: "methods_statistical_analysis",
+        title: "Make your analytical choices transparent",
+        text: [
+          "Transparent statistical methods let others reproduce and critique your work.",
+          "Think about models, covariates, subgroup analyses and sensitivity checks."
+        ],
+        cta: "In the comment box, summarise your main analysis model in one or two lines. Then adjust the slider accordingly."
+      },
+      {
+        itemId: "results_outcomes_effects",
+        title: "Report results with uncertainty, not just point estimates",
+        text: [
+          "EQUATOR stresses estimates with measures of precision.",
+          "Confidence intervals (or similar) tell us how stable your findings are likely to be."
+        ],
+        cta: "Note which effect measures and intervals you currently report, then move the slider and watch how the distributions respond."
+      },
+      {
+        itemId: "results_harms",
+        title: "Don’t hide the harms",
+        text: [
+          "Reporting only benefits gives a distorted picture.",
+          "EQUATOR guidance explicitly calls for harms and unintended effects."
+        ],
+        cta: "Reflect on where harms or downsides could appear in your study and whether they are being captured and reported."
+      },
+      {
+        itemId: "data_code_sharing",
+        title: "Think about transparency and sharing",
+        text: [
+          "Even where full data sharing isn’t possible, clear availability statements matter.",
+          "They signal openness and allow others to build on your work."
+        ],
+        cta: "Note what you could share (e.g. de-identified data, code, protocol). Set the slider based on how close you are to that ideal."
+      }
+    ];
+
+    let lastOutcomeSummary = null;
+    let tourIndex = -1;
+    let tourActive = false;
+
+    function clamp01(x) {
+      return Math.min(1, Math.max(0, x));
+    }
+
+    function computeDistribution(mean, confidence) {
+      mean = clamp01(mean);
+      const c = clamp01(confidence);
+      const sigma = 0.4 - 0.22 * c; // high confidence -> narrower distribution
+
+      const probs = [];
+      let sum = 0;
+      for (const band of BANDS) {
+        const z = (band.center - mean) / sigma;
+        const density = Math.exp(-0.5 * z * z);
+        probs.push(density);
+        sum += density;
+      }
+      if (sum <= 0) return BANDS.map(() => 1 / BANDS.length);
+      return probs.map(p => p / sum);
+    }
+
+    function expectedValueFromDistribution(dist) {
+      let ev = 0;
+      for (let i = 0; i < BANDS.length; i++) {
+        ev += BANDS[i].center * dist[i];
+      }
+      return ev;
+    }
+
+    function renderChecklist() {
+      const container = document.getElementById("checklistContainer");
+      container.innerHTML = "";
+
+      const sections = {};
+      EQUATOR_ITEMS.forEach(item => {
+        if (!sections[item.section]) sections[item.section] = [];
+        sections[item.section].push(item);
+      });
+
+      Object.keys(sections).forEach(sectionName => {
+        const sectionHeader = document.createElement("div");
+        sectionHeader.className = "section-title";
+        sectionHeader.innerHTML = `<span class="icon">${sectionName[0]}</span> ${sectionName}`;
+        container.appendChild(sectionHeader);
+
+        sections[sectionName].forEach(item => {
+          const card = document.createElement("article");
+          card.className = "item-card";
+          card.dataset.itemId = item.id;
+
+          const header = document.createElement("div");
+          header.className = "item-header";
+
+          const title = document.createElement("div");
+          title.className = "item-title";
+          title.textContent = item.label;
+
+          const tag = document.createElement("div");
+          tag.className = "item-tag";
+          tag.textContent = item.tag;
+
+          header.appendChild(title);
+          header.appendChild(tag);
+
+          const description = document.createElement("div");
+          description.className = "item-description";
+          description.textContent = item.prompt;
+
+          const sliderRow = document.createElement("div");
+          sliderRow.className = "slider-row";
+
+          const sliderLabelBlock = document.createElement("div");
+          sliderLabelBlock.className = "slider-label-block";
+
+          const sliderLabel = document.createElement("div");
+          sliderLabel.className = "slider-label";
+          sliderLabel.textContent = "0 = not addressed  •  100 = fully addressed in current materials";
+
+          sliderLabelBlock.appendChild(sliderLabel);
+
+          const slider = document.createElement("input");
+          slider.type = "range";
+          slider.min = "0";
+          slider.max = "100";
+          slider.value = "50";
+          slider.dataset.itemId = item.id;
+
+          const value = document.createElement("div");
+          value.className = "slider-value";
+          value.id = `value_${item.id}`;
+          value.textContent = " 50";
+
+          slider.addEventListener("input", () => {
+            value.textContent = slider.value.toString().padStart(3, " ");
+            updateDistributions();
+          });
+
+          sliderRow.appendChild(sliderLabelBlock);
+          sliderRow.appendChild(slider);
+          sliderRow.appendChild(value);
+
+          const comment = document.createElement("textarea");
+          comment.className = "comment-input";
+          comment.id = `comment_${item.id}`;
+          comment.placeholder = "Reflection: what’s already strong here, and what needs attention in your report?";
+
+          const details = document.createElement("details");
+          const summary = document.createElement("summary");
+          summary.textContent = "Why this EQUATOR item matters";
+          const p = document.createElement("p");
+          p.textContent = item.why;
+          details.appendChild(summary);
+          details.appendChild(p);
+
+          card.appendChild(header);
+          card.appendChild(description);
+          card.appendChild(sliderRow);
+          card.appendChild(comment);
+          card.appendChild(details);
+
+          container.appendChild(card);
+        });
+      });
+    }
+
+    function readItemValues() {
+      const values = {};
+      EQUATOR_ITEMS.forEach(item => {
+        const slider = document.querySelector(`input[type="range"][data-item-id="${item.id}"]`);
+        const comment = document.getElementById(`comment_${item.id}`);
+        const v = slider ? parseInt(slider.value, 10) || 0 : 0;
+        const c = comment ? comment.value || "" : "";
+        values[item.id] = { value: v, comment: c };
+      });
+      return values;
+    }
+
+    // Map EQUATOR ratings to outcome means [0,1] (heuristic)
+    function computeOutcomeMeans(values) {
+      function avg(ids) {
+        if (!ids.length) return 0;
+        let sum = 0;
+        ids.forEach(id => {
+          const v = values[id] ? values[id].value : 0;
+          sum += v / 100;
+        });
+        return sum / ids.length;
+      }
+
+      // Viability: clarity & usefulness to decision-makers / editors
+      const viability = avg([
+        "title_design_identified",
+        "abstract_structure_completeness",
+        "intro_background_rationale",
+        "intro_objectives_hypotheses",
+        "discussion_interpretation"
+      ]);
+
+      // Feasibility: how replicable and practically implementable the study is
+      const feasibility = avg([
+        "methods_design_setting",
+        "methods_eligibility_participants",
+        "methods_interventions_exposures",
+        "methods_outcomes",
+        "methods_sample_size",
+        "methods_statistical_analysis",
+        "results_baseline_data",
+        "results_outcomes_effects"
+      ]);
+
+      // Ethics: respect for participants, harms, bias, transparency
+      const ethics = avg([
+        "methods_ethics_ppi",
+        "methods_bias",
+        "methods_missing_data",
+        "results_harms",
+        "discussion_limitations",
+        "funding_conflicts"
+      ]);
+
+      // Sustainability: long-term trustworthiness, openness, and reusability
+      const sustainability = avg([
+        "methods_protocol_registration",
+        "discussion_limitations",
+        "discussion_interpretation",
+        "data_code_sharing",
+        "funding_conflicts"
+      ]);
+
+      return {
+        viability: clamp01(viability),
+        feasibility: clamp01(feasibility),
+        ethics: clamp01(ethics),
+        sustainability: clamp01(sustainability)
+      };
+    }
+
+    function classifyBadge(v, f, e, s) {
+      const strong =
+        v > 0.6 &&
+        f > 0.6 &&
+        e > 0.55 &&
+        s > 0.55;
+      const ethicallyRisky = e < 0.45 && s < 0.5;
+      if (ethicallyRisky) {
+        return { label: "Ethical / sustainability concerns to address", cls: "risk" };
+      }
+      if (strong) {
+        return { label: "Reporting looks strong & balanced", cls: "good" };
+      }
+      return { label: "Mixed profile – good basis for improvement", cls: "warn" };
+    }
+
+    function updateUncertaintyLabel() {
+      const slider = document.getElementById("uncertaintyGlobal");
+      const label = document.getElementById("uncertaintyValue");
+      const v = slider ? parseInt(slider.value, 10) || 0 : 0;
+      label.textContent = `${v.toString().padStart(3, " ")} / 100`;
+    }
+
+    function updateDistributions() {
+      const values = readItemValues();
+      const outcomeMeans = computeOutcomeMeans(values);
+      const confidence = (parseInt(document.getElementById("uncertaintyGlobal").value, 10) || 0) / 100;
+      const resultsGrid = document.getElementById("resultsGrid");
+      resultsGrid.innerHTML = "";
+
+      const summary = {};
+
+      OUTCOMES.forEach(outcome => {
+        const mean = outcomeMeans[outcome.key];
+        const dist = computeDistribution(mean, confidence);
+        const ev = expectedValueFromDistribution(dist);
+        summary[outcome.key] = { mean, dist, ev };
+
+        const card = document.createElement("div");
+        card.className = "result-card";
+
+        const header = document.createElement("div");
+        header.className = "result-header";
+
+        const title = document.createElement("div");
+        title.className = "result-title";
+        title.textContent = outcome.label;
+
+        const meanLabel = document.createElement("div");
+        meanLabel.className = "result-mean";
+        meanLabel.textContent = `Expected level: ${(ev * 100).toFixed(1)}%`;
+
+        header.appendChild(title);
+        header.appendChild(meanLabel);
+        card.appendChild(header);
+
+        BANDS.forEach((band, i) => {
+          const prob = dist[i];
+          const row = document.createElement("div");
+          row.className = "distribution-row";
+
+          const label = document.createElement("div");
+          label.className = "dist-label";
+          label.textContent = band.label;
+
+          const barContainer = document.createElement("div");
+          barContainer.className = "dist-bar-container";
+          const barFill = document.createElement("div");
+          barFill.className = "dist-bar-fill";
+          barFill.style.width = `${(prob * 100).toFixed(1)}%`;
+          barContainer.appendChild(barFill);
+
+          const value = document.createElement("div");
+          value.className = "dist-value";
+          value.textContent = `${(prob * 100).toFixed(1)}%`;
+
+          row.appendChild(label);
+          row.appendChild(barContainer);
+          row.appendChild(value);
+          card.appendChild(row);
+        });
+
+        resultsGrid.appendChild(card);
+      });
+
+      lastOutcomeSummary = summary;
+
+      const summaryEl = document.getElementById("summaryText");
+      const v = summary.viability.ev;
+      const f = summary.feasibility.ev;
+      const e = summary.ethics.ev;
+      const s = summary.sustainability.ev;
+
+      const badge = classifyBadge(v, f, e, s);
+      const confidenceVal = (parseInt(document.getElementById("uncertaintyGlobal").value, 10) || 0) / 100;
+
+      summaryEl.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;margin-bottom:0.25rem;">
+          <div class="badge ${badge.cls}">${badge.label}</div>
+          <div class="badge">Confidence: ${(confidenceVal * 100).toFixed(0)}%</div>
+        </div>
+        <div>
+          <span class="summary-highlight">Viability</span> ≈ ${(v * 100).toFixed(0)}%,
+          <span class="summary-highlight">Feasibility</span> ≈ ${(f * 100).toFixed(0)}%,
+          <span class="summary-highlight">Ethics</span> ≈ ${(e * 100).toFixed(0)}%,
+          <span class="summary-highlight">Sustainability</span> ≈ ${(s * 100).toFixed(0)}%.
+        </div>
+        <div style="margin-top:0.25rem;">
+          Where scores are low or uncertainty is high, follow the highlights in the checklist:
+          that’s where strengthening EQUATOR-aligned reporting will most improve the credibility and impact of your study.
+        </div>
+      `;
+    }
+
+    function exportJson() {
+      const itemValues = readItemValues();
+      const project = {
+        title: document.getElementById("projectTitle").value || "",
+        design: document.getElementById("projectDesign").value || "",
+        setting: document.getElementById("projectSetting").value || "",
+        summary: document.getElementById("projectSummary").value || ""
+      };
+
+      const confidence = (parseInt(document.getElementById("uncertaintyGlobal").value, 10) || 0) / 100;
+
+      const eqAnswers = {};
+      EQUATOR_ITEMS.forEach(item => {
+        eqAnswers[item.id] = {
+          label: item.label,
+          section: item.section,
+          tag: item.tag,
+          value: itemValues[item.id].value,
+          comment: itemValues[item.id].comment
+        };
+      });
+
+      const outcomes = lastOutcomeSummary
+        ? Object.fromEntries(
+            Object.entries(lastOutcomeSummary).map(([key, val]) => [
+              key,
+              {
+                mean: val.mean,
+                expectedValue: val.ev,
+                distributionBands: BANDS.map((b, i) => ({
+                  bandKey: b.key,
+                  bandLabel: b.label,
+                  probability: val.dist[i]
+                }))
+              }
+            ])
+          )
+        : null;
+
+      const snapshot = {
+        generatedAt: new Date().toISOString(),
+        project,
+        equator: {
+          confidence,
+          items: eqAnswers,
+          outcomes
+        }
+      };
+
+      const jsonText = JSON.stringify(snapshot, null, 2);
+      const exportBox = document.getElementById("exportBox");
+      exportBox.value = jsonText;
+
+      const blob = new Blob([jsonText], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "equator_explorer_snapshot.json";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    // --- Guided tour logic ---
+
+    function clearTourHighlight() {
+      const highlighted = document.querySelector(".item-card.tour-highlight");
+      if (highlighted) highlighted.classList.remove("tour-highlight");
+    }
+
+    function focusTourItem(itemId) {
+      clearTourHighlight();
+      const card = document.querySelector(`.item-card[data-item-id="${itemId}"]`);
+      if (!card) return;
+      card.classList.add("tour-highlight");
+      card.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    function updateTourUI() {
+      const body = document.getElementById("tourBody");
+      const indicator = document.getElementById("tourStepIndicator");
+      const hint = document.getElementById("tourHint");
+      const prevBtn = document.getElementById("tourPrev");
+      const nextBtn = document.getElementById("tourNext");
+
+      if (!tourActive || tourIndex < 0) {
+        indicator.textContent = "Tour not started";
+        body.innerHTML = `
+          <p>
+            Click <strong>“Start guided tour”</strong> on the left. We’ll walk you
+            through selected EQUATOR items, highlighting them in the checklist and
+            inviting short reflections.
+          </p>
+        `;
+        hint.textContent = "Tour is idle – press “Start guided tour”.";
+        prevBtn.disabled = true;
+        nextBtn.disabled = false;
+        clearTourHighlight();
+        return;
+      }
+
+      const step = TOUR_STEPS[tourIndex];
+      indicator.textContent = `Step ${tourIndex + 1} of ${TOUR_STEPS.length}`;
+      body.innerHTML = `
+        <p><strong>${step.title}</strong></p>
+        ${step.text.map(t => `<p>${t}</p>`).join("")}
+        <p class="tour-body-cta">${step.cta}</p>
+      `;
+      hint.textContent = "The highlighted card on the left belongs to this step.";
+
+      prevBtn.disabled = tourIndex === 0;
+      nextBtn.disabled = tourIndex === TOUR_STEPS.length - 1;
+
+      focusTourItem(step.itemId);
+    }
+
+    function startTour() {
+      tourActive = true;
+      tourIndex = 0;
+      updateTourUI();
+    }
+
+    function endTour() {
+      tourActive = false;
+      tourIndex = -1;
+      clearTourHighlight();
+      updateTourUI();
+    }
+
+    function nextTourStep() {
+      if (!tourActive) {
+        startTour();
+        return;
+      }
+      if (tourIndex < TOUR_STEPS.length - 1) {
+        tourIndex += 1;
+        updateTourUI();
+      }
+    }
+
+    function prevTourStep() {
+      if (!tourActive) return;
+      if (tourIndex > 0) {
+        tourIndex -= 1;
+        updateTourUI();
+      }
+    }
+
+    function init() {
+      renderChecklist();
+
+      document.getElementById("uncertaintyGlobal").addEventListener("input", () => {
+        updateUncertaintyLabel();
+        updateDistributions();
+      });
+      updateUncertaintyLabel();
+      updateDistributions();
+
+      document.getElementById("exportButton").addEventListener("click", exportJson);
+
+      document.getElementById("tourStartButton").addEventListener("click", startTour);
+      document.getElementById("tourNext").addEventListener("click", nextTourStep);
+      document.getElementById("tourPrev").addEventListener("click", prevTourStep);
+      document.getElementById("tourEnd").addEventListener("click", endTour);
+
+      updateTourUI();
+    }
+
+    document.addEventListener("DOMContentLoaded", init);
+  </script>
+</body>
+</html>
