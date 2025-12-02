@@ -2,17 +2,18 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>TRIPOD-AI Interactive Explorer + Guided Tour</title>
+  <title>TRIPOD-AI Interactive Explorer (Light Theme)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     :root {
-      --bg: #ffffff;               /* main page background */
-      --card-bg: #ffffff;          /* card background */
-      --accent: #0077ff;           /* highlight / slider accent */
-      --accent-soft: rgba(0, 119, 255, 0.12);
-      --border-subtle: rgba(0,0,0,0.2);  /* subtle borders */
-      --text-main: #000000;        /* main text */
-      --text-muted: #444444;       /* muted text */
+      --bg-page: #f5f5f7;
+      --bg-card: #ffffff;
+      --border-subtle: #e5e7eb;
+      --shadow-soft: 0 8px 20px rgba(15, 23, 42, 0.06);
+      --text-main: #111827;
+      --text-muted: #6b7280;
+      --accent: #2563eb;
+      --accent-soft: rgba(37, 99, 235, 0.12);
     }
 
     * {
@@ -21,16 +22,18 @@
 
     body {
       margin: 0;
-      padding: 1.25rem;
-      background: var(--bg);
+      padding: 16px;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg-page);
       color: var(--text-main);
     }
+
     .app-container {
       max-width: 1400px;
       margin: 0 auto;
       display: grid;
       grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
-      gap: 1.4rem;
+      gap: 16px;
     }
 
     @media (max-width: 1024px) {
@@ -40,45 +43,48 @@
     }
 
     .card {
-      background: var(--card-bg);
+      background: var(--bg-card);
+      border-radius: 12px;
       border: 1px solid var(--border-subtle);
+      box-shadow: var(--shadow-soft);
+      padding: 16px 18px;
     }
 
     .card-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 0.8rem;
-      margin-bottom: 0.85rem;
+      gap: 10px;
+      margin-bottom: 12px;
     }
 
     .card-title {
-      font-size: 1.15rem;
+      font-size: 1.1rem;
       font-weight: 600;
-      letter-spacing: 0.02em;
     }
 
     .subtitle {
-      font-size: 0.8rem;
+      font-size: 0.84rem;
       color: var(--text-muted);
     }
 
     .pill {
       border-radius: 999px;
-      padding: 0.12rem 0.6rem;
+      border: 1px solid #d1d5db;
+      padding: 3px 8px;
       font-size: 0.7rem;
       text-transform: uppercase;
       letter-spacing: 0.12em;
-      border: 1px solid rgba(148, 163, 184, 0.5);
-      color: var(--text-muted);
+      color: #4b5563;
+      background: #f9fafb;
       white-space: nowrap;
     }
 
     .project-form {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 0.6rem;
-      margin-bottom: 0.7rem;
+      gap: 10px;
+      margin-bottom: 10px;
     }
 
     @media (max-width: 900px) {
@@ -90,30 +96,31 @@
     .field-label {
       font-size: 0.78rem;
       color: var(--text-muted);
-      margin-bottom: 0.2rem;
+      margin-bottom: 2px;
     }
 
-    .text-input, .text-area {
+    .text-input,
+    .text-area {
       width: 100%;
-      border-radius: 0.7rem;
-      border: 1px solid rgba(148, 163, 184, 0.45);
-      background: rgba(15, 23, 42, 0.96);
+      border-radius: 8px;
+      border: 1px solid #d1d5db;
+      background: #ffffff;
       color: var(--text-main);
-      padding: 0.35rem 0.5rem;
-      font-size: 0.8rem;
+      padding: 6px 8px;
+      font-size: 0.85rem;
       font-family: inherit;
     }
 
     .text-input::placeholder,
     .text-area::placeholder {
-      color: rgba(148, 163, 184, 0.75);
+      color: #9ca3af;
     }
 
     .text-input:focus,
     .text-area:focus {
       outline: none;
-      border-color: rgba(56, 189, 248, 0.9);
-      box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.6);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent-soft);
     }
 
     .text-area {
@@ -123,14 +130,13 @@
     }
 
     .section-title {
-      margin-top: 0.8rem;
-      margin-bottom: 0.35rem;
+      margin-top: 10px;
+      margin-bottom: 6px;
       font-size: 0.9rem;
       font-weight: 600;
       display: flex;
       align-items: center;
-      gap: 0.35rem;
-      color: #e2e8f0;
+      gap: 6px;
     }
 
     .section-title .icon {
@@ -140,68 +146,67 @@
       align-items: center;
       justify-content: center;
       border-radius: 999px;
-      font-size: 0.65rem;
+      font-size: 0.7rem;
       background: var(--accent-soft);
       color: var(--accent);
-      border: 1px solid rgba(56, 189, 248, 0.4);
     }
 
     .checklist {
-      margin-top: 0.4rem;
+      margin-top: 4px;
       max-height: calc(100vh - 220px);
       overflow: auto;
-      padding-right: 0.4rem;
+      padding-right: 4px;
     }
 
     .item-card {
-      border-radius: 0.9rem;
-      border: 1px solid rgba(148, 163, 184, 0.35);
-      background: rgba(15, 23, 42, 0.97);
-      padding: 0.6rem 0.7rem 0.65rem;
-      margin-bottom: 0.55rem;
-      transition: box-shadow 0.12s ease-out, border-color 0.12s ease-out, transform 0.12s ease-out;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+      background: #ffffff;
+      padding: 8px 9px 9px;
+      margin-bottom: 8px;
+      transition: box-shadow 0.12s ease-out, border-color 0.12s ease-out, transform 0.12s ease-out, background 0.12s;
     }
 
     .item-card.tour-highlight {
-      border-color: rgba(251, 191, 36, 0.9);
-      box-shadow:
-        0 0 0 1px rgba(251, 191, 36, 0.8),
-        0 0 22px rgba(251, 191, 36, 0.45);
+      border-color: #f59e0b;
+      box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.6), 0 8px 18px rgba(0, 0, 0, 0.06);
+      background: #fffbeb;
       transform: translateY(-1px);
     }
 
     .item-header {
       display: flex;
       justify-content: space-between;
-      gap: 0.4rem;
-      margin-bottom: 0.35rem;
+      gap: 6px;
+      margin-bottom: 4px;
     }
 
     .item-title {
-      font-size: 0.83rem;
+      font-size: 0.85rem;
       font-weight: 600;
     }
 
     .item-tag {
-      font-size: 0.68rem;
+      font-size: 0.7rem;
       color: var(--text-muted);
-      padding: 0.1rem 0.4rem;
+      padding: 2px 7px;
       border-radius: 999px;
-      border: 1px solid rgba(148, 163, 184, 0.4);
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
       white-space: nowrap;
     }
 
     .item-description {
-      font-size: 0.77rem;
+      font-size: 0.8rem;
       color: var(--text-muted);
-      margin-bottom: 0.35rem;
+      margin-bottom: 4px;
     }
 
     .slider-row {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
-      margin-bottom: 0.25rem;
+      gap: 10px;
+      margin-bottom: 4px;
     }
 
     .slider-label-block {
@@ -215,19 +220,19 @@
     }
 
     .slider-value {
-      width: 68px;
+      width: 56px;
       text-align: right;
       font-variant-numeric: tabular-nums;
       font-size: 0.8rem;
-      color: #cbd5f5;
+      color: #111827;
     }
 
     input[type="range"] {
       flex: 2;
       appearance: none;
-      height: 6px;
+      height: 4px;
       border-radius: 999px;
-      background: radial-gradient(circle at 0, var(--accent-soft), rgba(15, 23, 42, 0.9));
+      background: #e5e7eb;
       outline: none;
     }
 
@@ -236,65 +241,62 @@
       width: 16px;
       height: 16px;
       border-radius: 50%;
-      background: radial-gradient(circle at 30% 30%, #e0f2fe, var(--accent));
-      border: 1px solid rgba(15, 23, 42, 0.9);
-      box-shadow:
-        0 0 0 3px rgba(56, 189, 248, 0.25),
-        0 8px 14px rgba(15, 23, 42, 0.85);
+      background: var(--accent);
+      border: 2px solid #ffffff;
+      box-shadow: 0 0 0 2px var(--accent-soft);
       cursor: pointer;
-      margin-top: -5px;
+      margin-top: -6px;
     }
 
     input[type="range"]::-moz-range-thumb {
       width: 16px;
       height: 16px;
       border-radius: 50%;
-      background: radial-gradient(circle at 30% 30%, #e0f2fe, var(--accent));
-      border: 1px solid rgba(15, 23, 42, 0.9);
-      box-shadow:
-        0 0 0 3px rgba(56, 189, 248, 0.25),
-        0 8px 14px rgba(15, 23, 42, 0.85);
+      background: var(--accent);
+      border: 2px solid #ffffff;
+      box-shadow: 0 0 0 2px var(--accent-soft);
       cursor: pointer;
     }
 
     input[type="range"]::-moz-range-track {
-      height: 6px;
+      height: 4px;
       border-radius: 999px;
-      background: radial-gradient(circle at 0, var(--accent-soft), rgba(15, 23, 42, 0.9));
+      background: #e5e7eb;
     }
 
     .comment-input {
       width: 100%;
       resize: vertical;
-      min-height: 38px;
+      min-height: 34px;
       max-height: 80px;
-      border-radius: 0.65rem;
-      border: 1px solid rgba(148, 163, 184, 0.45);
-      background: rgba(15, 23, 42, 0.97);
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
       color: var(--text-main);
-      font-size: 0.78rem;
-      padding: 0.3rem 0.45rem;
+      font-size: 0.8rem;
+      padding: 4px 6px;
       font-family: inherit;
-      margin-bottom: 0.25rem;
+      margin-bottom: 4px;
     }
 
     .comment-input::placeholder {
-      color: rgba(148, 163, 184, 0.75);
+      color: #9ca3af;
     }
 
     .comment-input:focus {
       outline: none;
-      border-color: rgba(56, 189, 248, 0.9);
-      box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.6);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent-soft);
+      background: #ffffff;
     }
 
     details {
-      font-size: 0.74rem;
+      font-size: 0.75rem;
       color: var(--text-muted);
+      cursor: pointer;
     }
 
     details summary {
-      cursor: pointer;
       list-style: none;
     }
 
@@ -303,49 +305,41 @@
     }
 
     details summary::before {
-      content: "❯";
+      content: "▸";
       display: inline-block;
-      margin-right: 0.35rem;
+      margin-right: 4px;
       font-size: 0.7rem;
-      transition: transform 0.15s ease-out;
     }
 
     details[open] summary::before {
-      transform: rotate(90deg);
-    }
-
-    details[open] {
-      color: #cbd5f5;
+      content: "▾";
     }
 
     .results-grid {
       display: flex;
       flex-direction: column;
-      gap: 0.9rem;
-      margin-top: 0.5rem;
+      gap: 10px;
+      margin-top: 10px;
     }
 
     .result-card {
-      border-radius: 0.95rem;
-      border: 1px solid rgba(148, 163, 184, 0.45);
-      padding: 0.6rem 0.75rem 0.7rem;
-      background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.95), #020617);
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+      padding: 8px 10px;
+      background: #ffffff;
     }
 
     .result-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 0.5rem;
-      margin-bottom: 0.55rem;
+      gap: 8px;
+      margin-bottom: 6px;
     }
 
     .result-title {
       font-size: 0.9rem;
       font-weight: 600;
-      letter-spacing: 0.03em;
-      text-transform: uppercase;
-      color: #e5e7f9;
     }
 
     .result-mean {
@@ -358,8 +352,8 @@
       display: grid;
       grid-template-columns: 0.9fr 2.4fr 0.7fr;
       align-items: center;
-      gap: 0.35rem;
-      margin-bottom: 0.2rem;
+      gap: 6px;
+      margin-bottom: 4px;
     }
 
     .distribution-row:last-child {
@@ -367,18 +361,18 @@
     }
 
     .dist-label {
-      font-size: 0.75rem;
+      font-size: 0.76rem;
       color: var(--text-muted);
     }
 
     .dist-bar-container {
       position: relative;
       width: 100%;
-      height: 9px;
+      height: 8px;
       border-radius: 999px;
       overflow: hidden;
-      background: rgba(15, 23, 42, 0.9);
-      border: 1px solid rgba(51, 65, 85, 0.9);
+      background: #f3f4f6;
+      border: 1px solid #e5e7eb;
     }
 
     .dist-bar-fill {
@@ -387,40 +381,39 @@
       top: 0;
       bottom: 0;
       border-radius: 999px;
-      background: linear-gradient(90deg, rgba(56, 189, 248, 0.15), var(--accent));
-      box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+      background: linear-gradient(90deg, var(--accent-soft), var(--accent));
       transition: width 120ms ease-out;
     }
 
     .dist-value {
-      font-size: 0.75rem;
+      font-size: 0.76rem;
       text-align: right;
       font-variant-numeric: tabular-nums;
-      color: #cbd5f5;
+      color: #111827;
     }
 
     .legend {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.55rem;
-      margin-top: 0.45rem;
-      font-size: 0.7rem;
+      gap: 6px;
+      margin-top: 8px;
+      font-size: 0.72rem;
       color: var(--text-muted);
     }
 
     .legend-item {
       display: inline-flex;
       align-items: center;
-      gap: 0.25rem;
-      padding: 0.15rem 0.5rem;
+      gap: 4px;
+      padding: 2px 8px;
       border-radius: 999px;
-      border: 1px solid rgba(148, 163, 184, 0.45);
-      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
     }
 
     .legend-dot {
-      width: 6px;
-      height: 6px;
+      width: 7px;
+      height: 7px;
       border-radius: 999px;
       background: var(--accent);
     }
@@ -428,79 +421,85 @@
     .summary-text {
       font-size: 0.78rem;
       color: var(--text-muted);
-      margin-top: 0.4rem;
+      margin-top: 8px;
       line-height: 1.4;
     }
 
     .summary-highlight {
-      color: #e5e7eb;
+      color: #111827;
+      font-weight: 500;
     }
 
     .badge {
-      padding: 0.15rem 0.5rem;
+      padding: 2px 8px;
       border-radius: 999px;
-      border: 1px solid rgba(148, 163, 184, 0.4);
+      border: 1px solid #e5e7eb;
       font-size: 0.7rem;
       text-transform: uppercase;
-      letter-spacing: 0.12em;
-      color: var(--text-muted);
+      letter-spacing: 0.09em;
+      color: #4b5563;
+      background: #f9fafb;
     }
 
     .badge.good {
-      border-color: rgba(34, 197, 94, 0.5);
-      color: #bbf7d0;
+      border-color: #22c55e;
+      color: #166534;
+      background: #dcfce7;
     }
 
     .badge.warn {
-      border-color: rgba(249, 115, 22, 0.6);
-      color: #fed7aa;
+      border-color: #f97316;
+      color: #9a3412;
+      background: #ffedd5;
     }
 
     .badge.risk {
-      border-color: rgba(248, 113, 113, 0.7);
-      color: #fecaca;
+      border-color: #ef4444;
+      color: #991b1b;
+      background: #fee2e2;
     }
 
     .export-controls {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 0.75rem;
-      margin-top: 0.9rem;
-      margin-bottom: 0.35rem;
+      gap: 10px;
+      margin-top: 12px;
+      margin-bottom: 6px;
     }
 
     .export-button,
     .tour-button,
     .tour-nav-btn {
       border-radius: 999px;
-      border: 1px solid rgba(56, 189, 248, 0.9);
-      padding: 0.45rem 0.9rem;
-      font-size: 0.78rem;
+      border: 1px solid var(--accent);
+      padding: 6px 12px;
+      font-size: 0.75rem;
       text-transform: uppercase;
-      letter-spacing: 0.12em;
-      background: radial-gradient(circle at 30% 0, rgba(56, 189, 248, 0.3), rgba(15, 23, 42, 0.95));
-      color: #e0f2fe;
+      letter-spacing: 0.11em;
+      background: #ffffff;
+      color: var(--accent);
       cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 0.35rem;
+      gap: 4px;
     }
 
     .tour-button {
-      padding: 0.35rem 0.8rem;
+      padding: 4px 10px;
       font-size: 0.72rem;
     }
 
     .tour-nav-btn {
-      padding: 0.25rem 0.7rem;
+      padding: 3px 10px;
       font-size: 0.7rem;
     }
 
     .export-button:hover,
     .tour-button:hover,
     .tour-nav-btn:hover {
-      box-shadow: 0 0 18px rgba(56, 189, 248, 0.65);
+      background: var(--accent);
+      color: #ffffff;
     }
 
     .export-button:active,
@@ -509,18 +508,29 @@
       transform: translateY(1px);
     }
 
+    .tour-nav-btn.secondary {
+      border-color: #d1d5db;
+      color: #4b5563;
+      background: #f9fafb;
+    }
+
+    .tour-nav-btn.secondary:hover {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
     .export-box {
       width: 100%;
       min-height: 150px;
       max-height: 220px;
       resize: vertical;
-      border-radius: 0.85rem;
-      border: 1px solid rgba(148, 163, 184, 0.5);
-      background: rgba(15, 23, 42, 0.9);
-      color: #e5e7eb;
-      font-size: 0.78rem;
-      padding: 0.5rem 0.7rem;
-      font-family: "SF Mono", ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
+      color: #111827;
+      font-size: 0.8rem;
+      padding: 6px 8px;
+      font-family: ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
       white-space: pre;
     }
 
@@ -530,51 +540,48 @@
     }
 
     .uncertainty-block {
-      margin-top: 0.35rem;
-      padding: 0.4rem 0.55rem;
-      border-radius: 0.8rem;
-      border: 1px dashed rgba(148, 163, 184, 0.55);
-      background: rgba(15, 23, 42, 0.95);
+      margin-top: 8px;
+      padding: 6px 8px;
+      border-radius: 10px;
+      border: 1px dashed #e5e7eb;
+      background: #f9fafb;
     }
 
     .uncertainty-label {
-      font-size: 0.78rem;
-      margin-bottom: 0.3rem;
+      font-size: 0.8rem;
+      margin-bottom: 4px;
       color: var(--text-muted);
     }
 
     .uncertainty-row {
       display: flex;
       align-items: center;
-      gap: 0.7rem;
+      gap: 8px;
     }
 
     .uncertainty-value {
       font-size: 0.8rem;
       font-variant-numeric: tabular-nums;
-      color: #cbd5f5;
+      color: #111827;
       min-width: 60px;
       text-align: right;
     }
 
     /* Guided tour panel */
     .tour-panel {
-      margin-top: 0.7rem;
-      padding: 0.55rem 0.65rem 0.55rem;
-      border-radius: 0.9rem;
-      border: 1px solid rgba(248, 250, 252, 0.3);
-      background: radial-gradient(circle at top left, rgba(30, 64, 175, 0.7), rgba(15, 23, 42, 0.98));
-      box-shadow:
-        0 18px 35px rgba(15, 23, 42, 0.95),
-        0 0 0 1px rgba(30, 64, 175, 0.8);
+      margin-top: 10px;
+      padding: 8px 9px;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
     }
 
     .tour-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 0.5rem;
-      margin-bottom: 0.3rem;
+      gap: 6px;
+      margin-bottom: 4px;
     }
 
     .tour-title {
@@ -583,53 +590,43 @@
     }
 
     .tour-step-indicator {
-      font-size: 0.7rem;
-      opacity: 0.9;
+      font-size: 0.72rem;
+      color: var(--text-muted);
     }
 
     .tour-body {
-      font-size: 0.76rem;
-      color: #e5e7eb;
-      margin-bottom: 0.35rem;
-      line-height: 1.45;
+      font-size: 0.78rem;
+      color: var(--text-main);
+      margin-bottom: 6px;
+      line-height: 1.4;
     }
 
     .tour-body p {
-      margin: 0.1rem 0;
+      margin: 2px 0;
     }
 
     .tour-body-cta {
-      font-size: 0.74rem;
-      opacity: 0.9;
+      font-size: 0.76rem;
+      color: #374151;
     }
 
     .tour-controls {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 0.4rem;
-      margin-top: 0.2rem;
+      gap: 6px;
+      margin-top: 4px;
     }
 
     .tour-nav-group {
       display: flex;
       align-items: center;
-      gap: 0.3rem;
+      gap: 4px;
     }
 
     .tour-hint {
-      font-size: 0.68rem;
-      opacity: 0.9;
-    }
-
-    .tour-nav-btn.secondary {
-      border-color: rgba(148, 163, 184, 0.7);
-      background: rgba(15, 23, 42, 0.95);
-      color: #e5e7eb;
-    }
-
-    .tour-nav-btn.secondary:hover {
-      box-shadow: 0 0 12px rgba(148, 163, 184, 0.7);
+      font-size: 0.7rem;
+      color: var(--text-muted);
     }
   </style>
 </head>
@@ -641,12 +638,11 @@
         <div>
           <div class="card-title">TRIPOD-AI Interactive Explorer</div>
           <div class="subtitle">
-            Anchor TRIPOD-AI in your own AI/ML prediction project. For each item,
-            rate how well it’s addressed and reflect on what still needs work.
+            Use the TRIPOD-AI checklist to stress-test your AI/ML prediction project, one item at a time.
           </div>
         </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.35rem;">
-          <span class="pill">Project ↔ Checklist ↔ Reflection</span>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+          <span class="pill">Project · Checklist · Reflection</span>
           <button id="tourStartButton" class="tour-button">
             <span>★</span> Start guided tour
           </button>
@@ -691,17 +687,16 @@
         <div>
           <div class="card-title">Outcome Distributions from Your TRIPOD-AI Profile</div>
           <div class="subtitle">
-            As you move the sliders, we estimate how your reporting profile affects
-            the likely viability, feasibility, ethics and sustainability of your project.
+            As you move the sliders, we estimate how your reporting profile affects viability, feasibility, ethics and sustainability.
           </div>
         </div>
-        <span class="pill">Viability • Feasibility • Ethics • Sustainability</span>
+        <span class="pill">Viability · Feasibility · Ethics · Sustainability</span>
       </div>
 
       <div class="uncertainty-block">
         <div class="uncertainty-label">
           Overall confidence in your TRIPOD-AI ratings
-          <span style="opacity:0.85;">(0 = very unsure, 100 = very confident)</span>
+          <span style="color:#9ca3af;">(0 = very unsure, 100 = very confident)</span>
         </div>
         <div class="uncertainty-row">
           <input type="range" min="0" max="100" value="60" id="uncertaintyGlobal" />
@@ -712,16 +707,15 @@
       <!-- Guided tour panel -->
       <div class="tour-panel" id="tourPanel">
         <div class="tour-header">
-          <div class="tour-title">Guided tour: explore TRIPOD-AI step by step</div>
+          <div class="tour-title">Guided tour: TRIPOD-AI in practice</div>
           <div class="tour-step-indicator" id="tourStepIndicator">
-            Step 0 of 0
+            Tour not started
           </div>
         </div>
         <div class="tour-body" id="tourBody">
           <p>
-            Click <strong>“Start guided tour”</strong> on the left to walk through selected
-            TRIPOD-AI items. We’ll highlight each card, suggest what to look for, and show
-            how your choices shape the distributions below.
+            Click <strong>“Start guided tour”</strong> on the left. We’ll walk through selected
+            TRIPOD-AI items, highlight them in the checklist, and invite short reflections.
           </p>
         </div>
         <div class="tour-controls">
@@ -743,7 +737,7 @@
       <div class="legend">
         <div class="legend-item">
           <span class="legend-dot"></span>
-          <span>Bar length = probability mass in that band</span>
+          <span>Bar length = probability in that band</span>
         </div>
         <div class="legend-item">
           <span class="legend-dot" style="opacity:0.4;"></span>
@@ -772,7 +766,7 @@
   </div>
 
   <script>
-    // --- TRIPOD-AI items: grouped & paraphrased for interactive exploration ---
+    // --- TRIPOD-AI items (same content as before, adapted for this UI) ---
 
     const TRIPOD_ITEMS = [
       // Title & Abstract
@@ -1013,8 +1007,6 @@
       { key: "veryHigh", label: "Very High", center: 0.9 }
     ];
 
-    // --- Guided tour steps (subset of items, with pedagogical narrative) ---
-
     const TOUR_STEPS = [
       {
         itemId: "background_rationale",
@@ -1101,7 +1093,7 @@
     function computeDistribution(mean, confidence) {
       mean = clamp01(mean);
       const c = clamp01(confidence);
-      const sigma = 0.4 - 0.22 * c; // higher confidence -> narrower
+      const sigma = 0.4 - 0.22 * c; // high confidence -> narrower
 
       const probs = [];
       let sum = 0;
@@ -1383,11 +1375,10 @@
       const s = summary.sustainability.ev;
 
       const badge = classifyBadge(v, f, e, s);
-
       const confidenceVal = (parseInt(document.getElementById("uncertaintyGlobal").value, 10) || 0) / 100;
 
       summaryEl.innerHTML = `
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;margin-bottom:0.25rem;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;">
           <div class="badge ${badge.cls}">${badge.label}</div>
           <div class="badge">Confidence: ${(confidenceVal * 100).toFixed(0)}%</div>
         </div>
@@ -1397,9 +1388,8 @@
           <span class="summary-highlight">Ethics</span> ≈ ${(e * 100).toFixed(0)}%,
           <span class="summary-highlight">Sustainability</span> ≈ ${(s * 100).toFixed(0)}%.
         </div>
-        <div style="margin-top:0.25rem;">
-          Where scores are low or uncertainty is high, explore the corresponding checklist items on the left:
-          this is where strengthening your TRIPOD-AI reporting will most improve the credibility and impact of your project.
+        <div style="margin-top:4px;">
+          Where scores are low or uncertainty is high, use the checklist (and guided tour) on the left to refine reporting and design decisions.
         </div>
       `;
     }
@@ -1468,8 +1458,7 @@
       URL.revokeObjectURL(url);
     }
 
-    // --- Guided tour logic ---
-
+    // Guided tour logic
     function clearTourHighlight() {
       const highlighted = document.querySelector(".item-card.tour-highlight");
       if (highlighted) highlighted.classList.remove("tour-highlight");
@@ -1484,7 +1473,6 @@
     }
 
     function updateTourUI() {
-      const panel = document.getElementById("tourPanel");
       const body = document.getElementById("tourBody");
       const indicator = document.getElementById("tourStepIndicator");
       const hint = document.getElementById("tourHint");
@@ -1495,9 +1483,9 @@
         indicator.textContent = "Tour not started";
         body.innerHTML = `
           <p>
-            Click <strong>“Start guided tour”</strong> on the left. We’ll pick a few
-            key TRIPOD-AI items, highlight them in the checklist, and help you reflect
-            on how they apply to your project.
+            Click <strong>“Start guided tour”</strong> on the left. We’ll walk you
+            through selected TRIPOD-AI items, highlighting them in the checklist and
+            inviting short reflections.
           </p>
         `;
         hint.textContent = "Tour is idle – press “Start guided tour”.";
@@ -1566,7 +1554,6 @@
 
       document.getElementById("exportButton").addEventListener("click", exportJson);
 
-      // Guided tour buttons
       document.getElementById("tourStartButton").addEventListener("click", startTour);
       document.getElementById("tourNext").addEventListener("click", nextTourStep);
       document.getElementById("tourPrev").addEventListener("click", prevTourStep);
