@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>QSAR Asthmagen Probability Explorer (Demo Only)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #020617;
+      --card-alt-bg: #020617;
+      --accent: #38bdf8;
+      --accent-soft: rgba(56, 189, 248, 0.17);
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --border: rgba(148, 163, 184, 0.3);
+      --danger: #fb7185;
+      --warning: #facc15;
+      --safe: #4ade80;
+      --radius-lg: 18px;
+      --radius-xl: 24px;
+      --shadow-soft: 0 24px 60px rgba(15, 23, 42, 0.95);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #1d283a 0, #020617 45%, #000 100%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      padding: 32px 12px;
+    }
+
+    .app-shell {
+      width: 100%;
+      max-width: 1200px;
+      background: radial-gradient(circle at top left, #020617 0, #020617 40%, #000 100%);
+      border-radius: 32px;
+      padding: 24px;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      box-shadow: var(--shadow-soft);
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+      gap: 24px;
+    }
+
+    @media (max-width: 900px) {
+      .app-shell {
+        grid-template-columns: minmax(0, 1fr);
+        padding: 18px;
+      }
+    }
+
+    .header {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+    }
+
+    .header-main {
+      max-width: 620px;
+    }
+
+    .title-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 4px;
+    }
+
+    .title-pill {
+      padding: 2px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .title-pill-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: radial-gradient(circle, var(--accent) 0, #0ea5e9 55%, transparent 100%);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.8);
+    }
+
+    h1 {
+      font-size: clamp(20px, 3vw, 24px);
+      margin: 0 0 4px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    h1 span.accent {
+      background: linear-gradient(to right, #38bdf8, #22c55e);
+      -webkit-background-clip: text;
+      color: transparent;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      color: var(--muted);
+      max-width: 600px;
+      line-height: 1.4;
+    }
+
+    .badge {
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      font-size: 11px;
+      color: var(--muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      backdrop-filter: blur(16px);
+    }
+
+    .badge strong {
+      color: var(--danger);
+    }
+
+    .layout-left,
+    .layout-right {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .card {
+      background: radial-gradient(circle at top left, #020617 0, #020617 45%, #020617 100%);
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border);
+      padding: 16px 16px 18px;
+      box-shadow: 0 16px 40px rgba(15, 23, 42, 0.8);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top right, rgba(56, 189, 248, 0.12), transparent 55%);
+      pointer-events: none;
+      mix-blend-mode: screen;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      gap: 10px;
+    }
+
+    .card-title {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-title span.dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.9);
+    }
+
+    .card-subtitle {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    label {
+      font-size: 12px;
+      color: var(--muted);
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    select,
+    input[type="number"] {
+      width: 100%;
+      padding: 7px 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      background: rgba(15, 23, 42, 0.85);
+      color: var(--text);
+      font-size: 13px;
+      outline: none;
+      transition: border 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+
+    select:focus,
+    input[type="number"]:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.4);
+      background: rgba(15, 23, 42, 0.95);
+    }
+
+    select {
+      cursor: pointer;
+      appearance: none;
+      background-image: linear-gradient(45deg, transparent 50%, #6b7280 50%),
+        linear-gradient(135deg, #6b7280 50%, transparent 50%);
+      background-position: calc(100% - 15px) 50%, calc(100% - 10px) 50%;
+      background-size: 5px 5px, 5px 5px;
+      background-repeat: no-repeat;
+      padding-right: 26px;
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .pill {
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px dashed rgba(148, 163, 184, 0.6);
+      color: var(--muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .pill span.dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--accent);
+    }
+
+    .slider-row {
+      display: grid;
+      grid-template-columns: 1.3fr 0.4fr;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .slider-row.compact {
+      grid-template-columns: 1.4fr 0.6fr;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      appearance: none;
+      height: 6px;
+      border-radius: 999px;
+      background: linear-gradient(
+        90deg,
+        rgba(56, 189, 248, 0.9),
+        rgba(34, 197, 94, 0.9),
+        rgba(250, 204, 21, 0.9)
+      );
+      outline: none;
+      opacity: 0.85;
+      transition: opacity 0.15s ease;
+    }
+
+    input[type="range"]:hover {
+      opacity: 1;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #020617;
+      border: 2px solid #e5e7eb;
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.7);
+      cursor: grab;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #020617;
+      border: 2px solid #e5e7eb;
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.7);
+      cursor: grab;
+    }
+
+    .value-pill {
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      color: var(--text);
+      text-align: center;
+      min-width: 64px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    @media (max-width: 600px) {
+      .grid-2 {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    /* Result gauge */
+    .result-card-main {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .prob-display {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+
+    .prob-percent {
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+    }
+
+    .prob-label {
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+    }
+
+    .prob-chip {
+      font-size: 11px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .prob-chip span.dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--safe);
+    }
+
+    .prob-chip.high span.dot {
+      background: var(--danger);
+    }
+
+    .prob-chip.medium span.dot {
+      background: var(--warning);
+    }
+
+    .gauge {
+      width: 100%;
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .gauge-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: inherit;
+      background: linear-gradient(
+        90deg,
+        var(--safe),
+        #22c55e,
+        var(--warning),
+        #f97316,
+        var(--danger)
+      );
+      transition: width 0.2s ease-out;
+    }
+
+    .gauge-markers {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      justify-content: space-between;
+      pointer-events: none;
+    }
+
+    .gauge-marker {
+      width: 1px;
+      background: rgba(148, 163, 184, 0.4);
+      height: 100%;
+    }
+
+    .gauge-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .interpretation {
+      font-size: 12px;
+      color: var(--muted);
+      border-radius: 14px;
+      border: 1px dashed rgba(148, 163, 184, 0.7);
+      padding: 8px 10px;
+      background: rgba(15, 23, 42, 0.9);
+    }
+
+    /* Contributions table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+      margin-top: 4px;
+      color: var(--muted);
+    }
+
+    th,
+    td {
+      padding: 5px 4px;
+      text-align: left;
+    }
+
+    th {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #9ca3af;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.4);
+    }
+
+    tr:nth-child(even) td {
+      background: rgba(15, 23, 42, 0.7);
+    }
+
+    .coef-positive {
+      color: #4ade80;
+    }
+
+    .coef-negative {
+      color: #fb7185;
+    }
+
+    .token {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+        "Liberation Mono", "Courier New", monospace;
+      font-size: 11px;
+    }
+
+    .footer-note {
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+
+    .sm-muted {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .pill-chem {
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      color: var(--muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+  </style>
+</head>
+<body>
+  <main class="app-shell">
+    <header class="header">
+      <div class="header-main">
+        <div class="title-row">
+          <div class="title-pill">
+            <span class="title-pill-dot"></span>
+            QSAR • Toy model
+          </div>
+        </div>
+        <h1>
+          Asthmagen <span class="accent">Probability Explorer</span>
+        </h1>
+        <p class="subtitle">
+          Pick a substance, inspect basic molecular descriptors, and explore a simple
+          QSAR-style logistic model that estimates the probability that the molecule
+          behaves as an asthmagen. Slide descriptors around to see how the prediction changes.
+        </p>
+      </div>
+      <div>
+        <div class="badge">
+          ⚠️ <strong>Educational demo only</strong>
+          <span>— Not validated, not for real-world risk or regulatory use.</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- LEFT SIDE: INPUT -->
+    <section class="layout-left">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">
+              <span class="dot"></span>
+              Substance &amp; identity
+            </div>
+            <p class="card-subtitle">
+              Choose a molecule from the dropdown to prefill approximate descriptors.
+            </p>
+          </div>
+        </div>
+
+        <div class="grid-2" style="margin-bottom: 10px;">
+          <div>
+            <label for="substanceSelect">Substance</label>
+            <select id="substanceSelect"></select>
+          </div>
+          <div>
+            <label for="categoryDisplay">Label (coarse)</label>
+            <input
+              id="categoryDisplay"
+              type="text"
+              readonly
+              value="—"
+              style="cursor: default;"
+            />
+          </div>
+        </div>
+
+        <div class="pill-row" id="identityPills">
+          <!-- filled by JS -->
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">
+              <span class="dot"></span>
+              Molecular descriptors (QSAR features)
+            </div>
+            <p class="card-subtitle">
+              Adjust descriptors to explore how the predicted asthmagen probability changes.
+            </p>
+          </div>
+        </div>
+
+        <!-- Sliders -->
+        <div>
+          <div class="slider-row">
+            <div>
+              <label for="logP">logP (octanol–water partition)</label>
+              <input id="logP" type="range" min="-2" max="7" step="0.1" />
+            </div>
+            <div class="value-pill">
+              <span id="logPValue">0.0</span>
+            </div>
+          </div>
+
+          <div class="slider-row">
+            <div>
+              <label for="mw">
+                Molecular weight (Da)
+                <span class="sm-muted">(20 – 400)</span>
+              </label>
+              <input id="mw" type="range" min="20" max="400" step="1" />
+            </div>
+            <div class="value-pill">
+              <span id="mwValue">0</span>
+            </div>
+          </div>
+
+          <div class="slider-row">
+            <div>
+              <label for="hba">H‐bond acceptors (HBA)</label>
+              <input id="hba" type="range" min="0" max="12" step="1" />
+            </div>
+            <div class="value-pill">
+              <span id="hbaValue">0</span>
+            </div>
+          </div>
+
+          <div class="slider-row">
+            <div>
+              <label for="hbd">H‐bond donors (HBD)</label>
+              <input id="hbd" type="range" min="0" max="8" step="1" />
+            </div>
+            <div class="value-pill">
+              <span id="hbdValue">0</span>
+            </div>
+          </div>
+
+          <div class="slider-row">
+            <div>
+              <label for="tpsa">Topological polar surface area (TPSA)</label>
+              <input id="tpsa" type="range" min="0" max="200" step="1" />
+            </div>
+            <div class="value-pill">
+              <span id="tpsaValue">0</span> Å²
+            </div>
+          </div>
+
+          <div class="slider-row">
+            <div>
+              <label for="electrophilicity">Electrophilicity / reactivity index</label>
+              <input id="electrophilicity" type="range" min="0" max="10" step="0.1" />
+            </div>
+            <div class="value-pill">
+              <span id="electrophilicityValue">0.0</span>
+            </div>
+          </div>
+
+          <div class="slider-row compact">
+            <div>
+              <label for="exposure">
+                Exposure scaling (inhalation scenario)
+                <span class="sm-muted">(toy factor)</span>
+              </label>
+              <input id="exposure" type="range" min="0" max="3" step="0.1" />
+            </div>
+            <div class="value-pill">
+              ×<span id="exposureValue">1.0</span>
+            </div>
+          </div>
+        </div>
+
+        <p class="footer-note">
+          Descriptors are approximate, loosely inspired by typical values for each compound family.
+          Random noise has been added. This is intentionally rough and purely illustrative.
+        </p>
+      </div>
+    </section>
+
+    <!-- RIGHT SIDE: OUTPUT -->
+    <section class="layout-right">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">
+              <span class="dot"></span>
+              QSAR probability output
+            </div>
+            <p class="card-subtitle">
+              Logistic model combining descriptors into an estimated probability of asthmagenicity.
+            </p>
+          </div>
+        </div>
+
+        <div class="result-card-main">
+          <div class="prob-display">
+            <div>
+              <div class="prob-percent" id="probPercent">0%</div>
+              <div class="prob-label">Estimated asthmagen probability (toy)</div>
+            </div>
+            <div style="margin-left:auto; text-align:right;">
+              <div class="prob-chip" id="riskChip">
+                <span class="dot"></span>
+                <span id="riskLabel">Very low region</span>
+              </div>
+              <div class="sm-muted" style="margin-top:4px;">
+                Logistic score (logit): <span class="token" id="logitValue">0.000</span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="gauge">
+              <div class="gauge-fill" id="gaugeFill"></div>
+              <div class="gauge-markers">
+                <div class="gauge-marker" style="left:25%"></div>
+                <div class="gauge-marker" style="left:50%"></div>
+                <div class="gauge-marker" style="left:75%"></div>
+              </div>
+            </div>
+            <div class="gauge-labels">
+              <span>&lt; 10% very low</span>
+              <span>~30% low–moderate</span>
+              <span>~60% moderate</span>
+              <span>&gt; 80% high</span>
+            </div>
+          </div>
+
+          <div class="interpretation" id="interpretationText">
+            —
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">
+              <span class="dot"></span>
+              Contribution breakdown
+            </div>
+            <p class="card-subtitle">
+              Term-by-term contributions (β × x) to the logistic score from each descriptor.
+            </p>
+          </div>
+        </div>
+
+        <div>
+          <table>
+            <thead>
+              <tr>
+                <th>Term</th>
+                <th>β (coefficient)</th>
+                <th>x (value)</th>
+                <th>β × x</th>
+              </tr>
+            </thead>
+            <tbody id="contribBody">
+              <!-- filled by JS -->
+            </tbody>
+          </table>
+          <p class="footer-note">
+            Model form (toy):<br />
+            <span class="token">
+              logit(p) = β₀ + β<sub>logP</sub>·logP + β<sub>MW</sub>·MW + β<sub>HBA</sub>·HBA +
+              β<sub>HBD</sub>·HBD + β<sub>TPSA</sub>·TPSA + β<sub>Electro</sub>·Electrophilicity +
+              β<sub>Exposure</sub>·Exposure
+            </span>
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // -----------------------------
+    // Toy QSAR model configuration
+    // -----------------------------
+
+    // Logistic regression-style coefficients (fabricated for demonstration)
+    const modelCoeffs = {
+      intercept: -3.2,
+      logP: 0.65,
+      mw: 0.004,           // small positive contribution with size
+      hba: 0.16,
+      hbd: 0.22,
+      tpsa: -0.011,        // higher polarity slightly reduces risk
+      electrophilicity: 0.42,
+      exposure: 0.85
+    };
+
+    // Example dataset of substances (heavily simplified; values approximate / illustrative only)
+    const substances = [
+      {
+        name: "Toluene diisocyanate (TDI)",
+        smiles: "CN(C)C(=O)NCC1=CC=CC=C1NCOC(=O)N(C)C",
+        label: "Well-known respiratory sensitizer",
+        category: "Likely asthmagen",
+        asthmagenFlag: true,
+        descriptors: { logP: 3.2, mw: 174, hba: 4, hbd: 0, tpsa: 52, electrophilicity: 8.2, exposure: 2.5 }
+      },
+      {
+        name: "Methylene diphenyl diisocyanate (MDI)",
+        smiles: "O=C=Nc1ccc(cc1)Cc2ccc(N=C=O)cc2",
+        label: "Aromatic diisocyanate",
+        category: "Likely asthmagen",
+        asthmagenFlag: true,
+        descriptors: { logP: 4.2, mw: 250, hba: 4, hbd: 0, tpsa: 58, electrophilicity: 7.6, exposure: 2.2 }
+      },
+      {
+        name: "Hexamethylene diisocyanate (HDI)",
+        smiles: "O=C=NCCCCCCN=C=O",
+        label: "Aliphatic diisocyanate",
+        category: "Probable asthmagen",
+        asthmagenFlag: true,
+        descriptors: { logP: 3.0, mw: 168, hba: 2, hbd: 0, tpsa: 40, electrophilicity: 7.2, exposure: 2.1 }
+      },
+      {
+        name: "Formaldehyde",
+        smiles: "C=O",
+        label: "Reactive aldehyde",
+        category: "Known respiratory irritant",
+        asthmagenFlag: true,
+        descriptors: { logP: -0.8, mw: 30, hba: 1, hbd: 0, tpsa: 17, electrophilicity: 9.0, exposure: 2.4 }
+      },
+      {
+        name: "Glutaraldehyde",
+        smiles: "OHC-(CH2)3-CHO",
+        label: "Biocidal dialdehyde",
+        category: "Known asthmagen",
+        asthmagenFlag: true,
+        descriptors: { logP: -0.2, mw: 100, hba: 2, hbd: 0, tpsa: 34, electrophilicity: 8.1, exposure: 2.1 }
+      },
+      {
+        name: "Maleic anhydride",
+        smiles: "O=C1OC(=O)C=C1",
+        label: "Cyclic anhydride",
+        category: "Probable asthmagen",
+        asthmagenFlag: true,
+        descriptors: { logP: -0.1, mw: 98, hba: 2, hbd: 0, tpsa: 45, electrophilicity: 7.5, exposure: 2.0 }
+      },
+      {
+        name: "Phthalic anhydride",
+        smiles: "O=C1OC(=O)c2ccccc21",
+        label: "Aromatic anhydride",
+        category: "Probable asthmagen",
+        asthmagenFlag: true,
+        descriptors: { logP: 0.8, mw: 148, hba: 2, hbd: 0, tpsa: 52, electrophilicity: 7.2, exposure: 1.8 }
+      },
+      {
+        name: "Colophony (rosin acids, generic)",
+        smiles: "[generic resin acids]",
+        label: "Complex mixture; solder flux",
+        category: "Associated with occupational asthma",
+        asthmagenFlag: true,
+        descriptors: { logP: 5.5, mw: 300, hba: 2, hbd: 1, tpsa: 60, electrophilicity: 5.5, exposure: 2.3 }
+      },
+      {
+        name: "Acrylamide",
+        smiles: "C=CC(=O)N",
+        label: "α,β-unsaturated amide",
+        category: "Sensitising electrophile (uncertain asthma link)",
+        asthmagenFlag: false,
+        descriptors: { logP: -0.7, mw: 71, hba: 1, hbd: 1, tpsa: 43, electrophilicity: 7.0, exposure: 1.4 }
+      },
+      {
+        name: "Methyl methacrylate",
+        smiles: "CC(=C)C(=O)OC",
+        label: "Acrylate monomer",
+        category: "Respiratory irritant; debated asthma role",
+        asthmagenFlag: false,
+        descriptors: { logP: 1.4, mw: 100, hba: 2, hbd: 0, tpsa: 35, electrophilicity: 6.5, exposure: 1.6 }
+      },
+      {
+        name: "Styrene",
+        smiles: "C=CC1=CC=CC=C1",
+        label: "Aromatic solvent monomer",
+        category: "Respiratory irritant",
+        asthmagenFlag: false,
+        descriptors: { logP: 2.9, mw: 104, hba: 0, hbd: 0, tpsa: 0, electrophilicity: 4.0, exposure: 1.3 }
+      },
+      {
+        name: "Ethylene oxide",
+        smiles: "C1CO1",
+        label: "Reactive epoxide",
+        category: "Potent electrophile",
+        asthmagenFlag: false,
+        descriptors: { logP: -0.3, mw: 44, hba: 1, hbd: 0, tpsa: 17, electrophilicity: 8.5, exposure: 1.8 }
+      },
+      {
+        name: "Chloramine-T (p-toluenesulfonamide sodium salt)",
+        smiles: "[Na+]O=S(=O)2Nc1cc(C)ccc1Cl",
+        label: "Disinfectant; can trigger occupational asthma",
+        category: "Suspected asthmagen",
+        asthmagenFlag: true,
+        descriptors: { logP: 0.4, mw: 230, hba: 5, hbd: 1, tpsa: 70, electrophilicity: 6.8, exposure: 2.0 }
+      },
+      {
+        name: "Nickel sulfate (hydrated, generic)",
+        smiles: "[Ni+2].[O-]S(=O)(=O)O",
+        label: "Metal salt; allergen",
+        category: "Respiratory sensitisation debated",
+        asthmagenFlag: false,
+        descriptors: { logP: -3.0, mw: 155, hba: 4, hbd: 0, tpsa: 85, electrophilicity: 5.0, exposure: 1.5 }
+      },
+      {
+        name: "Cobalt chloride",
+        smiles: "Cl[Co]Cl",
+        label: "Metal salt",
+        category: "Associated with occupational asthma",
+        asthmagenFlag: true,
+        descriptors: { logP: -3.0, mw: 130, hba: 0, hbd: 0, tpsa: 0, electrophilicity: 5.2, exposure: 1.7 }
+      },
+      {
+        name: "Ammonium persulfate",
+        smiles: "[NH4+]2.[O-]S(=O)2OS(=O)2[O-]",
+        label: "Strong oxidiser; hairdressing allergen",
+        category: "Well-documented asthmagen",
+        asthmagenFlag: true,
+        descriptors: { logP: -3.5, mw: 228, hba: 8, hbd: 0, tpsa: 160, electrophilicity: 7.0, exposure: 2.4 }
+      },
+      {
+        name: "Sodium persulfate",
+        smiles: "[Na+]2.[O-]S(=O)2OS(=O)2[O-]",
+        label: "Oxidiser; bleaching agent",
+        category: "Occupational asthmagen",
+        asthmagenFlag: true,
+        descriptors: { logP: -3.5, mw: 238, hba: 8, hbd: 0, tpsa: 160, electrophilicity: 6.8, exposure: 2.2 }
+      },
+      {
+        name: "Isopropanol (2-propanol)",
+        smiles: "CC(O)C",
+        label: "Common solvent",
+        category: "Low evidence for asthma",
+        asthmagenFlag: false,
+        descriptors: { logP: 0.1, mw: 60, hba: 1, hbd: 1, tpsa: 20, electrophilicity: 2.0, exposure: 1.0 }
+      },
+      {
+        name: "Acetone",
+        smiles: "CC(=O)C",
+        label: "Common solvent ketone",
+        category: "General irritant; low asthma concern",
+        asthmagenFlag: false,
+        descriptors: { logP: -0.2, mw: 58, hba: 1, hbd: 0, tpsa: 17, electrophilicity: 3.0, exposure: 1.0 }
+      },
+      {
+        name: "Glycerol (glycerine)",
+        smiles: "C(C(CO)O)O",
+        label: "Highly polar triol",
+        category: "Low asthmagen concern",
+        asthmagenFlag: false,
+        descriptors: { logP: -1.7, mw: 92, hba: 3, hbd: 3, tpsa: 60, electrophilicity: 1.0, exposure: 0.8 }
+      },
+      {
+        name: "Sodium chloride",
+        smiles: "[Na+].[Cl-]",
+        label: "Inert ionic salt (example of very low risk)",
+        category: "Very unlikely asthmagen",
+        asthmagenFlag: false,
+        descriptors: { logP: -4.0, mw: 58, hba: 0, hbd: 0, tpsa: 0, electrophilicity: 0.5, exposure: 0.4 }
+      }
+    ];
+
+    // -----------------------------
+    // Utility functions
+    // -----------------------------
+    function logistic(logit) {
+      return 1 / (1 + Math.exp(-logit));
+    }
+
+    function clamp(v, min, max) {
+      return Math.min(max, Math.max(min, v));
+    }
+
+    function formatNumber(v, digits) {
+      return v.toFixed(digits);
+    }
+
+    function computeLogitAndProbability(descriptors) {
+      const x = descriptors;
+      const c = modelCoeffs;
+      const logit =
+        c.intercept +
+        c.logP * x.logP +
+        c.mw * x.mw +
+        c.hba * x.hba +
+        c.hbd * x.hbd +
+        c.tpsa * x.tpsa +
+        c.electrophilicity * x.electrophilicity +
+        c.exposure * x.exposure;
+      return {
+        logit,
+        probability: logistic(logit)
+      };
+    }
+
+    function riskBand(prob) {
+      if (prob < 0.1) return { label: "Very low region", className: "" };
+      if (prob < 0.3) return { label: "Low–moderate region", className: "medium" };
+      if (prob < 0.6) return { label: "Moderate region", className: "medium" };
+      if (prob < 0.8) return { label: "High region", className: "high" };
+      return { label: "Very high region", className: "high" };
+    }
+
+    function generateInterpretation(substance, prob, logit, descriptors) {
+      const band = riskBand(prob);
+      const pct = prob * 100;
+      const asthmagenFlag = substance.asthmagenFlag;
+
+      const drivers = [
+        { key: "electrophilicity", label: "electrophilicity/reactivity", value: descriptors.electrophilicity },
+        { key: "logP", label: "lipophilicity (logP)", value: descriptors.logP },
+        { key: "tpsa", label: "polarity / TPSA", value: descriptors.tpsa },
+        { key: "exposure", label: "inhalation exposure factor", value: descriptors.exposure }
+      ].sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
+
+      const mainDriver = drivers[0];
+
+      let text = "";
+
+      text += `For <strong>${substance.name}</strong>, the toy QSAR model gives an estimated `;
+      text += `<strong>${pct.toFixed(1)}% probability</strong> of asthmagenicity. `;
+      text += `The logistic score (logit) is <span class="token">${logit.toFixed(3)}</span>, placing it in a `;
+      text += `<strong>${band.label.toLowerCase()}</strong>. `;
+
+      text += "<br><br>";
+
+      text += `In this simple model, the largest single driver is <em>${mainDriver.label}</em> `;
+      text += `with a value of about <strong>${mainDriver.value.toFixed(2)}</strong>, `;
+      text += `combined with the current exposure factor of <strong>${descriptors.exposure.toFixed(2)}</strong>. `;
+
+      text += "<br><br>";
+
+      if (asthmagenFlag) {
+        text += `This substance is <strong>tagged in the demo dataset as “${substance.category}”</strong>, `;
+        text += `so the model has been loosely tuned so that its probability tends to sit in a `;
+        text += `higher band when descriptors and exposure are left at their default values. `;
+      } else {
+        text += `This substance is <strong>tagged in the demo dataset as “${substance.category}”</strong>. `;
+        text += `By default the model is biased so that its probability typically falls into lower or intermediate bands. `;
+      }
+
+      text += "<br><br>";
+      text += `<strong>Reminder:</strong> this is a purely illustrative QSAR-style model. `;
+      text += `The coefficients and descriptor values are synthetic and should not be used for real risk assessment, `;
+      text += `classification or regulatory decisions.`;
+
+      return text;
+    }
+
+    // -----------------------------
+    // DOM wiring
+    // -----------------------------
+    const el = (id) => document.getElementById(id);
+
+    function populateSubstanceDropdown() {
+      const select = el("substanceSelect");
+      substances.forEach((s, index) => {
+        const opt = document.createElement("option");
+        opt.value = index;
+        opt.textContent = s.name;
+        select.appendChild(opt);
+      });
+    }
+
+    function setDescriptorSliders(descriptors) {
+      el("logP").value = descriptors.logP;
+      el("mw").value = descriptors.mw;
+      el("hba").value = descriptors.hba;
+      el("hbd").value = descriptors.hbd;
+      el("tpsa").value = descriptors.tpsa;
+      el("electrophilicity").value = descriptors.electrophilicity;
+      el("exposure").value = descriptors.exposure;
+
+      updateDescriptorValueLabels();
+    }
+
+    function getCurrentDescriptorsFromUI() {
+      return {
+        logP: parseFloat(el("logP").value),
+        mw: parseFloat(el("mw").value),
+        hba: parseFloat(el("hba").value),
+        hbd: parseFloat(el("hbd").value),
+        tpsa: parseFloat(el("tpsa").value),
+        electrophilicity: parseFloat(el("electrophilicity").value),
+        exposure: parseFloat(el("exposure").value)
+      };
+    }
+
+    function updateDescriptorValueLabels() {
+      el("logPValue").textContent = parseFloat(el("logP").value).toFixed(2);
+      el("mwValue").textContent = parseFloat(el("mw").value).toFixed(0);
+      el("hbaValue").textContent = parseFloat(el("hba").value).toFixed(0);
+      el("hbdValue").textContent = parseFloat(el("hbd").value).toFixed(0);
+      el("tpsaValue").textContent = parseFloat(el("tpsa").value).toFixed(0);
+      el("electrophilicityValue").textContent = parseFloat(el("electrophilicity").value).toFixed(2);
+      el("exposureValue").textContent = parseFloat(el("exposure").value).toFixed(2);
+    }
+
+    function updateIdentityPills(substance) {
+      const container = el("identityPills");
+      container.innerHTML = "";
+
+      const pill1 = document.createElement("div");
+      pill1.className = "pill";
+      pill1.innerHTML = `<span class="dot"></span>${substance.label}`;
+      container.appendChild(pill1);
+
+      const pill2 = document.createElement("div");
+      pill2.className = "pill-chem";
+      pill2.innerHTML = `<span class="dot"></span><span>SMILES:</span> <span class="token">${
+        substance.smiles || "n/a"
+      }</span>`;
+      container.appendChild(pill2);
+
+      const pill3 = document.createElement("div");
+      pill3.className = "pill-chem";
+      pill3.innerHTML = `<span class="dot"></span><span>Demo label:</span> <span>${
+        substance.category
+      }</span>`;
+      container.appendChild(pill3);
+    }
+
+    function updateContributionTable(descriptors) {
+      const body = el("contribBody");
+      body.innerHTML = "";
+
+      const terms = [
+        { key: "intercept", label: "Intercept", value: 1, x: 1, beta: modelCoeffs.intercept },
+        { key: "logP", label: "logP", value: descriptors.logP, x: descriptors.logP, beta: modelCoeffs.logP },
+        { key: "mw", label: "Molecular weight", value: descriptors.mw, x: descriptors.mw, beta: modelCoeffs.mw },
+        { key: "hba", label: "HBA", value: descriptors.hba, x: descriptors.hba, beta: modelCoeffs.hba },
+        { key: "hbd", label: "HBD", value: descriptors.hbd, x: descriptors.hbd, beta: modelCoeffs.hbd },
+        { key: "tpsa", label: "TPSA", value: descriptors.tpsa, x: descriptors.tpsa, beta: modelCoeffs.tpsa },
+        {
+          key: "electrophilicity",
+          label: "Electrophilicity",
+          value: descriptors.electrophilicity,
+          x: descriptors.electrophilicity,
+          beta: modelCoeffs.electrophilicity
+        },
+        { key: "exposure", label: "Exposure factor", value: descriptors.exposure, x: descriptors.exposure, beta: modelCoeffs.exposure }
+      ];
+
+      terms.forEach((t) => {
+        const tr = document.createElement("tr");
+
+        const beta = t.beta;
+        const contrib = beta * t.x;
+        const betaClass =
+          beta > 0 ? "coef-positive" : beta < 0 ? "coef-negative" : "";
+
+        tr.innerHTML = `
+          <td>${t.label}</td>
+          <td class="token ${betaClass}">${beta.toFixed(3)}</td>
+          <td class="token">${t.value === 1 ? "—" : t.value.toFixed(2)}</td>
+          <td class="token ${betaClass}">${contrib.toFixed(3)}</td>
+        `;
+
+        body.appendChild(tr);
+      });
+    }
+
+    function updateOutputs() {
+      const select = el("substanceSelect");
+      const substance = substances[parseInt(select.value, 10)];
+      const descriptors = getCurrentDescriptorsFromUI();
+      const { logit, probability } = computeLogitAndProbability(descriptors);
+
+      const probPercent = clamp(probability * 100, 0, 100);
+      el("probPercent").textContent = `${probPercent.toFixed(1)}%`;
+      el("logitValue").textContent = logit.toFixed(3);
+
+      // Gauge
+      const gaugeFill = el("gaugeFill");
+      gaugeFill.style.width = `${probPercent.toFixed(1)}%`;
+
+      // Risk chip
+      const band = riskBand(probability);
+      const chip = el("riskChip");
+      chip.classList.remove("high", "medium");
+      if (band.className) chip.classList.add(band.className);
+      el("riskLabel").textContent = band.label;
+
+      // Interpretation
+      el("interpretationText").innerHTML = generateInterpretation(
+        substance,
+        probability,
+        logit,
+        descriptors
+      );
+
+      // Contribution table
+      updateContributionTable(descriptors);
+    }
+
+    function onSubstanceChange() {
+      const select = el("substanceSelect");
+      const substance = substances[parseInt(select.value, 10)];
+      setDescriptorSliders(substance.descriptors);
+      el("categoryDisplay").value = substance.category;
+      updateIdentityPills(substance);
+      updateOutputs();
+    }
+
+    function attachSliderListeners() {
+      const sliderIds = [
+        "logP",
+        "mw",
+        "hba",
+        "hbd",
+        "tpsa",
+        "electrophilicity",
+        "exposure"
+      ];
+      sliderIds.forEach((id) => {
+        const s = el(id);
+        s.addEventListener("input", () => {
+          updateDescriptorValueLabels();
+          updateOutputs();
+        });
+      });
+    }
+
+    // -----------------------------
+    // Initialize app
+    // -----------------------------
+    window.addEventListener("DOMContentLoaded", () => {
+      populateSubstanceDropdown();
+      attachSliderListeners();
+
+      // Default to the first substance
+      el("substanceSelect").value = 0;
+      const defaultSubstance = substances[0];
+      setDescriptorSliders(defaultSubstance.descriptors);
+      el("categoryDisplay").value = defaultSubstance.category;
+      updateIdentityPills(defaultSubstance);
+
+      updateOutputs();
+      el("substanceSelect").addEventListener("change", onSubstanceChange);
+    });
+  </script>
+</body>
+</html>
