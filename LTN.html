@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>LTNs & Children’s Health – Causal Explorer</title>
+  <style>
+    :root {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.4;
+    }
+
+    body {
+      margin: 0;
+      background: #f4f5f7;
+      color: #222;
+    }
+
+    .app-container {
+      display: grid;
+      grid-template-columns: minmax(280px, 380px) minmax(0, 2fr) minmax(260px, 340px);
+      gap: 1.25rem;
+      padding: 1.5rem;
+      box-sizing: border-box;
+    }
+
+    h1 {
+      grid-column: 1 / -1;
+      margin: 0 0 0.5rem 0;
+      font-size: 1.6rem;
+    }
+
+    .subtitle {
+      grid-column: 1 / -1;
+      margin-bottom: 1rem;
+      font-size: 0.9rem;
+      color: #555;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 1rem 1.2rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+      box-sizing: border-box;
+    }
+
+    .card h2 {
+      margin-top: 0;
+      font-size: 1.05rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .section-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #777;
+      margin-bottom: 0.25rem;
+    }
+
+    .control-group {
+      margin-bottom: 0.75rem;
+    }
+
+    .control-group label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      margin-bottom: 0.15rem;
+    }
+
+    .control-group small {
+      color: #666;
+      display: block;
+      font-size: 0.75rem;
+      margin-top: 0.2rem;
+    }
+
+    input[type="range"] {
+      width: 100%;
+    }
+
+    select, input[type="number"] {
+      width: 100%;
+      padding: 0.35rem 0.45rem;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 0.85rem;
+      box-sizing: border-box;
+      background: #fff;
+    }
+
+    .value-pill {
+      font-size: 0.8rem;
+      background: #eef2ff;
+      color: #333;
+      border-radius: 999px;
+      padding: 0.1rem 0.5rem;
+      margin-left: 0.4rem;
+    }
+
+    .risk-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.7rem;
+    }
+
+    .risk-row {
+      border-radius: 10px;
+      padding: 0.6rem 0.7rem;
+      background: #f8fafc;
+      border: 1px solid #e0e7ff;
+      font-size: 0.85rem;
+    }
+
+    .risk-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 0.3rem;
+    }
+
+    .risk-name {
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .risk-main-value {
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .risk-subline {
+      font-size: 0.78rem;
+      color: #555;
+      margin-bottom: 0.25rem;
+    }
+
+    .bar-bg {
+      width: 100%;
+      height: 8px;
+      border-radius: 999px;
+      background: #e5e7eb;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      width: 0;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #4f46e5, #6366f1);
+      transition: width 0.25s ease-out;
+    }
+
+    .legend {
+      font-size: 0.75rem;
+      color: #666;
+      margin-top: 0.5rem;
+    }
+
+    .questions-list {
+      padding-left: 1.2rem;
+      font-size: 0.83rem;
+    }
+
+    .questions-list li {
+      margin-bottom: 0.25rem;
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 0.1rem 0.4rem;
+      border-radius: 999px;
+      background: #eef2ff;
+      color: #4338ca;
+      margin-bottom: 0.4rem;
+    }
+
+    .lit-list {
+      font-size: 0.78rem;
+      padding-left: 1.1rem;
+      margin-top: 0.25rem;
+    }
+
+    .lit-list li {
+      margin-bottom: 0.25rem;
+    }
+
+    .lit-list em {
+      font-style: italic;
+    }
+
+    .note {
+      font-size: 0.75rem;
+      color: #777;
+      margin-top: 0.5rem;
+    }
+
+    @media (max-width: 1024px) {
+      .app-container {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-container">
+  <h1>Exploring Causal Mechanisms: Low-Traffic Neighbourhoods & Children’s Health</h1>
+  <div class="subtitle">
+    Adjust the parameters to see how different assumptions about LTNs might affect illustrative risks
+    of child health outcomes. This is a thinking tool, not a prediction engine.
+  </div>
+
+  <!-- LEFT: CONTROLS -->
+  <div class="card">
+    <div class="section-label">Inputs</div>
+    <h2>Neighbourhood & Exposure Settings</h2>
+
+    <div class="control-group">
+      <label for="trafficReduction">
+        Traffic reduction on local streets
+        <span class="value-pill"><span id="trafficReductionValue">40</span>%</span>
+      </label>
+      <input id="trafficReduction" type="range" min="0" max="60" step="5" value="40">
+      <small>
+        Approximate % reduction in vehicle volume/speed on residential streets due to the LTN.
+        Higher values should lower road injury risk more strongly.
+      </small>
+    </div>
+
+    <div class="control-group">
+      <label for="no2Reduction">
+        Change in roadside NO₂
+        <span class="value-pill"><span id="no2ReductionValue">10</span>%</span>
+      </label>
+      <input id="no2Reduction" type="range" min="-10" max="30" step="5" value="10">
+      <small>
+        Approximate % change in local traffic-related NO₂ around homes/schools 
+        (negative values allow you to explore displacement to boundary roads).
+      </small>
+    </div>
+
+    <div class="control-group">
+      <label for="activityIncrease">
+        Extra active time per child
+        <span class="value-pill"><span id="activityIncreaseValue">15</span> min/day</span>
+      </label>
+      <input id="activityIncrease" type="range" min="0" max="30" step="5" value="15">
+      <small>
+        Estimated extra walking/cycling/outdoor play enabled by safer streets.
+      </small>
+    </div>
+
+    <div class="control-group">
+      <label for="deprivation">
+        Area-level deprivation (1 = low, 5 = high)
+        <span class="value-pill">Q<span id="deprivationValue">3</span></span>
+      </label>
+      <input id="deprivation" type="range" min="1" max="5" step="1" value="3">
+      <small>
+        Higher deprivation raises baseline risks (injury, asthma, obesity) but may also
+        mean larger absolute gains from environmental improvements.
+      </small>
+    </div>
+
+    <div class="control-group">
+      <label for="carOwnership">
+        Household car ownership (typical for this area)
+      </label>
+      <select id="carOwnership">
+        <option value="0">Low (most households car-free)</option>
+        <option value="1" selected>Medium (mix of car-free & 1 car)</option>
+        <option value="2">High (most households with 1–2 cars)</option>
+      </select>
+      <small>
+        Higher car ownership increases baseline exposure to traffic and tends to reduce
+        active travel.
+      </small>
+    </div>
+
+    <p class="note">
+      <strong>Important:</strong> All effects and numbers here are stylised, based loosely
+      on patterns in the literature. They are not validated risk estimates.
+    </p>
+  </div>
+
+  <!-- MIDDLE: RESULTS -->
+  <div class="card">
+    <div class="section-label">Outputs</div>
+    <h2>Illustrative Risks per Child (per year)</h2>
+
+    <div class="risk-grid">
+      <div class="risk-row" data-outcome="injury">
+        <div class="risk-header">
+          <div class="risk-name">Road traffic injury</div>
+          <div class="risk-main-value" id="injuryProbText"></div>
+        </div>
+        <div class="risk-subline" id="injuryCasesText"></div>
+        <div class="bar-bg">
+          <div class="bar-fill" id="injuryBar"></div>
+        </div>
+      </div>
+
+      <div class="risk-row" data-outcome="asthma">
+        <div class="risk-header">
+          <div class="risk-name">Asthma exacerbation / serious respiratory episode</div>
+          <div class="risk-main-value" id="asthmaProbText"></div>
+        </div>
+        <div class="risk-subline" id="asthmaCasesText"></div>
+        <div class="bar-bg">
+          <div class="bar-fill" id="asthmaBar"></div>
+        </div>
+      </div>
+
+      <div class="risk-row" data-outcome="lowPA">
+        <div class="risk-header">
+          <div class="risk-name">Low physical activity</div>
+          <div class="risk-main-value" id="lowPAProbText"></div>
+        </div>
+        <div class="risk-subline" id="lowPACasesText"></div>
+        <div class="bar-bg">
+          <div class="bar-fill" id="lowPABar"></div>
+        </div>
+      </div>
+
+      <div class="risk-row" data-outcome="obesity">
+        <div class="risk-header">
+          <div class="risk-name">Overweight / obesity</div>
+          <div class="risk-main-value" id="obesityProbText"></div>
+        </div>
+        <div class="risk-subline" id="obesityCasesText"></div>
+        <div class="bar-bg">
+          <div class="bar-fill" id="obesityBar"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="legend">
+      Displayed probabilities are per child per year; numbers in brackets show an
+      approximate 95% interval for expected cases per 1,000 children, assuming simple
+      binomial variation.
+    </div>
+  </div>
+
+  <!-- RIGHT: EVIDENCE & QUESTIONS -->
+  <div class="card">
+    <span class="badge">Evidence & Inquiry</span>
+    <h2>Key Mechanisms & Literature Anchors</h2>
+
+    <p style="font-size:0.83rem;">
+      Use these references as a starting point to defend the causal links:
+    </p>
+
+    <div class="section-label">Mechanism 1</div>
+    <strong style="font-size:0.85rem;">LTNs → ↓traffic → ↓child road injuries</strong>
+    <ul class="lit-list">
+      <li>London-wide evaluations of LTNs showing large reductions in road casualties
+          (esp. on internal LTN streets).</li>
+      <li>Classic injury epidemiology on traffic volume/speed as key determinants of child
+          pedestrian and cyclist risk.</li>
+    </ul>
+
+    <div class="section-label">Mechanism 2</div>
+    <strong style="font-size:0.85rem;">LTNs → ↓NO₂/PM (sometimes) → ↓asthma & respiratory burden</strong>
+    <ul class="lit-list">
+      <li>WHO and European meta-analyses linking NO₂ and fine particles to childhood asthma
+          incidence and exacerbations.</li>
+      <li>Local evaluations of air quality before/after LTNs (showing modest but real average
+          NO₂ reductions, with some boundary-road exceptions).</li>
+    </ul>
+
+    <div class="section-label">Mechanism 3</div>
+    <strong style="font-size:0.85rem;">LTNs → ↑perceived safety & walkability → ↑active travel & outdoor play</strong>
+    <ul class="lit-list">
+      <li>Longitudinal studies of “Mini-Holland” / LTN-type schemes showing large increases
+          in walking and cycling.</li>
+      <li>Child mobility studies linking traffic danger and neighbourhood safety to independent
+          mobility and physical activity.</li>
+    </ul>
+
+    <div class="section-label">Mechanism 4</div>
+    <strong style="font-size:0.85rem;">LTNs → ↑activity (over years) → ↓obesity risk</strong>
+    <ul class="lit-list">
+      <li>Neighbourhood walkability and childhood obesity literature: modest but consistent
+          associations in many settings.</li>
+      <li>Evidence on how small changes in daily MVPA accumulate into meaningful shifts in
+          BMI trajectories at population scale.</li>
+    </ul>
+
+    <div class="section-label">Questions to Ask</div>
+    <ul class="questions-list" id="questionsList">
+      <!-- dynamic content -->
+    </ul>
+
+    <p class="note">
+      Treat this tool as a way to structure questions: actual effect sizes should be
+      estimated with proper data, models, and sensitivity analyses.
+    </p>
+  </div>
+</div>
+
+<script>
+  // Baseline annual probabilities (stylised, per child)
+  const BASELINE = {
+    injury: 0.01,   // 1% per year
+    asthma: 0.15,   // 15% per year with an exacerbation/serious respiratory episode
+    lowPA: 0.40,    // 40% with low physical activity
+    obesity: 0.20   // 20% overweight/obese
+  };
+
+  function clamp(value, min, max) {
+    return Math.min(max, Math.max(min, value));
+  }
+
+  function computeRisks(params) {
+    const { trafficReduction, no2Reduction, activityIncrease, deprivation, carOwnership } = params;
+    const depCentered = deprivation - 3;       // -2 .. +2
+    const carLevel = carOwnership;             // 0,1,2 as numeric
+
+    const risks = {};
+
+    // 1. Injury risk
+    let pInjury = BASELINE.injury;
+    // Deprivation: up to +/-20%
+    pInjury *= 1 + 0.10 * depCentered;
+    // Traffic reduction: up to ~70% reduction at max slider
+    pInjury *= 1 - 0.70 * (trafficReduction / 60);
+    // Car ownership: more cars → more exposure (up to +10–15%)
+    pInjury *= 1 + 0.05 * carLevel;
+
+    // 2. Asthma / respiratory
+    let pAsthma = BASELINE.asthma;
+    pAsthma *= 1 + 0.10 * depCentered;
+    // NO2 reduction: up to ~20% reduction at 30% NO₂ decrease
+    // Allow negative NO2Reduction to model boundary-road worsening
+    const no2Prop = no2Reduction / 30; // can be negative
+    pAsthma *= 1 - 0.20 * no2Prop;
+    // Car use adds a bit
+    pAsthma *= 1 + 0.05 * carLevel;
+
+    // 3. Low physical activity
+    let pLowPA = BASELINE.lowPA;
+    pLowPA *= 1 + 0.15 * depCentered;
+    // Extra activity reduces low-PA risk up to ~40%
+    pLowPA *= 1 - 0.40 * (activityIncrease / 30);
+    // More cars → more low-PA
+    pLowPA *= 1 + 0.15 * carLevel;
+
+    // 4. Overweight / obesity
+    let pObesity = BASELINE.obesity;
+    pObesity *= 1 + 0.15 * depCentered;
+    // Extra MVPA: up to ~25% reduction at 30 min/day
+    pObesity *= 1 - 0.25 * (activityIncrease / 30);
+
+    // Clamp all probabilities to [0.0001, 0.95]
+    pInjury  = clamp(pInjury,  0.0001, 0.5);
+    pAsthma  = clamp(pAsthma,  0.01,   0.7);
+    pLowPA   = clamp(pLowPA,   0.05,   0.95);
+    pObesity = clamp(pObesity, 0.02,   0.70);
+
+    // Convert to objects with simple binomial CI for n=1000
+    const n = 1000;
+    function withCI(p) {
+      const se = Math.sqrt(p * (p - 1) * -1 / n); // p(1-p)/n but avoiding extra parens
+      const margin = 1.96 * se;
+      const low = clamp(p - margin, 0, 1);
+      const high = clamp(p + margin, 0, 1);
+      return { p, low, high, n };
+    }
+
+    risks.injury = withCI(pInjury);
+    risks.asthma = withCI(pAsthma);
+    risks.lowPA = withCI(pLowPA);
+    risks.obesity = withCI(pObesity);
+
+    return risks;
+  }
+
+  function updateUI() {
+    // Read inputs
+    const trafficReduction = parseFloat(document.getElementById('trafficReduction').value);
+    const no2Reduction = parseFloat(document.getElementById('no2Reduction').value);
+    const activityIncrease = parseFloat(document.getElementById('activityIncrease').value);
+    const deprivation = parseInt(document.getElementById('deprivation').value, 10);
+    const carOwnership = parseInt(document.getElementById('carOwnership').value, 10);
+
+    // Update numeric displays next to sliders
+    document.getElementById('trafficReductionValue').textContent = trafficReduction;
+    document.getElementById('no2ReductionValue').textContent = no2Reduction;
+    document.getElementById('activityIncreaseValue').textContent = activityIncrease;
+    document.getElementById('deprivationValue').textContent = deprivation;
+
+    const params = { trafficReduction, no2Reduction, activityIncrease, deprivation, carOwnership };
+    const risks = computeRisks(params);
+
+    // Helper to render each outcome
+    function renderOutcome(key, labelIdProb, labelIdCases, barId) {
+      const r = risks[key];
+      const pPct = (r.p * 100).toFixed(1);
+      const cases = (r.p * r.n);
+      const lowCases = (r.low * r.n);
+      const highCases = (r.high * r.n);
+
+      document.getElementById(labelIdProb).textContent = pPct + "%";
+      document.getElementById(labelIdCases).textContent =
+        `${cases.toFixed(0)} expected cases per 1,000 children ` +
+        `(${lowCases.toFixed(0)}–${highCases.toFixed(0)} as an approximate 95% interval)`;
+
+      const barEl = document.getElementById(barId);
+      barEl.style.width = (r.p * 100) + "%";
+    }
+
+    renderOutcome("injury",  "injuryProbText",  "injuryCasesText",  "injuryBar");
+    renderOutcome("asthma",  "asthmaProbText",  "asthmaCasesText",  "asthmaBar");
+    renderOutcome("lowPA",   "lowPAProbText",   "lowPACasesText",   "lowPABar");
+    renderOutcome("obesity", "obesityProbText", "obesityCasesText", "obesityBar");
+
+    // Generate tailored questions for further inquiry
+    updateQuestions(params, risks);
+  }
+
+  function updateQuestions(params, risks) {
+    const { trafficReduction, no2Reduction, activityIncrease, deprivation, carOwnership } = params;
+    const qs = [];
+
+    // Traffic vs injury
+    if (trafficReduction >= 40 && risks.injury.p > BASELINE.injury * 0.8) {
+      qs.push("If large traffic reductions are observed but injury risk remains high, " +
+              "are there specific junctions or boundary roads where collisions cluster?");
+    } else if (trafficReduction <= 10) {
+      qs.push("Given minimal traffic reduction, is the LTN design actually removing through-traffic, " +
+              "or is enforcement and filter placement insufficient?");
+    }
+
+    // Air quality vs asthma
+    if (no2Reduction < 0) {
+      qs.push("If NO₂ levels worsen near boundaries, which groups of children (e.g. those living or " +
+              "studying on boundary roads) are most exposed to potential harms?");
+    } else if (no2Reduction >= 15 && risks.asthma.p > BASELINE.asthma * 0.95) {
+      qs.push("Despite improved roadside NO₂, asthma risk remains high. Could indoor exposures, " +
+              "smoking, mould, or baseline vulnerability explain the residual risk?");
+    }
+
+    // Activity vs low PA
+    if (activityIncrease >= 20 && risks.lowPA.p > BASELINE.lowPA * 0.8) {
+      qs.push("If streets are safer but many children are still inactive, what non-traffic barriers " +
+              "exist (e.g. parental time, cultural norms, lack of play spaces)?");
+    } else if (activityIncrease <= 5 && trafficReduction >= 30) {
+      qs.push("Traffic danger has fallen but active time has barely changed. Are schools and local " +
+              "authorities actively promoting walking/cycling to capitalise on the LTN?");
+    }
+
+    // Obesity vs PA
+    if (risks.obesity.p > 0.25 && activityIncrease >= 15) {
+      qs.push("Obesity risk remains high despite increased physical activity. How important are food " +
+              "environments, marketing, and household income in this setting?");
+    }
+
+    // Social patterning
+    if (deprivation >= 4) {
+      qs.push("In more deprived areas, are LTN benefits (e.g. reduced injuries) large enough to " +
+              "narrow inequalities, or are there offsetting factors like overcrowding or poor housing?");
+    }
+
+    if (carOwnership === 2 && activityIncrease > 0) {
+      qs.push("If most households own cars, what policies (parking, pricing, school streets) might " +
+              "be needed to lock in behavioural change beyond the LTN itself?");
+    }
+
+    if (qs.length === 0) {
+      qs.push("Which causal pathways (injury, air quality, physical activity, obesity) seem to drive " +
+              "most of the benefit under your assumptions, and which would you prioritise for " +
+              "data collection and model validation?");
+    }
+
+    const listEl = document.getElementById('questionsList');
+    listEl.innerHTML = "";
+    qs.forEach(q => {
+      const li = document.createElement('li');
+      li.textContent = q;
+      listEl.appendChild(li);
+    });
+  }
+
+  // Wire up events
+  document.addEventListener('DOMContentLoaded', () => {
+    ['trafficReduction', 'no2Reduction', 'activityIncrease', 'deprivation', 'carOwnership']
+      .forEach(id => {
+        const el = document.getElementById(id);
+        el.addEventListener('input', updateUI);
+        el.addEventListener('change', updateUI);
+      });
+    updateUI();
+  });
+</script>
+
+</body>
+</html>
