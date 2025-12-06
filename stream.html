@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Rocky Stream Fluid Simulation (Vanilla JS)</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      background: radial-gradient(circle at top, #202a44 0, #050712 60%, #000 100%);
+      color: #f5f5f5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+      padding: 16px;
+      gap: 12px;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      text-align: center;
+    }
+
+    #app {
+      display: flex;
+      flex-direction: row;
+      gap: 12px;
+      max-width: 1100px;
+      width: 100%;
+    }
+
+    #canvas-container {
+      flex: 1 1 auto;
+      background: #05070e;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.6);
+      position: relative;
+    }
+
+    #sim {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    #panel {
+      flex: 0 0 260px;
+      background: rgba(8, 11, 22, 0.9);
+      border-radius: 14px;
+      padding: 14px;
+      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.7);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    #panel h2 {
+      font-size: 0.95rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #a0b3ff;
+      margin-bottom: 4px;
+    }
+
+    .control-group {
+      margin-bottom: 6px;
+    }
+
+    .control-label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #a1a1b5;
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+
+    .control-label span.value {
+      color: #e0e4ff;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: #5ab9ff;
+    }
+
+    button {
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      background: linear-gradient(135deg, #2b86ff, #42e3ff);
+      color: #050814;
+      font-weight: 600;
+      box-shadow: 0 7px 18px rgba(35, 138, 255, 0.35);
+      transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.1s ease;
+      width: 100%;
+      margin-top: 6px;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.04);
+      box-shadow: 0 10px 24px rgba(35, 138, 255, 0.5);
+    }
+
+    button:active {
+      transform: translateY(0px) scale(0.99);
+      box-shadow: 0 5px 14px rgba(35, 138, 255, 0.35);
+    }
+
+    .small-text {
+      font-size: 0.72rem;
+      line-height: 1.3;
+      color: #a4a8c5;
+      margin-top: 3px;
+    }
+
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 4px;
+    }
+
+    .badge {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      padding: 3px 7px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #cbd4ff;
+      background: radial-gradient(circle at top left, rgba(88, 153, 255, 0.3), transparent 50%);
+    }
+
+    @media (max-width: 800px) {
+      #app {
+        flex-direction: column;
+      }
+      #panel {
+        order: -1;
+        width: 100%;
+      }
+    }
+
+    .fps-counter {
+      position: absolute;
+      right: 10px;
+      top: 10px;
+      font-size: 0.7rem;
+      color: rgba(255, 255, 255, 0.75);
+      background: rgba(0, 0, 0, 0.3);
+      padding: 3px 7px;
+      border-radius: 999px;
+      backdrop-filter: blur(6px);
+    }
+  </style>
+</head>
+<body>
+  <h1>Rocky Stream – Shallow Water Fluid Simulation (Vanilla JS)</h1>
+  <div id="app">
+    <div id="canvas-container">
+      <canvas id="sim" width="900" height="450"></canvas>
+      <div class="fps-counter" id="fps"></div>
+    </div>
+    <aside id="panel">
+      <h2>Controls</h2>
+
+      <div class="control-group">
+        <label class="control-label">
+          Flow rate
+          <span class="value" id="flowLabel">1.0</span>
+        </label>
+        <input id="flow" type="range" min="0" max="3" step="0.1" value="1" />
+        <p class="small-text">
+          Controls how much water is injected at the upstream side. Higher values mean a stronger current.
+        </p>
+      </div>
+
+      <div class="control-group">
+        <label class="control-label">
+          Bed roughness
+          <span class="value" id="roughnessLabel">1.0</span>
+        </label>
+        <input id="roughness" type="range" min="0.3" max="2.0" step="0.1" value="1.0" />
+        <p class="small-text">
+          Scales how uneven the rocky bed is. Changing this regenerates the terrain.
+        </p>
+      </div>
+
+      <div class="control-group">
+        <label class="control-label">
+          Friction
+          <span class="value" id="frictionLabel">0.020</span>
+        </label>
+        <input id="friction" type="range" min="0.002" max="0.06" step="0.002" value="0.02" />
+        <p class="small-text">
+          Viscous drag of water against the bed. Larger values slow the flow and damp waves more quickly.
+        </p>
+      </div>
+
+      <div class="control-group">
+        <label class="control-label">
+          Flow curvature
+          <span class="value" id="curvatureLabel">0.7</span>
+        </label>
+        <input id="curvature" type="range" min="0" max="1.5" step="0.1" value="0.7" />
+        <p class="small-text">
+          Shapes where water enters the stream cross-section (center vs. more distributed).
+        </p>
+      </div>
+
+      <button id="reset">Reset Bed &amp; Water</button>
+      <button id="pause">Pause Simulation</button>
+
+      <p class="small-text">
+        This is a simple 2D <em>shallow-water</em> model: water height and velocity are computed on a grid, flowing
+        over a procedurally generated rocky bed. It’s not a full CFD solver, but it captures waves, pooling,
+        and channeling around rocks.
+      </p>
+
+      <div class="badge-row">
+        <div class="badge">No Libraries</div>
+        <div class="badge">Canvas 2D</div>
+        <div class="badge">Shallow Water</div>
+      </div>
+    </aside>
+  </div>
+
+  <script>
+    // ------------------------------------------------------------
+    // Basic configuration
+    // ------------------------------------------------------------
+    const canvas = document.getElementById("sim");
+    const ctx = canvas.getContext("2d");
+
+    const NX = 150; // grid size X
+    const NY = 70;  // grid size Y
+
+    // "Cell size" is purely for scaling; we treat dx = dy = 1 in the math.
+    const bed = new Float32Array(NX * NY);  // bed elevation (rocky terrain)
+    const h   = new Float32Array(NX * NY);  // water depth
+    const u   = new Float32Array(NX * NY);  // x-velocity
+    const v   = new Float32Array(NX * NY);  // y-velocity
+
+    const hNext = new Float32Array(NX * NY);
+    const uNext = new Float32Array(NX * NY);
+    const vNext = new Float32Array(NX * NY);
+
+    let bedMin = 0, bedMax = 1;
+
+    let FLOW_RATE = 1.0;
+    let BED_ROUGHNESS = 1.0;
+    let FRICTION = 0.02;
+    let CURVATURE = 0.7;
+    const GRAVITY = 9.8 * 0.12; // scaled gravity for stability
+    const DT = 0.025;           // time step
+
+    let paused = false;
+
+    // ------------------------------------------------------------
+    // Helpers
+    // ------------------------------------------------------------
+    function idx(x, y) {
+      return x + y * NX;
+    }
+
+    function clamp(v, a, b) {
+      return v < a ? a : v > b ? b : v;
+    }
+
+    // Simple deterministic RNG for reproducible terrain
+    let seed = 1337;
+    function rand() {
+      // LCG
+      seed = (seed * 1664525 + 1013904223) >>> 0;
+      return seed / 0xffffffff;
+    }
+
+    // Smooth-ish noise
+    function smoothNoise(x, y) {
+      const xi = Math.floor(x);
+      const yi = Math.floor(y);
+      const xf = x - xi;
+      const yf = y - yi;
+
+      function hash(ix, iy) {
+        const k = ix * 374761393 + iy * 668265263;
+        return ((k ^ (k >> 13)) * 1274126177) >>> 0;
+      }
+
+      function n(ix, iy) {
+        return hash(ix, iy) / 0xffffffff;
+      }
+
+      const n00 = n(xi, yi);
+      const n10 = n(xi + 1, yi);
+      const n01 = n(xi, yi + 1);
+      const n11 = n(xi + 1, yi + 1);
+
+      const u = xf * xf * (3 - 2 * xf);
+      const v = yf * yf * (3 - 2 * yf);
+
+      const nx0 = n00 * (1 - u) + n10 * u;
+      const nx1 = n01 * (1 - u) + n11 * u;
+
+      return nx0 * (1 - v) + nx1 * v;
+    }
+
+    // ------------------------------------------------------------
+    // Terrain generation: rocky bed
+    // ------------------------------------------------------------
+    function generateBed() {
+      bedMin = Infinity;
+      bedMax = -Infinity;
+
+      for (let y = 0; y < NY; y++) {
+        for (let x = 0; x < NX; x++) {
+          const nx = x / NX;
+          const ny = y / NY;
+
+          // gentle downhill slope from left to right
+          let baseSlope = (1 - nx) * 0.3;
+
+          // layered noise to form boulders and roughness
+          let noise =
+            0.7 * smoothNoise(nx * 3, ny * 5) +
+            0.4 * smoothNoise(nx * 7, ny * 7) +
+            0.2 * smoothNoise(nx * 15, ny * 12);
+
+          noise -= 0.5; // center around zero
+          noise *= 0.5 * BED_ROUGHNESS;
+
+          let elevation = baseSlope + noise;
+
+          // carve a slightly lower channel through the center
+          const dy = ny - 0.5;
+          const channel = -0.25 * Math.exp(-20 * dy * dy);
+          elevation += channel;
+
+          const i = idx(x, y);
+          bed[i] = elevation;
+
+          if (elevation < bedMin) bedMin = elevation;
+          if (elevation > bedMax) bedMax = elevation;
+        }
+      }
+    }
+
+    // ------------------------------------------------------------
+    // Initialization of water
+    // ------------------------------------------------------------
+    function resetWater() {
+      h.fill(0);
+      u.fill(0);
+      v.fill(0);
+
+      // Small initial film of water
+      for (let y = 0; y < NY; y++) {
+        for (let x = 0; x < NX; x++) {
+          const i = idx(x, y);
+          h[i] = 0.02;
+        }
+      }
+    }
+
+    function fullReset() {
+      generateBed();
+      resetWater();
+    }
+
+    // ------------------------------------------------------------
+    // Shallow-water solver step
+    // ------------------------------------------------------------
+    function stepSimulation() {
+      // 1. Update velocities using bed + water surface gradients
+      for (let y = 0; y < NY; y++) {
+        for (let x = 0; x < NX; x++) {
+          const i = idx(x, y);
+
+          // Central differences (clamped at boundaries)
+          const xm = x > 0 ? x - 1 : x;
+          const xp = x < NX - 1 ? x + 1 : x;
+          const ym = y > 0 ? y - 1 : y;
+          const yp = y < NY - 1 ? y + 1 : y;
+
+          const iL = idx(xm, y);
+          const iR = idx(xp, y);
+          const iU = idx(x, ym);
+          const iD = idx(x, yp);
+
+          const surfaceL = bed[iL] + h[iL];
+          const surfaceR = bed[iR] + h[iR];
+          const surfaceU = bed[iU] + h[iU];
+          const surfaceD = bed[iD] + h[iD];
+
+          const dsdx = (surfaceR - surfaceL) * 0.5;
+          const dsdy = (surfaceD - surfaceU) * 0.5;
+
+          // acceleration = -g * grad(surface)
+          let ui = u[i] - GRAVITY * dsdx * DT;
+          let vi = v[i] - GRAVITY * dsdy * DT;
+
+          // simple drag
+          ui /= (1 + FRICTION);
+          vi /= (1 + FRICTION);
+
+          // mild velocity clamping for stability
+          const maxSpeed = 2.5;
+          const speed = Math.hypot(ui, vi);
+          if (speed > maxSpeed) {
+            const scale = maxSpeed / speed;
+            ui *= scale;
+            vi *= scale;
+          }
+
+          uNext[i] = ui;
+          vNext[i] = vi;
+        }
+      }
+
+      // Swap velocity buffers
+      u.set(uNext);
+      v.set(vNext);
+
+      // 2. Advect water depth using divergence of fluxes
+      for (let y = 0; y < NY; y++) {
+        for (let x = 0; x < NX; x++) {
+          const i = idx(x, y);
+          const h0 = h[i];
+
+          // flux on right face from this cell
+          const fxR = u[i] * h0;
+          // flux on left face from the neighbor
+          const fxL = x > 0 ? u[idx(x - 1, y)] * h[idx(x - 1, y)] : 0;
+
+          // flux on bottom face from this cell
+          const fyD = y < NY - 1 ? v[i] * h0 : 0;
+          // flux on top face from the neighbor
+          const fyU = y > 0 ? v[idx(x, y - 1)] * h[idx(x, y - 1)] : 0;
+
+          let hNewVal = h0 - DT * ((fxR - fxL) + (fyD - fyU));
+
+          // small numerical diffusion to smooth shocks
+          const xm = x > 0 ? x - 1 : x;
+          const xp = x < NX - 1 ? x + 1 : x;
+          const ym = y > 0 ? y - 1 : y;
+          const yp = y < NY - 1 ? y + 1 : y;
+          const avgNeighbor =
+            (h[idx(xm, y)] + h[idx(xp, y)] + h[idx(x, ym)] + h[idx(x, yp)]) * 0.25;
+          hNewVal = hNewVal * 0.9 + avgNeighbor * 0.1;
+
+          hNext[i] = Math.max(0, hNewVal);
+        }
+      }
+
+      h.set(hNext);
+
+      // 3. Boundary conditions + inflow/outflow
+      applyBoundaryConditions();
+      injectInflow();
+    }
+
+    function applyBoundaryConditions() {
+      // Let water exit on the right edge by flattening depth slightly,
+      // and damp velocity near boundary for numerical stability.
+      for (let y = 0; y < NY; y++) {
+        const iRight = idx(NX - 1, y);
+        h[iRight] *= 0.8;
+        u[iRight] *= 0.2;
+        v[iRight] *= 0.2;
+      }
+
+      // Top & bottom: reflective-ish; just damp vertical velocity
+      for (let x = 0; x < NX; x++) {
+        const iTop = idx(x, 0);
+        const iBottom = idx(x, NY - 1);
+        v[iTop] *= -0.1;
+        v[iBottom] *= -0.1;
+        u[iTop] *= 0.9;
+        u[iBottom] *= 0.9;
+      }
+    }
+
+    function injectInflow() {
+      const inflowBase = 0.07 * FLOW_RATE;
+
+      // inject water on the left boundary in a curved band
+      for (let y = 0; y < NY; y++) {
+        const ny = y / NY;
+        const center = 0.5;
+
+        // Gaussian-like shape to pick which rows get the strongest inflow
+        const dy = ny - center;
+        const weight =
+          Math.exp(-((dy * dy) * (8 + CURVATURE * 10))) * (0.7 + CURVATURE * 0.3);
+
+        if (weight < 0.005) continue;
+
+        const i = idx(0, y);
+        h[i] += inflowBase * weight * DT * 60;
+        u[i] = 1.8 * FLOW_RATE; // initial downstream push
+      }
+    }
+
+    // ------------------------------------------------------------
+    // Rendering
+    // ------------------------------------------------------------
+    function render() {
+      const w = canvas.width;
+      const hCanvas = canvas.height;
+
+      const cellW = w / NX;
+      const cellH = hCanvas / NY;
+
+      const imgData = ctx.getImageData(0, 0, w, hCanvas);
+      const data = imgData.data;
+
+      function putPixel(x, y, r, g, b, a) {
+        const index = (x + y * w) * 4;
+        data[index] = r;
+        data[index + 1] = g;
+        data[index + 2] = b;
+        data[index + 3] = a;
+      }
+
+      // For each cell, draw as a block of pixels.
+      const waterColor = [60, 150, 255];
+
+      for (let gy = 0; gy < NY; gy++) {
+        for (let gx = 0; gx < NX; gx++) {
+          const i = idx(gx, gy);
+          const bedVal = bed[i];
+          const depth = h[i];
+
+          // Normalize bed elevation
+          const t = (bedVal - bedMin) / (bedMax - bedMin + 1e-6);
+
+          // Rocky color: brownish/grey
+          let br = 80 + 90 * t;
+          let bg = 60 + 70 * t;
+          let bb = 45 + 40 * t;
+
+          // Add a hint of shading based on local slope (for depth illusion)
+          const xm = gx > 0 ? gx - 1 : gx;
+          const xp = gx < NX - 1 ? gx + 1 : gx;
+          const ym = gy > 0 ? gy - 1 : gy;
+          const yp = gy < NY - 1 ? gy + 1 : gy;
+          const slopeX = bed[idx(xp, gy)] - bed[idx(xm, gy)];
+          const slopeY = bed[idx(gx, yp)] - bed[idx(gx, ym)];
+          const shade = -(slopeX * 0.7 + slopeY * 0.5) * 1.8;
+          br = clamp(br + shade * 40, 0, 255);
+          bg = clamp(bg + shade * 30, 0, 255);
+          bb = clamp(bb + shade * 20, 0, 255);
+
+          // Water overlay: mix with blue based on depth
+          let r = br, g = bg, b = bb;
+          if (depth > 0.0005) {
+            const alpha = clamp(depth * 3.0, 0, 0.9);
+            r = (1 - alpha) * br + alpha * waterColor[0];
+            g = (1 - alpha) * bg + alpha * waterColor[1];
+            b = (1 - alpha) * bb + alpha * waterColor[2];
+
+            // Slight brightness based on local velocity magnitude
+            const speed = Math.hypot(u[i], v[i]);
+            const extra = clamp(speed * 30, 0, 40);
+            r = clamp(r + extra * 0.4, 0, 255);
+            g = clamp(g + extra * 0.6, 0, 255);
+            b = clamp(b + extra, 0, 255);
+          }
+
+          const ir = r | 0;
+          const ig = g | 0;
+          const ib = b | 0;
+
+          const pxStartX = Math.floor(gx * cellW);
+          const pxEndX = Math.floor((gx + 1) * cellW);
+          const pxStartY = Math.floor(gy * cellH);
+          const pxEndY = Math.floor((gy + 1) * cellH);
+
+          for (let py = pxStartY; py < pxEndY; py++) {
+            for (let px = pxStartX; px < pxEndX; px++) {
+              putPixel(px, py, ir, ig, ib, 255);
+            }
+          }
+        }
+      }
+
+      ctx.putImageData(imgData, 0, 0);
+    }
+
+    // ------------------------------------------------------------
+    // Animation loop + FPS counter
+    // ------------------------------------------------------------
+    const fpsEl = document.getElementById("fps");
+    let lastTime = performance.now();
+    let lastFpsUpdate = lastTime;
+    let frames = 0;
+
+    function loop(now) {
+      requestAnimationFrame(loop);
+
+      const dt = now - lastTime;
+      lastTime = now;
+
+      // perform several small physics steps per frame for stability
+      if (!paused) {
+        const subSteps = 2;
+        for (let i = 0; i < subSteps; i++) {
+          stepSimulation();
+        }
+      }
+
+      render();
+
+      frames++;
+      if (now - lastFpsUpdate > 500) {
+        const fps = (frames * 1000) / (now - lastFpsUpdate);
+        fpsEl.textContent = fps.toFixed(0) + " FPS";
+        frames = 0;
+        lastFpsUpdate = now;
+      }
+    }
+
+    // ------------------------------------------------------------
+    // UI bindings
+    // ------------------------------------------------------------
+    const flowInput = document.getElementById("flow");
+    const flowLabel = document.getElementById("flowLabel");
+    flowInput.addEventListener("input", () => {
+      FLOW_RATE = parseFloat(flowInput.value);
+      flowLabel.textContent = FLOW_RATE.toFixed(1);
+    });
+
+    const roughInput = document.getElementById("roughness");
+    const roughLabel = document.getElementById("roughnessLabel");
+    roughInput.addEventListener("input", () => {
+      BED_ROUGHNESS = parseFloat(roughInput.value);
+      roughLabel.textContent = BED_ROUGHNESS.toFixed(1);
+      generateBed(); // regenerate rocky bed with new roughness
+    });
+
+    const frictionInput = document.getElementById("friction");
+    const frictionLabel = document.getElementById("frictionLabel");
+    frictionInput.addEventListener("input", () => {
+      FRICTION = parseFloat(frictionInput.value);
+      frictionLabel.textContent = FRICTION.toFixed(3);
+    });
+
+    const curvatureInput = document.getElementById("curvature");
+    const curvatureLabel = document.getElementById("curvatureLabel");
+    curvatureInput.addEventListener("input", () => {
+      CURVATURE = parseFloat(curvatureInput.value);
+      curvatureLabel.textContent = CURVATURE.toFixed(1);
+    });
+
+    document.getElementById("reset").addEventListener("click", () => {
+      fullReset();
+    });
+
+    const pauseBtn = document.getElementById("pause");
+    pauseBtn.addEventListener("click", () => {
+      paused = !paused;
+      pauseBtn.textContent = paused ? "Resume Simulation" : "Pause Simulation";
+    });
+
+    // Handle canvas resizing while keeping aspect ratio
+    function resizeCanvas() {
+      const container = document.getElementById("canvas-container");
+      const width = container.clientWidth;
+      const aspect = canvas.height / canvas.width;
+      canvas.width = width;
+      canvas.height = width * aspect;
+    }
+
+    window.addEventListener("resize", resizeCanvas);
+
+    // ------------------------------------------------------------
+    // Kick off
+    // ------------------------------------------------------------
+    resizeCanvas();
+    fullReset();
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>
