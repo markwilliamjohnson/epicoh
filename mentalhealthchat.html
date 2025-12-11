@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>AI Chatbot – Emotional Feedback Mechanism Simulator</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      background: #0f172a;
+      color: #e5e7eb;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    header {
+      padding: 1.5rem 2rem 1rem;
+      border-bottom: 1px solid #1f2937;
+      background: radial-gradient(circle at top left, #1f2937, #020617);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.8rem;
+    }
+
+    header p {
+      margin: 0.4rem 0 0;
+      font-size: 0.95rem;
+      color: #9ca3af;
+      max-width: 62rem;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: minmax(0, 1.5fr) minmax(0, 1.1fr);
+      gap: 1.5rem;
+      padding: 1.5rem 2rem 2rem;
+      flex: 1;
+    }
+
+    .card {
+      background: #020617;
+      border-radius: 1rem;
+      border: 1px solid #1f2937;
+      padding: 1rem 1.25rem;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+    }
+
+    .card h2 {
+      margin-top: 0;
+      font-size: 1.1rem;
+      margin-bottom: 0.6rem;
+    }
+
+    .controls-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 0.9rem 1.3rem;
+    }
+
+    .control {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+
+    .control-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      color: #cbd5f5;
+    }
+
+    .control-label span.value {
+      color: #a5b4fc;
+      min-width: 2.5rem;
+      text-align: right;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: #6366f1;
+    }
+
+    .hint {
+      font-size: 0.78rem;
+      color: #6b7280;
+    }
+
+    .buttons {
+      margin-top: 0.8rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      align-items: center;
+    }
+
+    button {
+      background: #4f46e5;
+      color: white;
+      border: none;
+      border-radius: 999px;
+      padding: 0.4rem 0.9rem;
+      font-size: 0.86rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      box-shadow: 0 10px 30px rgba(79, 70, 229, 0.35);
+    }
+
+    button.secondary {
+      background: transparent;
+      color: #9ca3af;
+      border: 1px solid #374151;
+      box-shadow: none;
+    }
+
+    button.danger {
+      background: #b91c1c;
+      box-shadow: 0 10px 30px rgba(185, 28, 28, 0.4);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: default;
+      box-shadow: none;
+    }
+
+    .chip {
+      font-size: 0.72rem;
+      border-radius: 999px;
+      padding: 0.15rem 0.45rem;
+      border: 1px solid #374151;
+      color: #9ca3af;
+    }
+
+    .state-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 0.9rem 1.2rem;
+      margin-top: 0.6rem;
+    }
+
+    .state {
+      background: #020617;
+      border-radius: 0.9rem;
+      border: 1px solid #111827;
+      padding: 0.7rem 0.8rem;
+    }
+
+    .state-title {
+      font-size: 0.8rem;
+      color: #9ca3af;
+      margin-bottom: 0.3rem;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .state-value {
+      font-weight: 600;
+      font-size: 1.15rem;
+    }
+
+    .bar {
+      height: 6px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: #111827;
+      margin-top: 0.3rem;
+    }
+
+    .bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #22c55e, #22d3ee);
+      transition: width 0.2s ease-out;
+    }
+
+    .distress .bar-fill {
+      background: linear-gradient(90deg, #f97316, #f97316);
+    }
+
+    .wellbeing .bar-fill {
+      background: linear-gradient(90deg, #22c55e, #a3e635);
+    }
+
+    .log {
+      margin-top: 0.8rem;
+      background: #020617;
+      border-radius: 0.9rem;
+      border: 1px solid #111827;
+      padding: 0.65rem 0.8rem 0.5rem;
+      max-height: 235px;
+      overflow-y: auto;
+      font-size: 0.78rem;
+    }
+
+    .log p {
+      margin: 0.15rem 0;
+      color: #d1d5db;
+    }
+
+    .log p.system {
+      color: #9ca3af;
+    }
+
+    .log p.positive {
+      color: #bbf7d0;
+    }
+
+    .log p.negative {
+      color: #fecaca;
+    }
+
+    .log p.neutral {
+      color: #e5e7eb;
+    }
+
+    .legend {
+      margin-top: 0.5rem;
+      font-size: 0.75rem;
+      color: #9ca3af;
+    }
+
+    .legend ul {
+      margin: 0.3rem 0 0;
+      padding-left: 1rem;
+    }
+
+    .legend li {
+      margin: 0.1rem 0;
+    }
+
+    .explanation {
+      font-size: 0.82rem;
+      color: #d1d5db;
+      line-height: 1.4;
+    }
+
+    .explanation strong {
+      color: #e5e7eb;
+    }
+
+    .explanation code {
+      background: #111827;
+      padding: 0 0.15rem;
+      border-radius: 0.2rem;
+    }
+
+    footer {
+      padding: 0.7rem 2rem 1.1rem;
+      font-size: 0.75rem;
+      color: #6b7280;
+      border-top: 1px solid #111827;
+      background: #020617;
+    }
+
+    @media (max-width: 960px) {
+      main {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>AI Chatbot Emotional Feedback Mechanism</h1>
+    <p>
+      This simulator models a feedback loop where an AI chatbot’s <strong>language choices</strong>
+      influence a user’s <strong>emotional state</strong> and <strong>engagement</strong>, which in turn
+      shapes the next messages the chatbot would see. It’s a toy model of how wording can help or harm.
+    </p>
+  </header>
+
+  <main>
+    <!-- LEFT: PARAMETERS & CONTROLS -->
+    <section class="card">
+      <h2>1. Tune the Mechanism Parameters</h2>
+      <p class="hint">
+        Think of these sliders as properties of the <strong>chatbot’s language</strong> and the
+        <strong>user’s psychology</strong>. You’re controlling “how the words land”.
+      </p>
+
+      <div class="controls-grid">
+        <!-- Chatbot parameters -->
+        <div class="control">
+          <div class="control-label">
+            <span>Empathic wording strength</span>
+            <span class="value" id="val-empathy">0.7</span>
+          </div>
+          <input type="range" id="empathy" min="0" max="1" step="0.05" value="0.7" />
+          <div class="hint">
+            How consistently the chatbot uses validating, warm, reflective language.
+          </div>
+        </div>
+
+        <div class="control">
+          <div class="control-label">
+            <span>Reframing / CBT skill</span>
+            <span class="value" id="val-reframe">0.6</span>
+          </div>
+          <input type="range" id="reframe" min="0" max="1" step="0.05" value="0.6" />
+          <div class="hint">
+            How well the chatbot prompts helpful reappraisal (“Is there another way to see this?”).
+          </div>
+        </div>
+
+        <div class="control">
+          <div class="control-label">
+            <span>Invalidation / misattunement risk</span>
+            <span class="value" id="val-invalidation">0.2</span>
+          </div>
+          <input type="range" id="invalidation" min="0" max="1" step="0.05" value="0.2" />
+          <div class="hint">
+            Chance the wording feels dismissive or off (“everyone feels that way, don’t worry”).
+          </div>
+        </div>
+
+        <!-- User parameters -->
+        <div class="control">
+          <div class="control-label">
+            <span>User sensitivity to invalidation</span>
+            <span class="value" id="val-sensitivity">0.6</span>
+          </div>
+          <input type="range" id="sensitivity" min="0" max="1" step="0.05" value="0.6" />
+          <div class="hint">
+            How strongly the user reacts when they feel misunderstood or minimised.
+          </div>
+        </div>
+
+        <div class="control">
+          <div class="control-label">
+            <span>User dependency tendency</span>
+            <span class="value" id="val-dependency">0.4</span>
+          </div>
+          <input type="range" id="dependency" min="0" max="1" step="0.05" value="0.4" />
+          <div class="hint">
+            How much soothing replies increase reliance on the chatbot for emotional regulation.
+          </div>
+        </div>
+
+        <div class="control">
+          <div class="control-label">
+            <span>Initial distress level</span>
+            <span class="value" id="val-baseline">70</span>
+          </div>
+          <input type="range" id="baselineDistress" min="0" max="100" step="5" value="70" />
+          <div class="hint">
+            How distressed the user is before talking to the chatbot.
+          </div>
+        </div>
+      </div>
+
+      <div class="buttons">
+        <button id="stepBtn">Step once ⏭</button>
+        <button id="playBtn">Auto-play ▶</button>
+        <button id="resetBtn" class="secondary">Reset 🔄</button>
+        <span class="chip" id="stepCountChip">Step: 0</span>
+      </div>
+
+      <div class="legend">
+        <strong>What one “step” represents:</strong>
+        <ul>
+          <li>User sends a message → chatbot replies with some pattern of wording.</li>
+          <li>User appraises the reply (“I feel understood / dismissed”).</li>
+          <li>Their distress, feeling-understood, flexibility, and urge to keep typing update.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- RIGHT: STATE + EXPLANATION -->
+    <section class="card">
+      <h2>2. Observe the User’s Emotional State</h2>
+      <p class="hint">
+        These variables are the <strong>internal state</strong> of the user that the chatbot never
+        sees directly – it only infers them from messages.
+      </p>
+
+      <div class="state-grid">
+        <div class="state distress">
+          <div class="state-title">
+            <span>Distress</span>
+            <span id="state-distress-val" class="state-value">70</span>
+          </div>
+          <div class="bar">
+            <div id="state-distress-bar" class="bar-fill" style="width: 70%"></div>
+          </div>
+          <div class="hint">Higher = more emotional pain.</div>
+        </div>
+
+        <div class="state">
+          <div class="state-title">
+            <span>Feeling understood</span>
+            <span id="state-understood-val" class="state-value">30</span>
+          </div>
+          <div class="bar">
+            <div id="state-understood-bar" class="bar-fill" style="width: 30%"></div>
+          </div>
+          <div class="hint">Do the words “land” as empathic and attuned?</div>
+        </div>
+
+        <div class="state">
+          <div class="state-title">
+            <span>Cognitive flexibility</span>
+            <span id="state-flex-val" class="state-value">40</span>
+          </div>
+          <div class="bar">
+            <div id="state-flex-bar" class="bar-fill" style="width: 40%"></div>
+          </div>
+          <div class="hint">Ability to reframe and see alternative perspectives.</div>
+        </div>
+
+        <div class="state">
+          <div class="state-title">
+            <span>Engagement / urge to keep chatting</span>
+            <span id="state-engage-val" class="state-value">50</span>
+          </div>
+          <div class="bar">
+            <div id="state-engage-bar" class="bar-fill" style="width: 50%"></div>
+          </div>
+          <div class="hint">
+            Higher = more likely the user keeps typing messages to the chatbot.
+          </div>
+        </div>
+
+        <div class="state wellbeing">
+          <div class="state-title">
+            <span>Overall wellbeing</span>
+            <span id="state-wellbeing-val" class="state-value">30</span>
+          </div>
+          <div class="bar">
+            <div id="state-wellbeing-bar" class="bar-fill" style="width: 30%"></div>
+          </div>
+          <div class="hint">A rough inverse of distress (this is what we care about).</div>
+        </div>
+      </div>
+
+      <div class="log" id="log">
+        <p class="system">
+          Adjust sliders, then press <strong>“Step once”</strong>. Each line explains how the chatbot’s
+          <em>wording</em> changed the user’s internal state in that turn.
+        </p>
+      </div>
+
+      <div class="explanation">
+        <p><strong>Mechanism (in this toy model):</strong></p>
+        <p>
+          At each step, the chatbot’s language is summarised by two helpful forces and one risky force:
+        </p>
+        <ul>
+          <li><code>perceivedEmpathy</code> – how validating and warm the reply feels.</li>
+          <li><code>reframingPower</code> – how much the reply nudges reappraisal and perspective shift.</li>
+          <li><code>invalidationImpact</code> – how much the wording feels dismissive or off.</li>
+        </ul>
+        <p>
+          Those feed into the user’s <strong>appraisal</strong> of the message, which updates their
+          <code>feelingUnderstood</code>, <code>cognitiveFlexibility</code>, <code>distress</code>,
+          and <code>engagement</code>. In other words:
+        </p>
+        <p>
+          <code>language → appraisal → emotion + thinking → urge to keep typing → next messages</code>.
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    This is a conceptual simulator, not a clinical tool. The numbers are illustrative,
+    showing how cycles of “feeling understood vs. dismissed” can spiral wellbeing up or down.
+  </footer>
+
+  <script>
+    // -----------------------------
+    // MODEL STATE
+    // -----------------------------
+    let state = {
+      step: 0,
+      distress: 70,          // 0–100 (higher = worse)
+      feelingUnderstood: 30, // 0–100
+      flexibility: 40,       // 0–100
+      engagement: 50         // 0–100 (how much the user wants to keep chatting)
+    };
+
+    let autoplay = false;
+    let autoplayInterval = null;
+
+    // -----------------------------
+    // DOM HOOKS
+    // -----------------------------
+    const sliders = {
+      empathy: document.getElementById("empathy"),
+      reframe: document.getElementById("reframe"),
+      invalidation: document.getElementById("invalidation"),
+      sensitivity: document.getElementById("sensitivity"),
+      dependency: document.getElementById("dependency"),
+      baseline: document.getElementById("baselineDistress")
+    };
+
+    const values = {
+      empathy: document.getElementById("val-empathy"),
+      reframe: document.getElementById("val-reframe"),
+      invalidation: document.getElementById("val-invalidation"),
+      sensitivity: document.getElementById("val-sensitivity"),
+      dependency: document.getElementById("val-dependency"),
+      baseline: document.getElementById("val-baseline")
+    };
+
+    const stateEls = {
+      distressVal: document.getElementById("state-distress-val"),
+      distressBar: document.getElementById("state-distress-bar"),
+      understoodVal: document.getElementById("state-understood-val"),
+      understoodBar: document.getElementById("state-understood-bar"),
+      flexVal: document.getElementById("state-flex-val"),
+      flexBar: document.getElementById("state-flex-bar"),
+      engageVal: document.getElementById("state-engage-val"),
+      engageBar: document.getElementById("state-engage-bar"),
+      wellbeingVal: document.getElementById("state-wellbeing-val"),
+      wellbeingBar: document.getElementById("state-wellbeing-bar")
+    };
+
+    const logEl = document.getElementById("log");
+    const stepCountChip = document.getElementById("stepCountChip");
+    const stepBtn = document.getElementById("stepBtn");
+    const playBtn = document.getElementById("playBtn");
+    const resetBtn = document.getElementById("resetBtn");
+
+    // -----------------------------
+    // UTILITIES
+    // -----------------------------
+    function clamp(val, min, max) {
+      return Math.min(max, Math.max(min, val));
+    }
+
+    function appendLog(text, mood = "neutral") {
+      const p = document.createElement("p");
+      p.textContent = text;
+      p.classList.add(mood);
+      logEl.appendChild(p);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function clearLog() {
+      logEl.innerHTML = "";
+    }
+
+    // -----------------------------
+    // UPDATE UI FROM STATE
+    // -----------------------------
+    function syncSliderLabels() {
+      values.empathy.textContent = Number(sliders.empathy.value).toFixed(2);
+      values.reframe.textContent = Number(sliders.reframe.value).toFixed(2);
+      values.invalidation.textContent = Number(sliders.invalidation.value).toFixed(2);
+      values.sensitivity.textContent = Number(sliders.sensitivity.value).toFixed(2);
+      values.dependency.textContent = Number(sliders.dependency.value).toFixed(2);
+      values.baseline.textContent = sliders.baseline.value;
+    }
+
+    function updateStateUI() {
+      const wellbeing = clamp(100 - state.distress, 0, 100);
+
+      stateEls.distressVal.textContent = state.distress.toFixed(0);
+      stateEls.distressBar.style.width = state.distress.toFixed(0) + "%";
+
+      stateEls.understoodVal.textContent = state.feelingUnderstood.toFixed(0);
+      stateEls.understoodBar.style.width = state.feelingUnderstood.toFixed(0) + "%";
+
+      stateEls.flexVal.textContent = state.flexibility.toFixed(0);
+      stateEls.flexBar.style.width = state.flexibility.toFixed(0) + "%";
+
+      stateEls.engageVal.textContent = state.engagement.toFixed(0);
+      stateEls.engageBar.style.width = state.engagement.toFixed(0) + "%";
+
+      stateEls.wellbeingVal.textContent = wellbeing.toFixed(0);
+      stateEls.wellbeingBar.style.width = wellbeing.toFixed(0) + "%";
+
+      stepCountChip.textContent = "Step: " + state.step;
+    }
+
+    // -----------------------------
+    // MODEL DYNAMICS
+    // -----------------------------
+    function runOneStep() {
+      // Read parameters
+      const empathy = Number(sliders.empathy.value);           // 0–1
+      const reframe = Number(sliders.reframe.value);           // 0–1
+      const invalidation = Number(sliders.invalidation.value); // 0–1
+      const sensitivity = Number(sliders.sensitivity.value);   // 0–1
+      const dependency = Number(sliders.dependency.value);     // 0–1
+
+      // Normalised state
+      const dNorm = state.distress / 100;
+      const uNorm = state.feelingUnderstood / 100;
+      const fNorm = state.flexibility / 100;
+
+      // 1. LANGUAGE → APPRAISAL
+      // perceivedEmpathy: how empathic the reply *feels* overall
+      const perceivedEmpathy = clamp(
+        empathy * (1 - invalidation * 0.4),
+        0, 1
+      );
+
+      // reframingPower: how much cognitive reappraisal gets triggered
+      const reframingPower = clamp(
+        reframe * (0.6 + 0.4 * uNorm),
+        0, 1
+      );
+
+      // invalidationImpact: harm when wording feels off / dismissive
+      const invalidationImpact = clamp(
+        invalidation * sensitivity * (0.6 + 0.4 * dNorm),
+        0, 1
+      );
+
+      // 2. APPRAISAL → EMOTIONAL & COGNITIVE SHIFTS
+      // Feeling understood increases with perceived empathy, falls with invalidation
+      let dFeelingUnderstood =
+        + 25 * perceivedEmpathy
+        - 30 * invalidationImpact;
+
+      // Cognitive flexibility increases with reframing, harmed by strong invalidation
+      let dFlexibility =
+        + 20 * reframingPower
+        - 10 * invalidationImpact;
+
+      // Distress falls with empathy & reframing, rises with invalidation
+      let dDistress =
+        - 18 * perceivedEmpathy
+        - 10 * reframingPower * (0.5 + 0.5 * fNorm)
+        + 28 * invalidationImpact;
+
+      // Engagement: how much the user wants to keep typing
+      let dEngagement =
+        + 18 * perceivedEmpathy
+        + 10 * dependency * (0.4 + 0.6 * uNorm)
+        - 24 * invalidationImpact;
+
+      // 3. UPDATE STATE
+      state.step += 1;
+      state.feelingUnderstood = clamp(state.feelingUnderstood + dFeelingUnderstood, 0, 100);
+      state.flexibility = clamp(state.flexibility + dFlexibility, 0, 100);
+      state.distress = clamp(state.distress + dDistress, 0, 100);
+      state.engagement = clamp(state.engagement + dEngagement, 0, 100);
+
+      // 4. GENERATE EXPLANATION TEXT
+      const wellbeingBefore = 100 - clamp(state.distress - dDistress, 0, 100);
+      const wellbeingAfter = 100 - state.distress;
+      const dWellbeing = wellbeingAfter - wellbeingBefore;
+
+      let mood = "neutral";
+      if (dWellbeing > 2) mood = "positive";
+      else if (dWellbeing < -2) mood = "negative";
+
+      let summaryParts = [];
+
+      if (perceivedEmpathy > 0.6) {
+        summaryParts.push("The chatbot’s wording feels clearly empathic and validating.");
+      } else if (perceivedEmpathy < 0.25) {
+        summaryParts.push("The chatbot’s wording feels rather flat or distant.");
+      } else {
+        summaryParts.push("The chatbot’s wording provides some empathy, but not strongly.");
+      }
+
+      if (reframingPower > 0.6) {
+        summaryParts.push("It also invites the user to reconsider their situation (strong reframing prompts).");
+      } else if (reframingPower > 0.25) {
+        summaryParts.push("There is some gentle encouragement to see things differently.");
+      }
+
+      if (invalidationImpact > 0.5) {
+        summaryParts.push("However, the message lands as quite invalidating or off, which hurts.");
+      } else if (invalidationImpact > 0.2) {
+        summaryParts.push("There is a mild sense of being misunderstood.");
+      }
+
+      let feelingChange;
+      if (dFeelingUnderstood > 3) {
+        feelingChange = "The user feels more understood ";
+      } else if (dFeelingUnderstood < -3) {
+        feelingChange = "The user feels less understood ";
+      } else {
+        feelingChange = "The user’s sense of being understood barely shifts ";
+      }
+      feelingChange += `(${dFeelingUnderstood.toFixed(1)} pts).`;
+
+      let distressChange;
+      if (dDistress < -3) {
+        distressChange = `Distress eases (${dDistress.toFixed(1)} pts),`;
+      } else if (dDistress > 3) {
+        distressChange = `distress increases (${dDistress.toFixed(1)} pts),`;
+      } else {
+        distressChange = "distress is roughly unchanged,";
+      }
+
+      let engageChange;
+      if (dEngagement > 3) {
+        engageChange = `and the urge to keep chatting rises (${dEngagement.toFixed(1)} pts).`;
+      } else if (dEngagement < -3) {
+        engageChange = `and the urge to keep chatting drops (${dEngagement.toFixed(1)} pts).`;
+      } else {
+        engageChange = "and the urge to keep chatting stays similar.";
+      }
+
+      const explanation =
+        `Step ${state.step}: ` +
+        summaryParts.join(" ") + " " +
+        feelingChange + " " +
+        distressChange + " " +
+        engageChange +
+        ` Overall wellbeing ${dWellbeing >= 0 ? "improves" : "worsens"} by ${dWellbeing.toFixed(1)} points.`;
+
+      appendLog(explanation, mood);
+
+      updateStateUI();
+    }
+
+    function resetState() {
+      state.step = 0;
+      state.distress = Number(sliders.baseline.value);
+      state.feelingUnderstood = 30;
+      state.flexibility = 40;
+      state.engagement = 50;
+      updateStateUI();
+      clearLog();
+      appendLog(
+        "Simulation reset. Distress is set to the chosen baseline. " +
+        "Feeling understood, flexibility, and engagement start at moderate levels.",
+        "system"
+      );
+    }
+
+    // -----------------------------
+    // AUTO-PLAY CONTROL
+    // -----------------------------
+    function toggleAutoplay() {
+      autoplay = !autoplay;
+      if (autoplay) {
+        playBtn.textContent = "Stop ⏸";
+        stepBtn.disabled = true;
+        autoplayInterval = setInterval(() => {
+          // If engagement falls very low, stop automatically
+          if (state.engagement < 5) {
+            appendLog(
+              "Engagement has dropped very low; the user no longer wants to chat. Auto-play stopped.",
+              "system"
+            );
+            toggleAutoplay(); // will flip back
+            return;
+          }
+          runOneStep();
+        }, 600);
+      } else {
+        playBtn.textContent = "Auto-play ▶";
+        stepBtn.disabled = false;
+        clearInterval(autoplayInterval);
+        autoplayInterval = null;
+      }
+    }
+
+    // -----------------------------
+    // EVENT LISTENERS
+    // -----------------------------
+    Object.values(sliders).forEach((slider) => {
+      slider.addEventListener("input", () => {
+        syncSliderLabels();
+        if (slider.id === "baselineDistress") {
+          // Only affects starting state, so show a hint if already running
+          appendLog(
+            "Baseline distress changed. Press Reset to apply this to the current simulation.",
+            "system"
+          );
+        }
+      });
+    });
+
+    stepBtn.addEventListener("click", runOneStep);
+    playBtn.addEventListener("click", () => {
+      toggleAutoplay();
+    });
+    resetBtn.addEventListener("click", () => {
+      if (autoplay) toggleAutoplay();
+      resetState();
+    });
+
+    // -----------------------------
+    // INITIALISATION
+    // -----------------------------
+    syncSliderLabels();
+    resetState();
+    updateStateUI();
+  </script>
+</body>
+</html>
