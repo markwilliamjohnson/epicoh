@@ -1,0 +1,1043 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Complexity Management Walkthrough</title>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --panel:#111a33;
+      --panel2:#0f1730;
+      --text:#e7ecff;
+      --muted:#b7c1ff;
+      --accent:#7aa2ff;
+      --accent2:#8ef0d2;
+      --warn:#ffcc66;
+      --danger:#ff6b81;
+      --ok:#86efac;
+      --border:rgba(255,255,255,.12);
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius:18px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      background: radial-gradient(1200px 800px at 25% 15%, rgba(122,162,255,.22), transparent 55%),
+                  radial-gradient(900px 700px at 85% 30%, rgba(142,240,210,.18), transparent 55%),
+                  radial-gradient(1200px 900px at 60% 90%, rgba(255,204,102,.12), transparent 60%),
+                  var(--bg);
+      color:var(--text);
+      line-height:1.35;
+    }
+    header{
+      padding:28px 18px 10px;
+      max-width:1100px;
+      margin:0 auto;
+    }
+    .topbar{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      justify-content:space-between;
+      flex-wrap:wrap;
+    }
+    h1{
+      margin:0;
+      font-size: clamp(20px, 3vw, 28px);
+      letter-spacing:.2px;
+    }
+    .subtitle{
+      margin:8px 0 0;
+      color:var(--muted);
+      max-width:70ch;
+      font-size: 14px;
+    }
+
+    main{
+      max-width:1100px;
+      margin:0 auto;
+      padding: 10px 18px 28px;
+      display:grid;
+      grid-template-columns: 380px 1fr;
+      gap:14px;
+    }
+    @media (max-width: 980px){
+      main{grid-template-columns: 1fr;}
+    }
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+
+    .card .hd{
+      padding:14px 16px;
+      background: linear-gradient(180deg, rgba(17,26,51,.95), rgba(17,26,51,.6));
+      border-bottom: 1px solid var(--border);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .card .hd h2{
+      margin:0;
+      font-size: 14px;
+      color: var(--muted);
+      font-weight:650;
+      letter-spacing:.3px;
+      text-transform: uppercase;
+    }
+
+    .card .bd{padding:14px 16px;}
+
+    .pill{
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.04);
+      color: var(--muted);
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+      white-space:nowrap;
+    }
+    .pill b{color:var(--text); font-weight:650;}
+
+    .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+
+    .btn{
+      appearance:none;
+      border:none;
+      background: rgba(122,162,255,.18);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 14px;
+      cursor:pointer;
+      font-weight:650;
+      letter-spacing:.2px;
+      border:1px solid rgba(122,162,255,.35);
+      transition: transform .08s ease, background .2s ease, border .2s ease;
+    }
+    .btn:hover{background: rgba(122,162,255,.24);}
+    .btn:active{transform: translateY(1px);}
+    .btn.secondary{background: rgba(255,255,255,.06); border:1px solid var(--border);}
+    .btn.secondary:hover{background: rgba(255,255,255,.09);}
+    .btn.danger{background: rgba(255,107,129,.16); border:1px solid rgba(255,107,129,.38);}
+
+    .btn.small{padding:7px 10px; border-radius: 12px; font-size: 13px;}
+
+    .grid2{display:grid; grid-template-columns: 1fr 1fr; gap:10px;}
+    @media (max-width: 980px){
+      .grid2{grid-template-columns: 1fr;}
+    }
+
+    .stepTitle{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:space-between;
+      flex-wrap:wrap;
+      margin-bottom:10px;
+    }
+    .stepTitle h3{
+      margin:0;
+      font-size: 18px;
+      letter-spacing:.2px;
+    }
+    .stepTitle .meta{color:var(--muted); font-size: 13px;}
+
+    .content{
+      color: var(--text);
+      max-width: 90ch;
+      font-size: 15px;
+    }
+    .content p{margin: 0 0 10px; color: rgba(231,236,255,.96);}
+    .content ul{margin: 8px 0 0 18px; color: rgba(231,236,255,.94)}
+    .content li{margin:6px 0;}
+
+    .callout{
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.05);
+      border-radius: 16px;
+      padding: 12px 12px;
+      margin: 10px 0 0;
+    }
+    .callout b{color:var(--accent2)}
+
+    .progress{
+      height:10px;
+      background: rgba(255,255,255,.07);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      overflow:hidden;
+      width: 210px;
+      max-width: 100%;
+    }
+    .bar{height:100%; width:0%; background: linear-gradient(90deg, rgba(122,162,255,.9), rgba(142,240,210,.9));}
+
+    .kv{display:grid; grid-template-columns: 1fr auto; gap:8px; align-items:center;}
+    .kv label{color:var(--muted); font-size: 13px;}
+    .kv output{font-weight:700}
+
+    input[type="range"]{width:100%}
+    .rangeBox{display:grid; gap:8px;}
+
+    .mini{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:10px;
+    }
+
+    .diagram{
+      border:1px solid var(--border);
+      background: rgba(0,0,0,.18);
+      border-radius: 16px;
+      padding: 10px;
+      overflow:hidden;
+    }
+
+    .legend{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top:10px;
+      color:var(--muted);
+      font-size: 12px;
+    }
+    .dot{width:10px; height:10px; border-radius:99px; display:inline-block;}
+
+    .footerNote{color:var(--muted); font-size: 12px; margin-top:10px;}
+
+    .list{
+      display:grid;
+      gap:8px;
+      margin-top: 10px;
+    }
+    .item{
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.04);
+      border-radius: 14px;
+      padding: 10px 10px;
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:10px;
+    }
+    .item .left{display:grid; gap:4px;}
+    .item .name{font-weight:700}
+    .item .desc{color:var(--muted); font-size: 13px;}
+    .badge{
+      font-size: 12px;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.03);
+      color: var(--muted);
+      padding: 4px 8px;
+      border-radius: 999px;
+      white-space:nowrap;
+    }
+
+    .toast{
+      position: fixed;
+      bottom: 16px;
+      right: 16px;
+      background: rgba(17,26,51,.92);
+      border:1px solid var(--border);
+      color: var(--text);
+      border-radius: 16px;
+      padding: 10px 12px;
+      box-shadow: var(--shadow);
+      max-width: 360px;
+      display:none;
+      z-index: 30;
+    }
+    .toast.show{display:block;}
+    .toast .t{font-weight:750; margin-bottom: 4px;}
+    .toast .m{color: var(--muted); font-size: 13px;}
+
+    .toggle{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      margin-top: 8px;
+      user-select:none;
+    }
+    .switch{
+      width: 44px;
+      height: 26px;
+      border-radius: 999px;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.06);
+      position:relative;
+      cursor:pointer;
+    }
+    .knob{
+      position:absolute;
+      top: 3px;
+      left: 3px;
+      width: 20px;
+      height: 20px;
+      border-radius:999px;
+      background: rgba(231,236,255,.92);
+      transition: left .18s ease;
+    }
+    .switch.on{background: rgba(122,162,255,.22); border-color: rgba(122,162,255,.4)}
+    .switch.on .knob{left: 21px;}
+
+    .sr{position:absolute; left:-9999px;}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="topbar">
+      <div>
+        <h1>Complexity Management: a step-by-step walkthrough</h1>
+        <p class="subtitle">Explore how new technologies add options, how individuals relate to an environment that is more complex than they are, how niches are constructed through multiple descriptions, and how institutions attenuate choices—sometimes creating tensions that drive further innovation.</p>
+      </div>
+      <div class="row" aria-label="Session actions">
+        <button class="btn secondary small" id="btnReset">Reset</button>
+        <button class="btn small" id="btnExport">Export notes</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- LEFT: controls + progress -->
+    <section class="card" aria-label="Controls">
+      <div class="hd">
+        <h2>Run the model</h2>
+        <div class="pill"><span aria-hidden="true">⏳</span> Step <b id="stepCount">1</b>/<span id="stepTotal">6</span></div>
+      </div>
+      <div class="bd">
+        <div class="row" style="justify-content:space-between; align-items:center;">
+          <div class="progress" aria-label="progress"><div class="bar" id="bar"></div></div>
+          <div class="row">
+            <button class="btn secondary" id="btnPrev">Back</button>
+            <button class="btn" id="btnNext">Next</button>
+          </div>
+        </div>
+
+        <div class="callout" id="promptBox" style="margin-top:12px">
+          <b>Quick prompt:</b>
+          <div class="footerNote" id="promptText">Adjust the sliders to see how option-growth affects uncertainty and niche stability.</div>
+        </div>
+
+        <div class="mini" style="margin-top:12px">
+          <div class="card" style="box-shadow:none; background: rgba(255,255,255,.03)">
+            <div class="hd"><h2>Parameters</h2><span class="pill"><span aria-hidden="true">⚙️</span> editable</span></div>
+            <div class="bd">
+              <div class="rangeBox" aria-label="Parameter sliders">
+                <div class="kv"><label for="techOptions">Technology options in environment</label><output id="techOut">12</output></div>
+                <input id="techOptions" type="range" min="2" max="60" value="12" />
+
+                <div class="kv"><label for="attention">Individual attenuation strength (attention/selectivity)</label><output id="attOut">55</output></div>
+                <input id="attention" type="range" min="5" max="95" value="55" />
+
+                <div class="kv"><label for="descriptions">Niche construction effort (many descriptions)</label><output id="descOut">50</output></div>
+                <input id="descriptions" type="range" min="0" max="100" value="50" />
+
+                <div class="kv"><label for="institution">Institutional attenuation (rules/templates/bureaucracy)</label><output id="instOut">45</output></div>
+                <input id="institution" type="range" min="0" max="100" value="45" />
+
+                <div class="toggle" aria-label="Institution mode">
+                  <div class="switch" id="instSwitch" role="switch" aria-checked="false" tabindex="0">
+                    <div class="knob"></div>
+                  </div>
+                  <div>
+                    <div style="font-weight:700">Institution active</div>
+                    <div class="footerNote">Turn on to see how institutions reduce choice-space and also introduce mismatch.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="box-shadow:none; background: rgba(255,255,255,.03)">
+            <div class="hd"><h2>Readouts</h2><span class="pill"><span aria-hidden="true">📈</span> live</span></div>
+            <div class="bd">
+              <div class="list" id="readouts"></div>
+              <div class="footerNote">These are illustrative, not measurements. They visualize the relationships described in each step.</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT: step content + diagram -->
+    <section class="card" aria-label="Walkthrough">
+      <div class="hd">
+        <h2>Walkthrough</h2>
+        <div class="pill"><span aria-hidden="true">🧭</span> guided</div>
+      </div>
+      <div class="bd">
+        <div class="stepTitle">
+          <div>
+            <h3 id="stepTitle">1) New technology adds options</h3>
+            <div class="meta" id="stepMeta">Start with the baseline idea: any new technology is an additional option in the environment.</div>
+          </div>
+          <div class="row">
+            <button class="btn secondary small" id="btnAddNote">Add note</button>
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div>
+            <div class="content" id="stepBody"></div>
+
+            <div class="callout" id="exerciseBox">
+              <b>Micro-exercise</b>
+              <div class="footerNote" id="exerciseText"></div>
+            </div>
+
+            <div class="card" style="margin-top:10px; box-shadow:none; background: rgba(255,255,255,.03)">
+              <div class="hd"><h2>Your notes</h2><span class="pill"><span aria-hidden="true">📝</span> saved locally</span></div>
+              <div class="bd">
+                <textarea id="notes" rows="8" style="width:100%; resize:vertical; border-radius: 14px; border:1px solid var(--border); background: rgba(0,0,0,.2); color: var(--text); padding:10px; font: inherit" placeholder="Write observations as you go…"></textarea>
+                <div class="row" style="justify-content:space-between; margin-top:10px">
+                  <button class="btn secondary small" id="btnClearNotes">Clear</button>
+                  <div class="pill"><span aria-hidden="true">💾</span> autosave</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="diagram" aria-label="Diagram">
+              <svg id="viz" viewBox="0 0 520 340" width="100%" height="340" role="img" aria-label="Complexity loops diagram">
+                <defs>
+                  <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="4" result="coloredBlur" />
+                    <feMerge>
+                      <feMergeNode in="coloredBlur" />
+                      <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                  </filter>
+                  <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(231,236,255,.9)" />
+                  </marker>
+                </defs>
+
+                <!-- background grid -->
+                <g opacity=".12">
+                  <path d="M0 40H520 M0 80H520 M0 120H520 M0 160H520 M0 200H520 M0 240H520 M0 280H520 M0 320H520" stroke="rgba(255,255,255,.28)" />
+                  <path d="M40 0V340 M80 0V340 M120 0V340 M160 0V340 M200 0V340 M240 0V340 M280 0V340 M320 0V340 M360 0V340 M400 0V340 M440 0V340 M480 0V340" stroke="rgba(255,255,255,.28)" />
+                </g>
+
+                <!-- environment -->
+                <rect x="22" y="20" width="476" height="300" rx="20" ry="20" fill="rgba(122,162,255,.10)" stroke="rgba(122,162,255,.35)" />
+                <text x="40" y="48" fill="rgba(231,236,255,.92)" font-size="14" font-weight="700">Environment (more complex)</text>
+
+                <!-- tech options cluster -->
+                <g id="options"></g>
+
+                <!-- individual -->
+                <circle id="indCircle" cx="160" cy="190" r="54" fill="rgba(142,240,210,.14)" stroke="rgba(142,240,210,.5)" />
+                <text x="126" y="190" fill="rgba(231,236,255,.95)" font-size="13" font-weight="700">Individual</text>
+                <text x="118" y="210" fill="rgba(183,193,255,.9)" font-size="11">(limited)</text>
+
+                <!-- institution -->
+                <rect id="instBox" x="302" y="142" width="170" height="96" rx="18" ry="18" fill="rgba(255,255,255,.05)" stroke="rgba(255,255,255,.18)" />
+                <text x="318" y="170" fill="rgba(231,236,255,.92)" font-size="13" font-weight="700">Institution</text>
+                <text x="318" y="190" fill="rgba(183,193,255,.9)" font-size="11">rules • templates</text>
+                <text x="318" y="206" fill="rgba(183,193,255,.9)" font-size="11">bureaucracy</text>
+
+                <!-- niche -->
+                <path id="niche" d="M 112 256 C 152 278, 194 278, 234 256 C 212 300, 134 300, 112 256" fill="rgba(255,204,102,.12)" stroke="rgba(255,204,102,.45)" />
+                <text x="134" y="292" fill="rgba(231,236,255,.92)" font-size="12" font-weight="650">Niche</text>
+
+                <!-- arrows: env -> ind (attenuation/select) -->
+                <path id="a1" d="M 244 110 C 206 122, 186 132, 172 148" fill="none" stroke="rgba(231,236,255,.75)" stroke-width="2" marker-end="url(#arrow)" />
+                <text x="200" y="116" fill="rgba(183,193,255,.92)" font-size="11">signals</text>
+
+                <!-- arrows: ind -> env (niche creation / descriptions) -->
+                <path id="a2" d="M 176 236 C 194 256, 214 270, 252 278" fill="none" stroke="rgba(231,236,255,.75)" stroke-width="2" marker-end="url(#arrow)" />
+                <text x="210" y="262" fill="rgba(183,193,255,.92)" font-size="11">descriptions</text>
+
+                <!-- arrows: institution attenuation -->
+                <path id="a3" d="M 238 172 C 268 164, 284 160, 300 160" fill="none" stroke="rgba(231,236,255,.70)" stroke-width="2" marker-end="url(#arrow)" />
+                <text x="248" y="156" fill="rgba(183,193,255,.92)" font-size="11">requests</text>
+
+                <path id="a4" d="M 302 220 C 278 244, 250 256, 214 264" fill="none" stroke="rgba(231,236,255,.70)" stroke-width="2" marker-end="url(#arrow)" />
+                <text x="258" y="238" fill="rgba(183,193,255,.92)" font-size="11">templates</text>
+
+                <!-- tension / mismatch -->
+                <path id="tension" d="M 278 122 C 330 88, 410 94, 454 136" fill="none" stroke="rgba(255,107,129,.70)" stroke-width="2" stroke-dasharray="6 6" marker-end="url(#arrow)" />
+                <text x="308" y="96" fill="rgba(255,204,102,.92)" font-size="11">mismatch</text>
+
+              </svg>
+
+              <div class="legend" aria-label="Legend">
+                <span class="pill"><span class="dot" style="background: rgba(142,240,210,.9)"></span>Individual loop</span>
+                <span class="pill"><span class="dot" style="background: rgba(122,162,255,.9)"></span>Environment options</span>
+                <span class="pill"><span class="dot" style="background: rgba(255,204,102,.9)"></span>Niche (stability)</span>
+                <span class="pill"><span class="dot" style="background: rgba(255,107,129,.9)"></span>Institution mismatch</span>
+              </div>
+            </div>
+
+            <div class="card" style="margin-top:10px; box-shadow:none; background: rgba(255,255,255,.03)">
+              <div class="hd"><h2>Option list</h2><span class="pill"><span aria-hidden="true">🧰</span> environment</span></div>
+              <div class="bd">
+                <div class="footerNote">A toy list of “ways to do the same thing.” As options grow, selecting a method becomes harder.</div>
+                <div class="list" id="optionList"></div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite">
+    <div class="t" id="toastT">Saved</div>
+    <div class="m" id="toastM">Your note was added.</div>
+  </div>
+
+  <script>
+    // -----------------------------
+    // Model + walkthrough content
+    // -----------------------------
+
+    const STEPS = [
+      {
+        title: "1) New technology adds options",
+        meta: "Any new technology is an additional option in the environment for doing things that could be done before.",
+        body: `
+          <p><b>Core idea:</b> a technology doesn’t only add a new capability; it adds a new <i>way</i> of doing things that were already possible.</p>
+          <ul>
+            <li>Before: one or a few ways to do a task.</li>
+            <li>After: the old ways still exist, plus the new way(s).</li>
+            <li>So the environment’s <b>option-space</b> grows.</li>
+          </ul>
+          <div class="callout"><b>In this model</b> we treat “technology” as increased optionality in the environment, not automatically as progress.</div>
+        `,
+        exercise: "Pick a task (e.g., write a report, contact a colleague, plan a trip). Slide ‘Technology options’ upward and notice how many alternate methods appear.",
+        prompt: "Try increasing technology options. Notice how ‘selection load’ rises even if the task itself didn’t change."
+      },
+      {
+        title: "2) Individual ↔ environment: attenuation and niche creation",
+        meta: "Individuals are in relationship with an environment that is more complex than they are.",
+        body: `
+          <p><b>Asymmetry:</b> the environment contains more possible signals and actions than any individual can process.</p>
+          <p>So the individual relies on a loop:</p>
+          <ul>
+            <li><b>Attenuation / selection:</b> filter signals from the environment (attention, habits, heuristics).</li>
+            <li><b>Niche creation:</b> shape a “dwelling-space” in the environment where life/work is manageable.</li>
+          </ul>
+          <p><b>Niche creation</b> happens through generating <b>many descriptions of the same thing</b>—multiple framings that stabilize meaning and action.</p>
+          <div class="callout"><b>Examples of “many descriptions”</b>: checklists, narratives, categories, metaphors, labels, plans, job titles, OKRs, user stories.</div>
+        `,
+        exercise: "Raise ‘Niche construction effort’. Imagine making 5–10 descriptions of the same situation until it becomes ‘livable’. What shifts?",
+        prompt: "Turn up attention/selectivity and niche effort to see how they reduce perceived overload and increase stability."
+      },
+      {
+        title: "3) More options → harder selection → individual uncertainty",
+        meta: "The rise in technology options increases the challenge of selecting which option to perform.",
+        body: `
+          <p>When option-space expands, it increases the difficulty of choosing <i>which</i> technology to perform.</p>
+          <ul>
+            <li><b>Selection burden</b> rises: more comparisons, more tradeoffs, more context-switching.</li>
+            <li><b>Uncertainty</b> rises: “What matters?” “What are the criteria?” “What counts as success?”</li>
+            <li>Niche construction becomes harder: instability grows because today’s descriptions don’t reliably constrain tomorrow’s choices.</li>
+          </ul>
+          <div class="callout"><b>Key claim:</b> more options can increase <i>uncertainty</i> even when capabilities increase.</div>
+        `,
+        exercise: "Push ‘Technology options’ high. Now lower ‘attention/selectivity’ a bit. Watch uncertainty climb and niche stability drop.",
+        prompt: "Max out options, reduce selectivity—see how criteria become unclear and niches become fragile."
+      },
+      {
+        title: "4) Institutions mop up uncertainty by attenuating choices",
+        meta: "A further loop layer (institution) reduces uncertainty via rules, templates, bureaucracy.",
+        body: `
+          <p>As individuals struggle to select among proliferating options, <b>institutions</b> add a higher-level loop to manage uncertainty:</p>
+          <ul>
+            <li><b>Attenuate choices</b>: approved tools, standard operating procedures, forms, templates, policies.</li>
+            <li><b>Stabilize criteria</b>: what counts as “done,” “compliant,” “acceptable.”</li>
+            <li><b>Reduce variability</b>: fewer pathways, more predictability.</li>
+          </ul>
+          <div class="callout"><b>In this app:</b> turn on the Institution switch, then raise institutional attenuation. Notice uncertainty can drop—up to a point.</div>
+        `,
+        exercise: "Enable ‘Institution active’. Increase ‘Institutional attenuation’. What happens to choice-space and uncertainty?",
+        prompt: "Institutional attenuation reduces choice-space and can lower uncertainty—while creating a new kind of tension."
+      },
+      {
+        title: "5) Mismatch: institutional world vs. real world squeezes the user",
+        meta: "Institutional attenuation can create uncertainty because it’s not the real world.",
+        body: `
+          <p>Institutional filters simplify reality—but they can also distort it.</p>
+          <ul>
+            <li>The <b>institutional world</b> (templates, rules) may not match the <b>real environment</b> (messy signals, edge-cases).</li>
+            <li>The individual experiences conflict: <b>navigate directly</b> with personal judgement, or <b>navigate institutionally</b> by the book?</li>
+            <li>This can increase uncertainty and stress: the user is <b>squeezed in the middle</b>.</li>
+          </ul>
+          <div class="callout"><b>Watch for the tradeoff:</b> more attenuation can reduce choice overload but increase mismatch tension.</div>
+        `,
+        exercise: "With Institution active, raise institutional attenuation high, then also raise technology options. Observe the mismatch indicator grow.",
+        prompt: "High institutional attenuation + high option-space often increases ‘mismatch tension’ (compliance vs reality)."
+      },
+      {
+        title: "6) Positive feedback: tension → innovation → more options",
+        meta: "The squeeze drives innovation and new technologies, which create more complexity and uncertainty.",
+        body: `
+          <p>The squeeze (between environment and institution) can drive further innovation:</p>
+          <ul>
+            <li>People invent tools to bypass constraints, automate bureaucracy, or restore agency.</li>
+            <li>Those tools add <b>more options</b> to the environment.</li>
+            <li>More options restart the cycle: selection burden rises, uncertainty rises, institutions respond…</li>
+          </ul>
+          <div class="callout"><b>System dynamic:</b> a <i>positive feedback loop</i> can form: more options → more uncertainty → more institutional attenuation → more mismatch → more innovation → more options.</div>
+        `,
+        exercise: "Try to ‘balance’ the system: choose settings where uncertainty is manageable and mismatch is not extreme. What combination works?",
+        prompt: "Aim for a stable region: enough selectivity + enough niche work + enough institutional support, without extreme mismatch."
+      }
+    ];
+
+    // Toy option labels for the environment list
+    const OPTION_POOL = [
+      {name:"Email", desc:"Asynchronous messages"},
+      {name:"Phone call", desc:"High-bandwidth synchronous"},
+      {name:"Chat (IM)", desc:"Fast, lightweight coordination"},
+      {name:"Video meeting", desc:"Multi-channel communication"},
+      {name:"Shared doc", desc:"Collaborative writing"},
+      {name:"Ticketing system", desc:"Traceable requests"},
+      {name:"Workflow automation", desc:"Rules + triggers"},
+      {name:"Spreadsheets", desc:"Flexible modeling"},
+      {name:"Dashboard", desc:"Metrics + monitoring"},
+      {name:"Templates", desc:"Standardized structure"},
+      {name:"AI assistant", desc:"Drafting + synthesis"},
+      {name:"Knowledge base", desc:"Institutional memory"},
+      {name:"Project board", desc:"Visual work tracking"},
+      {name:"Docs-as-code", desc:"Versioned documentation"},
+      {name:"Forms", desc:"Structured intake"},
+      {name:"CRM", desc:"Relationship tracking"},
+      {name:"RPA bot", desc:"Automate clerical tasks"},
+      {name:"No-code app", desc:"Rapid internal tools"},
+      {name:"Data warehouse", desc:"Centralize analytics"},
+      {name:"API integration", desc:"Connect systems"},
+      {name:"Identity/SSO", desc:"Access control"},
+      {name:"Policy engine", desc:"Rule enforcement"},
+      {name:"Digital signatures", desc:"Compliance + approvals"},
+      {name:"Collab whiteboard", desc:"Shared sensemaking"},
+      {name:"Personal scripts", desc:"DIY workflow"},
+      {name:"Mobile app", desc:"Anywhere interaction"},
+      {name:"Calendar scheduling", desc:"Coordinate time"},
+      {name:"Notification hub", desc:"Stream triage"},
+      {name:"Prompt library", desc:"Reusable AI patterns"},
+      {name:"Decision log", desc:"Explainable choices"},
+      {name:"Playbooks", desc:"Codified responses"},
+      {name:"Runbooks", desc:"Operational stability"},
+      {name:"Procurement gate", desc:"Approved tools list"},
+      {name:"Access request", desc:"Role-based permissions"},
+      {name:"Secure sandbox", desc:"Controlled experiments"},
+      {name:"Shadow IT", desc:"Unofficial tools"},
+      {name:"Second brain", desc:"Personal knowledge system"},
+      {name:"Note capture", desc:"Externalize memory"},
+      {name:"Task manager", desc:"Personal execution"},
+      {name:"Team OKRs", desc:"Shared targets"}
+    ];
+
+    // -----------------------------
+    // State
+    // -----------------------------
+
+    const state = {
+      step: 0,
+      techOptions: 12,
+      attention: 55,
+      descriptions: 50,
+      institution: 45,
+      institutionActive: false,
+      notes: ""
+    };
+
+    const $ = (id) => document.getElementById(id);
+
+    // -----------------------------
+    // Derived indicators (toy)
+    // -----------------------------
+
+    function clamp01(x){ return Math.max(0, Math.min(1, x)); }
+
+    function indicators(){
+      // Normalize
+      const O = state.techOptions; // 2..60
+      const att = state.attention / 100; // 0..1
+      const desc = state.descriptions / 100; // 0..1
+      const inst = state.institution / 100; // 0..1
+      const instOn = state.institutionActive ? 1 : 0;
+
+      // Choice-space (reduced by attention, and institution if on)
+      const effectiveChoiceSpace = O * (1 - 0.55*att) * (1 - 0.65*inst*instOn);
+
+      // Selection load grows with options and reduced attenuation
+      const selectionLoad = (O ** 0.9) * (1 + (1-att)*1.2) * (1 + 0.25*inst*instOn);
+
+      // Uncertainty rises with effective choice space and selection load; can be reduced by attention and institutional attenuation
+      const uncertaintyRaw = (effectiveChoiceSpace * 0.7 + selectionLoad * 0.5) / 20;
+      const uncertainty = uncertaintyRaw * (1 - 0.35*att) * (1 - 0.32*inst*instOn);
+
+      // Criteria clarity: improves with attention and institutional attenuation, but degrades with high options
+      const criteriaClarity = clamp01(0.55*att + 0.35*inst*instOn - 0.015*(O-10));
+
+      // Niche stability: improved by descriptions and criteria clarity, harmed by uncertainty
+      const nicheStability = clamp01(0.55*desc + 0.30*criteriaClarity - 0.35*clamp01(uncertainty/3));
+
+      // Mismatch tension: only relevant when institution is on; increases with institutional attenuation and high options, reduced by strong niche work
+      const mismatch = instOn ? clamp01(0.55*inst + 0.012*(O-10) - 0.25*desc) : 0;
+
+      // Innovation pressure: increases with mismatch + uncertainty (positive feedback driver)
+      const innovationPressure = clamp01(0.55*clamp01(uncertainty/3) + 0.65*mismatch);
+
+      return {
+        effectiveChoiceSpace,
+        selectionLoad,
+        uncertainty,
+        criteriaClarity,
+        nicheStability,
+        mismatch,
+        innovationPressure
+      };
+    }
+
+    function fmt(n){
+      if (!isFinite(n)) return "–";
+      if (n >= 1000) return n.toFixed(0);
+      return n.toFixed(1);
+    }
+
+    function pct01(x){ return `${Math.round(clamp01(x)*100)}%`; }
+
+    // -----------------------------
+    // Render
+    // -----------------------------
+
+    function render(){
+      // Step UI
+      $("stepTotal").textContent = STEPS.length;
+      $("stepCount").textContent = (state.step + 1);
+      const prog = ((state.step+1)/STEPS.length)*100;
+      $("bar").style.width = `${prog}%`;
+
+      $("btnPrev").disabled = state.step === 0;
+      $("btnNext").textContent = state.step === STEPS.length-1 ? "Finish" : "Next";
+
+      const step = STEPS[state.step];
+      $("stepTitle").textContent = step.title;
+      $("stepMeta").textContent = step.meta;
+      $("stepBody").innerHTML = step.body;
+      $("exerciseText").textContent = step.exercise;
+      $("promptText").textContent = step.prompt;
+
+      // Sliders + outputs
+      $("techOptions").value = String(state.techOptions);
+      $("attention").value = String(state.attention);
+      $("descriptions").value = String(state.descriptions);
+      $("institution").value = String(state.institution);
+
+      $("techOut").textContent = String(state.techOptions);
+      $("attOut").textContent = String(state.attention);
+      $("descOut").textContent = String(state.descriptions);
+      $("instOut").textContent = String(state.institution);
+
+      // Institution switch
+      const sw = $("instSwitch");
+      sw.classList.toggle("on", state.institutionActive);
+      sw.setAttribute("aria-checked", state.institutionActive ? "true" : "false");
+
+      // Notes
+      $("notes").value = state.notes;
+
+      // Option list
+      renderOptions();
+
+      // Readouts + diagram
+      renderReadouts();
+      renderViz();
+
+      // Step-sensitive guidance: hide mismatch arrow unless step >= 4 and institution active
+      const showMismatch = state.institutionActive && state.step >= 4;
+      $("tension").style.opacity = showMismatch ? "1" : "0";
+
+      // Institution box visibility: fade until step >= 3
+      const instVisible = state.step >= 3;
+      $("instBox").style.opacity = instVisible ? "1" : "0.35";
+      $("a3").style.opacity = instVisible ? "1" : "0.25";
+      $("a4").style.opacity = instVisible ? "1" : "0.25";
+
+      // Niche visibility: starts step 1 onwards
+      const nicheVisible = state.step >= 1;
+      $("niche").style.opacity = nicheVisible ? "1" : "0.25";
+      $("a2").style.opacity = nicheVisible ? "1" : "0.25";
+
+      // Signal arrow always visible but brighter step >= 1
+      $("a1").style.opacity = state.step >= 1 ? "1" : "0.55";
+    }
+
+    function renderOptions(){
+      const list = $("optionList");
+      list.innerHTML = "";
+      const n = state.techOptions;
+      // choose first n from pool, but wrap if needed
+      for (let i=0; i<n; i++){
+        const it = OPTION_POOL[i % OPTION_POOL.length];
+        const el = document.createElement("div");
+        el.className = "item";
+        const oldOrNew = i < 6 ? "baseline" : (i < 14 ? "added" : "proliferation");
+        el.innerHTML = `
+          <div class="left">
+            <div class="name">${escapeHtml(it.name)}</div>
+            <div class="desc">${escapeHtml(it.desc)}</div>
+          </div>
+          <div class="badge">${oldOrNew}</div>
+        `;
+        list.appendChild(el);
+      }
+    }
+
+    function renderReadouts(){
+      const r = indicators();
+      const rows = [
+        {k:"Environment option-space", v:`${state.techOptions} options`, note:"More technologies = more ways to do the same thing."},
+        {k:"Effective choice-space (after attenuation)", v: fmt(r.effectiveChoiceSpace), note:"What the individual effectively has to choose among."},
+        {k:"Selection load", v: fmt(r.selectionLoad), note:"Cognitive/coordination effort to pick an option."},
+        {k:"Individual uncertainty", v: fmt(r.uncertainty), note:"Rises with options + selection load; reduced by selectivity/institutions."},
+        {k:"Criteria clarity", v: pct01(r.criteriaClarity), note:"How clear the selection criteria feel."},
+        {k:"Niche stability", v: pct01(r.nicheStability), note:"Stabilized by many descriptions; undermined by uncertainty."},
+        {k:"Institution mismatch tension", v: pct01(r.mismatch), note:"Gap between institutional simplification and real environment."},
+        {k:"Innovation pressure", v: pct01(r.innovationPressure), note:"Positive feedback driver (uncertainty + mismatch)."}
+      ];
+      const box = $("readouts");
+      box.innerHTML = "";
+      rows.forEach(row => {
+        const el = document.createElement("div");
+        el.className = "item";
+        el.innerHTML = `
+          <div class="left">
+            <div class="name">${escapeHtml(row.k)}</div>
+            <div class="desc">${escapeHtml(row.note)}</div>
+          </div>
+          <div class="badge">${escapeHtml(row.v)}</div>
+        `;
+        box.appendChild(el);
+      });
+    }
+
+    function renderViz(){
+      const r = indicators();
+
+      // Options cluster: sprinkle dots (count scales with techOptions)
+      const g = $("options");
+      g.innerHTML = "";
+      const n = Math.min(60, state.techOptions);
+      for (let i=0; i<n; i++){
+        const x = 290 + (i%10)*18;
+        const y = 70 + Math.floor(i/10)*16;
+        const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        dot.setAttribute("cx", x);
+        dot.setAttribute("cy", y);
+        dot.setAttribute("r", "4");
+        dot.setAttribute("fill", "rgba(122,162,255,.75)");
+        dot.setAttribute("opacity", String(0.35 + 0.65*Math.min(1, state.techOptions/60)));
+        g.appendChild(dot);
+      }
+
+      // Individual circle size changes slightly with attention (selective capacity)
+      const ind = $("indCircle");
+      const baseR = 52;
+      const rAdj = baseR * (0.85 + 0.35*(state.attention/100));
+      ind.setAttribute("r", String(rAdj));
+      ind.setAttribute("filter", r.uncertainty > 2.2 ? "url(#glow)" : "");
+
+      // Niche area opacity scales with niche stability
+      $("niche").style.opacity = String(0.25 + 0.75*clamp01(r.nicheStability));
+
+      // Arrow thickness: a1 (signals) based on option space; a2 (descriptions) based on descriptions; a3/a4 based on institution
+      const a1w = 1.4 + 1.8*Math.min(1, state.techOptions/60);
+      $("a1").setAttribute("stroke-width", String(a1w));
+      const a2w = 1.4 + 2.0*(state.descriptions/100);
+      $("a2").setAttribute("stroke-width", String(a2w));
+      const instOn = state.institutionActive ? 1 : 0;
+      const a3w = 1.2 + 2.2*(state.institution/100)*instOn;
+      $("a3").setAttribute("stroke-width", String(a3w));
+      $("a4").setAttribute("stroke-width", String(a3w));
+
+      // Tension dash opacity scales with mismatch
+      $("tension").style.opacity = String(0.15 + 0.85*clamp01(r.mismatch));
+
+      // Institution box highlight when active
+      $("instBox").setAttribute(
+        "stroke",
+        state.institutionActive ? "rgba(122,162,255,.45)" : "rgba(255,255,255,.18)"
+      );
+      $("instBox").setAttribute(
+        "fill",
+        state.institutionActive ? "rgba(122,162,255,.08)" : "rgba(255,255,255,.05)"
+      );
+    }
+
+    // -----------------------------
+    // Events
+    // -----------------------------
+
+    function save(){
+      localStorage.setItem("cm_app_state_v1", JSON.stringify(state));
+    }
+
+    function load(){
+      try{
+        const raw = localStorage.getItem("cm_app_state_v1");
+        if (!raw) return;
+        const s = JSON.parse(raw);
+        Object.assign(state, {
+          step: typeof s.step === "number" ? Math.min(STEPS.length-1, Math.max(0, s.step)) : 0,
+          techOptions: typeof s.techOptions === "number" ? s.techOptions : state.techOptions,
+          attention: typeof s.attention === "number" ? s.attention : state.attention,
+          descriptions: typeof s.descriptions === "number" ? s.descriptions : state.descriptions,
+          institution: typeof s.institution === "number" ? s.institution : state.institution,
+          institutionActive: !!s.institutionActive,
+          notes: typeof s.notes === "string" ? s.notes : ""
+        });
+      } catch(e){
+        // ignore
+      }
+    }
+
+    function toast(title, msg){
+      $("toastT").textContent = title;
+      $("toastM").textContent = msg;
+      const t = $("toast");
+      t.classList.add("show");
+      window.clearTimeout(toast._t);
+      toast._t = window.setTimeout(() => t.classList.remove("show"), 2200);
+    }
+
+    function next(){
+      if (state.step < STEPS.length-1){
+        state.step++;
+        save();
+        render();
+      } else {
+        toast("Done", "You reached the end. Try different parameter settings to explore the loop.");
+      }
+    }
+
+    function prev(){
+      state.step = Math.max(0, state.step-1);
+      save();
+      render();
+    }
+
+    function resetAll(){
+      Object.assign(state, {
+        step: 0,
+        techOptions: 12,
+        attention: 55,
+        descriptions: 50,
+        institution: 45,
+        institutionActive: false,
+        notes: ""
+      });
+      save();
+      render();
+      toast("Reset", "Back to defaults.");
+    }
+
+    function exportNotes(){
+      const r = indicators();
+      const lines = [
+        "Complexity Management Walkthrough — Export",
+        `Date: ${new Date().toISOString()}`,
+        "",
+        `Step: ${state.step+1}/${STEPS.length} — ${STEPS[state.step].title}`,
+        "",
+        "Parameters:",
+        `- Technology options: ${state.techOptions}`,
+        `- Attention/selectivity: ${state.attention}`,
+        `- Niche descriptions effort: ${state.descriptions}`,
+        `- Institution active: ${state.institutionActive}`,
+        `- Institutional attenuation: ${state.institution}`,
+        "",
+        "Readouts (toy):",
+        `- Effective choice-space: ${fmt(r.effectiveChoiceSpace)}`,
+        `- Selection load: ${fmt(r.selectionLoad)}`,
+        `- Uncertainty: ${fmt(r.uncertainty)}`,
+        `- Criteria clarity: ${pct01(r.criteriaClarity)}`,
+        `- Niche stability: ${pct01(r.nicheStability)}`,
+        `- Mismatch tension: ${pct01(r.mismatch)}`,
+        `- Innovation pressure: ${pct01(r.innovationPressure)}`,
+        "",
+        "Notes:",
+        state.notes.trim() ? state.notes.trim() : "(none)"
+      ];
+
+      const blob = new Blob([lines.join("\n")], {type:"text/plain;charset=utf-8"});
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "complexity-management-notes.txt";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      toast("Exported", "Downloaded a text file with your notes + current settings.");
+    }
+
+    function escapeHtml(s){
+      return String(s)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    // Wire up
+    $("btnNext").addEventListener("click", next);
+    $("btnPrev").addEventListener("click", prev);
+    $("btnReset").addEventListener("click", resetAll);
+    $("btnExport").addEventListener("click", exportNotes);
+
+    $("techOptions").addEventListener("input", (e)=>{ state.techOptions = Number(e.target.value); save(); render(); });
+    $("attention").addEventListener("input", (e)=>{ state.attention = Number(e.target.value); save(); render(); });
+    $("descriptions").addEventListener("input", (e)=>{ state.descriptions = Number(e.target.value); save(); render(); });
+    $("institution").addEventListener("input", (e)=>{ state.institution = Number(e.target.value); save(); render(); });
+
+    $("notes").addEventListener("input", (e)=>{ state.notes = e.target.value; save(); });
+    $("btnClearNotes").addEventListener("click", ()=>{ state.notes = ""; save(); render(); toast("Cleared", "Notes cleared."); });
+
+    function toggleInstitution(){
+      state.institutionActive = !state.institutionActive;
+      save();
+      render();
+      toast("Institution", state.institutionActive ? "Enabled institutional attenuation." : "Disabled institutional attenuation.");
+    }
+
+    $("instSwitch").addEventListener("click", toggleInstitution);
+    $("instSwitch").addEventListener("keydown", (e)=>{
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleInstitution(); }
+    });
+
+    $("btnAddNote").addEventListener("click", ()=>{
+      const stamp = new Date().toLocaleString();
+      const r = indicators();
+      const line = `\n\n[${stamp}] Step ${state.step+1}: ${STEPS[state.step].title}\n- Options=${state.techOptions}, Selectivity=${state.attention}, Descriptions=${state.descriptions}, Institution=${state.institutionActive ? "on" : "off"} (${state.institution})\n- Uncertainty=${fmt(r.uncertainty)}, Niche=${pct01(r.nicheStability)}, Mismatch=${pct01(r.mismatch)}\nObservation: `;
+      state.notes = (state.notes || "") + line;
+      save();
+      render();
+      // move cursor to end
+      const ta = $("notes");
+      ta.focus();
+      ta.setSelectionRange(ta.value.length, ta.value.length);
+      toast("Note", "Added a timestamped note stub.");
+    });
+
+    // Init
+    load();
+    render();
+  </script>
+</body>
+</html>
