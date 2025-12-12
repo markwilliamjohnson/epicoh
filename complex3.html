@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complexity Management Analysis</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(to right, #2c3e50, #4a6491);
+            color: white;
+            padding: 25px 40px;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+        
+        .app-body {
+            display: flex;
+            min-height: 600px;
+        }
+        
+        .progress-container {
+            width: 300px;
+            background-color: #f8f9fa;
+            padding: 30px 20px;
+            border-right: 1px solid #eaeaea;
+        }
+        
+        .progress-steps {
+            list-style: none;
+            margin-top: 20px;
+        }
+        
+        .progress-step {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .progress-step.active {
+            background-color: #e3f2fd;
+            color: #1565c0;
+            font-weight: 600;
+            border-left: 4px solid #1565c0;
+        }
+        
+        .progress-step.completed {
+            color: #2e7d32;
+        }
+        
+        .step-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-weight: bold;
+            background-color: #e0e0e0;
+            color: #666;
+        }
+        
+        .progress-step.active .step-icon {
+            background-color: #1565c0;
+            color: white;
+        }
+        
+        .progress-step.completed .step-icon {
+            background-color: #2e7d32;
+            color: white;
+        }
+        
+        .step-content {
+            flex: 1;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .step-panel {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+        }
+        
+        .step-panel.active {
+            display: flex;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .step-title {
+            font-size: 1.8rem;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .step-description {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 25px;
+            color: #444;
+        }
+        
+        .visualization-container {
+            background-color: #f9f9f9;
+            border-radius: 10px;
+            padding: 25px;
+            margin-top: 20px;
+            flex: 1;
+            min-height: 320px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+        
+        .visualization {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .visual-svg {
+            max-width: 100%;
+            height: auto;
+            max-height: 280px;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+        }
+        
+        .btn-prev {
+            background-color: #f1f1f1;
+            color: #333;
+        }
+        
+        .btn-prev:hover {
+            background-color: #e0e0e0;
+        }
+        
+        .btn-prev:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .btn-next {
+            background-color: #1565c0;
+            color: white;
+        }
+        
+        .btn-next:hover {
+            background-color: #0d47a1;
+        }
+        
+        .btn-next:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .btn-restart {
+            background-color: #f8f9fa;
+            color: #666;
+            border: 1px solid #ddd;
+        }
+        
+        .btn-restart:hover {
+            background-color: #e9ecef;
+        }
+        
+        .btn-icon {
+            margin-right: 8px;
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background-color: #e0e0e0;
+            border-radius: 4px;
+            margin: 25px 0 15px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(to right, #1565c0, #42a5f5);
+            width: 16.66%;
+            transition: width 0.5s ease;
+        }
+        
+        .progress-text {
+            text-align: right;
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .loop {
+            stroke-width: 2;
+            fill: none;
+        }
+        
+        .environment-loop {
+            stroke: #4caf50;
+        }
+        
+        .individual-loop {
+            stroke: #2196f3;
+        }
+        
+        .institution-loop {
+            stroke: #ff9800;
+        }
+        
+        .feedback-loop {
+            stroke: #f44336;
+        }
+        
+        .node {
+            fill: white;
+            stroke-width: 2;
+        }
+        
+        .environment-node {
+            stroke: #4caf50;
+        }
+        
+        .individual-node {
+            stroke: #2196f3;
+        }
+        
+        .institution-node {
+            stroke: #ff9800;
+        }
+        
+        .technology-node {
+            stroke: #9c27b0;
+        }
+        
+        .node-label {
+            font-size: 12px;
+            font-weight: bold;
+            text-anchor: middle;
+            dominant-baseline: central;
+        }
+        
+        .connection {
+            stroke-width: 1.5;
+            fill: none;
+        }
+        
+        .arrow {
+            fill: #666;
+        }
+        
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-right: 15px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 0.9rem;
+            border-top: 1px solid #eee;
+        }
+        
+        @media (max-width: 768px) {
+            .app-body {
+                flex-direction: column;
+            }
+            
+            .progress-container {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid #eaeaea;
+            }
+            
+            .progress-steps {
+                display: flex;
+                overflow-x: auto;
+                padding-bottom: 10px;
+            }
+            
+            .progress-step {
+                min-width: 200px;
+                margin-right: 10px;
+                margin-bottom: 0;
+            }
+            
+            .step-content {
+                padding: 20px;
+            }
+            
+            .visual-svg {
+                max-height: 220px;
+            }
+        }
+        
+        .note-box {
+            background-color: #fffde7;
+            border-left: 4px solid #ffd600;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 4px 4px 0;
+        }
+        
+        .complexity-level {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        
+        .complexity-item {
+            text-align: center;
+            padding: 15px;
+            background-color: #f5f5f5;
+            border-radius: 8px;
+            flex: 1;
+            margin: 0 5px;
+        }
+        
+        .complexity-item.active {
+            background-color: #e3f2fd;
+            border: 2px solid #1565c0;
+        }
+        
+        .svg-container {
+            width: 100%;
+            overflow: visible;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Complexity Management Analysis</h1>
+            <p class="subtitle">A step-by-step exploration of technology adoption and institutional adaptation</p>
+        </header>
+        
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-text">
+            <span id="currentStep">1</span> of 6 steps
+        </div>
+        
+        <div class="app-body">
+            <div class="progress-container">
+                <h3><i class="fas fa-list-ol btn-icon"></i> Analysis Steps</h3>
+                <ul class="progress-steps" id="progressSteps">
+                    <li class="progress-step active" data-step="1">
+                        <div class="step-icon">1</div>
+                        <div class="step-text">
+                            <h4>New Technology as Option</h4>
+                            <p>Additional ways to perform tasks</p>
+                        </div>
+                    </li>
+                    <li class="progress-step" data-step="2">
+                        <div class="step-icon">2</div>
+                        <div class="step-text">
+                            <h4>Individual & Environment</h4>
+                            <p>Attenuation and niche creation</p>
+                        </div>
+                    </li>
+                    <li class="progress-step" data-step="3">
+                        <div class="step-icon">3</div>
+                        <div class="step-text">
+                            <h4>Rise in Options</h4>
+                            <p>Increased selection challenge</p>
+                        </div>
+                    </li>
+                    <li class="progress-step" data-step="4">
+                        <div class="step-icon">4</div>
+                        <div class="step-text">
+                            <h4>Institutional Attenuation</h4>
+                            <p>Bureaucracy and rules</p>
+                        </div>
+                    </li>
+                    <li class="progress-step" data-step="5">
+                        <div class="step-icon">5</div>
+                        <div class="step-text">
+                            <h4>Conflict for Users</h4>
+                            <p>Squeezed between two worlds</p>
+                        </div>
+                    </li>
+                    <li class="progress-step" data-step="6">
+                        <div class="step-icon">6</div>
+                        <div class="step-text">
+                            <h4>Feedback Loop</h4>
+                            <p>Complexity drives more innovation</p>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="step-content">
+                <!-- Step 1 -->
+                <div class="step-panel active" id="step1">
+                    <h2 class="step-title">Step 1: New Technology as an Additional Option</h2>
+                    <div class="step-description">
+                        <p>Any new technology introduces an additional option in the environment for performing tasks that could already be accomplished through existing means.</p>
+                        
+                        <div class="note-box">
+                            <p><strong>Key Insight:</strong> Technology doesn't replace existing methods but adds to the set of available choices, increasing the overall complexity of the environment.</p>
+                        </div>
+                        
+                        <p>Consider communication: Before email, we had letters, telephones, and face-to-face meetings. Email became an additional option, not a replacement for all previous methods. This pattern repeats with each technological advancement.</p>
+                    </div>
+                    
+                    <div class="visualization-container">
+                        <div class="visualization">
+                            <svg class="visual-svg" viewBox="0 0 600 300">
+                                <!-- Environment -->
+                                <rect x="50" y="40" width="500" height="120" fill="#e8f5e9" stroke="#4caf50" stroke-width="3" stroke-dasharray="5,5" rx="5" />
+                                <text x="300" y="30" text-anchor="middle" font-weight="bold" font-size="20" fill="#2c3e50">Environment</text>
+                                
+                                <!-- Existing methods -->
+                                <circle cx="150" cy="100" r="35" fill="#bbdefb" stroke="#2196f3" stroke-width="3" />
+                                <text x="150" y="100" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="bold">Method A</text>
+                                
+                                <circle cx="300" cy="100" r="35" fill="#bbdefb" stroke="#2196f3" stroke-width="3" />
+                                <text x="300" y="100" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="bold">Method B</text>
+                                
+                                <circle cx="450" cy="100" r="35" fill="#bbdefb" stroke="#2196f3" stroke-width="3" />
+                                <text x="450" y="100" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="bold">Method C</text>
+                                
+                                <!-- New technology -->
+                                <circle cx="300" cy="200" r="40" fill="#e1bee7" stroke="#9c27b0" stroke-width="4" />
+                                <text x="300" y="200" text-anchor="middle" dominant-baseline="central" font-size="16" font-weight="bold">New Technology</text>
+                                
+                                <!-- Arrow showing addition -->
+                                <path d="M300,135 L300,160" stroke="#9c27b0" stroke-width="3" fill="none" marker-end="url(#arrowhead1)" />
+                                <text x="330" y="145" font-size="14" fill="#9c27b0" font-weight="bold">Adds Option</text>
+                                
+                                <defs>
+                                    <marker id="arrowhead1" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                        <polygon points="0 0, 10 3.5, 0 7" fill="#9c27b0" />
+                                    </marker>
+                                </defs>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Step 2 -->
+                <div class="step-panel" id="step2">
+                    <h2 class="step-title">Step 2: Individual & Environment Relationship</h2>
+                    <div class="step-description">
+                        <p>Individuals exist in relationship with their environment. They have less complexity than the environment and manage this through a two-way process:</p>
+                        
+                        <div class="complexity-level">
+                            <div class="complexity-item active">
+                                <h4>Attenuation</h4>
+                                <p>Selecting and filtering signals from the environment to reduce complexity</p>
+                            </div>
+                            <div class="complexity-item">
+                                <h4>Niche Creation</h4>
+                                <p>Generating many descriptions of the same thing to create a stable place to dwell</p>
+                            </div>
+                        </div>
+                        
+                        <p>This creates a feedback loop: individuals attenuate environmental complexity by selecting relevant signals, and simultaneously create niches in the environment through their actions and descriptions. Niche creation is essentially about creating stability through multiple perspectives on the same reality.</p>
+                    </div>
+                    
+                    <div class="visualization-container">
+                        <div class="visualization">
+                            <svg class="visual-svg" viewBox="0 0 600 350">
+                                <!-- Environment -->
+                                <rect x="50" y="40" width="500" height="100" fill="#e8f5e9" stroke="#4caf50" stroke-width="3" rx="5" />
+                                <text x="300" y="30" text-anchor="middle" font-weight="bold" font-size="20" fill="#2c3e50">Environment (High Complexity)</text>
+                                <text x="300" y="90" text-anchor="middle" font-size="16" fill="#333" font-weight="bold">Many signals and options</text>
+                                
+                                <!-- Individual -->
+                                <circle cx="300" cy="250" r="45" fill="#e3f2fd" stroke="#2196f3" stroke-width="3" />
+                                <text x="300" y="250" text-anchor="middle" dominant-baseline="central" font-weight="bold" font-size="18">Individual</text>
+                                <text x="300" y="275" text-anchor="middle" dominant-baseline="central" font-size="14" fill="#555">(Lower Complexity)</text>
+                                
+                                <!-- Attenuation arrow -->
+                                <path d="M300,140 Q300,180 260,210" stroke="#2196f3" stroke-width="3" fill="none" marker-end="url(#arrowhead2)" />
+                                <text x="200" y="175" font-size="14" fill="#2196f3" font-weight="bold">Attenuation</text>
+                                <text x="200" y="195" font-size="12" fill="#2196f3">(selects signals)</text>
+                                
+                                <!-- Niche creation arrow -->
+                                <path d="M300,210 Q300,180 340,140" stroke="#4caf50" stroke-width="3" fill="none" marker-end="url(#arrowhead3)" />
+                                <text x="400" y="175" font-size="14" fill="#4caf50" font-weight="bold">Niche Creation</text>
+                                <text x="400" y="195" font-size="12" fill="#4caf50">(generates descriptions)</text>
+                                
+                                <!-- Loop label -->
+                                <text x="300" y="320" text-anchor="middle" font-size="16" font-weight="bold" fill="#666">Feedback Loop</text>
+                                
+                                <defs>
+                                    <marker id="arrowhead2" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                        <polygon points="0 0, 10 3.5, 0 7" fill="#2196f3" />
+                                    </marker>
+                                    <marker id="arrowhead3" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                        <polygon points="0 0, 10 3.5, 0 7" fill="#4caf50" />
+                                    </marker>
+                                </defs>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Step 3 -->
+                <div class="step-panel" id="step3">
+                    <h2 class="step-title">Step 3: Rise in Technology Options</h2>
+                    <div class="step-description">
+                        <p>The proliferation of technology options increases the challenge of selection. With more options comes:</p>
+                        
+                        <ul style="margin-left: 20px; margin-bottom: 20px;">
+                            <li><strong>Increased uncertainty</strong> about which option to choose</li>
+                            <li><strong>Difficulty identifying criteria</strong> for selection between alternatives</li>
+                            <li><strong>Reduced ability to construct stable niches</strong> as technologies rapidly change</li>
+                        </ul>
+                        
+                        <p>This creates a paradox: more options should mean more freedom, but instead they often lead to decision paralysis and increased cognitive load. The individual's attenuation mechanisms become overwhelmed by the sheer volume of technological signals.</p>
+                        
+                        <div class="note-box">
+                            <p><strong>Example:</strong> Consider project management tools. With dozens of options (Asana, Trello, Jira, Basecamp, Monday.com, etc.), selecting the "right" one becomes increasingly difficult, and the criteria for selection (cost, features, integration) become harder to define.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="visualization-container">
+                        <div class="visualization">
+                            <svg class="visual-svg" viewBox="0 0 600 350">
+                                <!-- Individual -->
+                                <circle cx="300" cy="175" r="50" fill="#e3f2fd" stroke="#2196f3" stroke-width="3" />
+                                <text x="300" y="175" text-anchor="middle" dominant-baseline="central" font-weight="bold" font-size="18">Individual</text>
+                                
+                                <!-- Technology options bombarding individual -->
+                                <circle cx="100" cy="80" r="25" fill="#f1f1f1" stroke="#9c27b0" stroke-width="3" />
+                                <text x="100" y="80" text-anchor="middle" dominant-baseline="central" font-size="12" font-weight="bold">Tech A</text>
+                                
+                                <circle cx="180" cy="60" r="25" fill="#f1f1f1" stroke="#9c27b0" stroke-width="3" />
+                                <text x="180" y="60" text-anchor="middle" dominant-baseline="central" font-size="12" font-weight="bold">Tech B</text>
+                                
+                                <circle cx="500" cy="80" r="25" fill="#f1f1f1" stroke="#9c27b0" stroke-width="3" />
+                                <text x="500" y="80" text-anchor="middle" dominant-baseline="central" font-size="12" font-weight="bold">Tech C</text>
+                                
+                                <circle cx="420" cy="60" r="25" fill="#f1f1f1" stroke="#9c27b0" stroke-width="3" />
+                                <text x="420" y="60" text-anchor="middle" dominant-baseline="central" font-size="12" font-weight="bold">Tech D</text>
+                                
+                                <circle cx="80" cy="270" r="25" fill="#f1f1f1" stroke="#9c27b0" stroke-width="3" />
+                                <text x="80" y="270" text-anchor="middle" dominant-baseline="central" font-size="12" font-weight="bold">Tech E</text>
+                                
+                                <circle cx="520" cy="270" r="25" fill="#f1f1f1" stroke="#9c27b0" stroke-width="3" />
+                                <text x="520" y="270" text-anchor="middle" dominant-baseline="central" font-size="12" font-weight="bold">Tech F</text>
+                                
+                                <!-- Arrows from tech to individual -->
+                                <line x1="120" y1="100" x2="250" y2="150" stroke="#9c27b0" stroke-width="2" stroke-dasharray="4,4" />
+                                <line x1="195" y1="80" x2="250" y2="140" stroke="#9c27b0" stroke-width="2" stroke-dasharray="4,4" />
+                                <line x1="485" y1="100" x2="350" y2="150" stroke="#9c27b0" stroke-width="2" stroke-dasharray="4,4" />
+                                <line x1="440" y1="80" x2="350" y2="140" stroke="#9c27b0" stroke-width="2" stroke-dasharray="4,4" />
+                                <line x1="100" y1="250" x2="250" y2="200" stroke="#9c27b0" stroke-width="2" stroke-dasharray="4,4" />
+                                <line x1="500" y1="250" x2="350" y2="200" stroke="#9c27b0" stroke-width="2" stroke-dasharray="4,4" />
+                                
+                                <!-- Question marks showing uncertainty -->
+                                <text x="300" y="280" text-anchor="middle" font-size="70" fill="#f44336">?</text>
+                                <text x="300" y="320" text-anchor="middle" font-size="18" font-weight="bold" fill="#f44336">Increased Uncertainty</text>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Step 4 -->
+                <div class="step-panel" id="step4">
+                    <h2 class="step-title">Step 4: Institutional Attenuation</h2>
+                    <div class="step-description">
+                        <p>To manage individual uncertainty, institutions create a second-layer attenuation system:</p>
+                        
+                        <ul style="margin-left: 20px; margin-bottom: 20px;">
+                            <li><strong>Bureaucracy</strong> - Formal procedures and hierarchies</li>
+                            <li><strong>Templates & Standards</strong> - Pre-defined ways of doing things</li>
+                            <li><strong>Rules & Policies</strong> - Constraints on choice and action</li>
+                            <li><strong>Certification & Approval</strong> - Gatekeeping mechanisms</li>
+                        </ul>
+                        
+                        <p>This institutional layer "mops up" some of the user's uncertainty by reducing the available options and providing clear (if sometimes arbitrary) selection criteria. However, this attenuation creates its own complexity and may not align with the actual needs of individuals or the realities of the environment.</p>
+                        
+                        <div class="note-box">
+                            <p><strong>Example:</strong> A university's IT department might limit software options to only those that meet specific security and compatibility standards, reducing the burden on individual faculty members to evaluate every possible tool.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="visualization-container">
+                        <div class="visualization">
+                            <svg class="visual-svg" viewBox="0 0 600 350">
+                                <!-- Institution -->
+                                <rect x="150" y="50" width="300" height="80" fill="#fff3e0" stroke="#ff9800" stroke-width="3" rx="5" />
+                                <text x="300" y="90" text-anchor="middle" dominant-baseline="central" font-weight="bold" font-size="20">Institution</text>
+                                
+                                <!-- Individual -->
+                                <circle cx="300" cy="250" r="45" fill="#e3f2fd" stroke="#2196f3" stroke-width="3" />
+                                <text x="300" y="250" text-anchor="middle" dominant-baseline="central" font-weight="bold" font-size="18">Individual</text>
+                                
+                                <!-- Technology options -->
+                                <circle cx="50" cy="170" r="30" fill="#f1f1f1" stroke="#9c27b0" stroke-width="3" />
+                                <text x="50" y="170" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="bold">Tech A</text>
+                                
+                                <circle cx="550" cy="170" r="30" fill="#f1f1f1" stroke="#9c27b0" stroke-width="3" />
+                                <text x="550" y="170" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="bold">Tech B</text>
+                                
+                                <!-- Institution filters technology -->
+                                <path d="M80,170 Q180,130 200,100" stroke="#ff9800" stroke-width="3" fill="none" marker-end="url(#arrowhead4)" />
+                                <text x="140" y="140" font-size="12" fill="#ff9800" font-weight="bold">filtered by</text>
+                                
+                                <path d="M520,170 Q420,130 400,100" stroke="#ff9800" stroke-width="3" fill="none" marker-end="url(#arrowhead4)" />
+                                <text x="460" y="140" font-size="12" fill="#ff9800" font-weight="bold">filtered by</text>
+                                
+                                <!-- Institution to individual -->
+                                <path d="M300,130 Q300,180 300,205" stroke="#ff9800" stroke-width="3" fill="none" marker-end="url(#arrowhead4)" />
+                                <text x="330" y="170" font-size="12" fill="#ff9800" font-weight="bold">provides approved</text>
+                                <text x="330" y="185" font-size="12" fill="#ff9800">options</text>
+                                
+                                <!-- Institutional tools -->
+                                <rect x="180" y="60" width="240" height="25" rx="3" fill="#ffecb3" stroke="#ff9800" stroke-width="1" />
+                                <text x="300" y="72" text-anchor="middle" dominant-baseline="central" font-size="12" font-weight="bold">Bureaucracy & Rules</text>
+                                
+                                <rect x="180" y="90" width="240" height="25" rx="3" fill="#ffecb3" stroke="#ff9800" stroke-width="1" />
+                                <text x="300" y="102" text-anchor="middle" dominant-baseline="central" font-size="12" font-weight="bold">Templates & Standards</text>
+                                
+                                <defs>
+                                    <marker id="arrowhead4" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                        <polygon points="0 0, 10 3.5, 0 7" fill="#ff9800" />
+                                    </marker>
+                                </defs>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Step 5 -->
+                <div class="step-panel" id="step5">
+                    <h2 class="step-title">Step 5: Conflict for Users</h2>
+                    <div class="step-description">
+                        <p>Users find themselves squeezed between two worlds:</p>
+                        
+                        <div class="complexity-level">
+                            <div class="complexity-item">
+                                <h4>Personal Way</h4>
+                                <p>Direct contact with environment, intuitive, adaptive</p>
+                            </div>
+                            <div class="complexity-item active">
+                                <h4>Institutional Way</h4>
+                                <p>Mediated through bureaucracy, standardized, constrained</p>
+                            </div>
+                        </div>
+                        
+                        <p>The institutionally attenuated world is not the real world, creating conflict for users as they navigate between their personal way (in direct contact with the environment) and the institutional way (mediated through rules and templates).</p>
+                        
+                        <p>This tension creates cognitive dissonance and additional uncertainty as users must constantly decide whether to follow institutional protocols or trust their own judgment and experience.</p>
+                        
+                        <div class="note-box">
+                            <p><strong>Example:</strong> A doctor may know from experience that a particular treatment works best for certain patients, but hospital protocols might require a different, standardized approach. The doctor is squeezed between institutional requirements and professional judgment.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="visualization-container">
+                        <div class="visualization">
+                            <svg class="visual-svg" viewBox="0 0 600 350">
+                                <!-- Environment -->
+                                <rect x="50" y="40" width="500" height="80" fill="#e8f5e9" stroke="#4caf50" stroke-width="3" rx="5" />
+                                <text x="300" y="80" text-anchor="middle" dominant-baseline="central" font-weight="bold" font-size="18">Environment (Real World)</text>
+                                
+                                <!-- Individual (squeezed in middle) -->
+                                <circle cx="300" cy="190" r="50" fill="#ffebee" stroke="#f44336" stroke-width="4" />
+                                <text x="300" y="190" text-anchor="middle" dominant-baseline="central" font-weight="bold" font-size="20">User</text>
+                                <text x="300" y="215" text-anchor="middle" dominant-baseline="central" font-size="16" fill="#f44336" font-weight="bold">SQUEEZED</text>
+                                
+                                <!-- Institution -->
+                                <rect x="50" y="280" width="500" height="40" fill="#fff3e0" stroke="#ff9800" stroke-width="3" rx="5" />
+                                <text x="300" y="300" text-anchor="middle" dominant-baseline="central" font-weight="bold" font-size="18">Institutional Attenuation</text>
+                                
+                                <!-- Arrows squeezing user -->
+                                <path d="M300,120 Q300,150 300,160" stroke="#4caf50" stroke-width="3" fill="none" marker-end="url(#arrowhead5)" />
+                                <text x="260" y="140" font-size="14" fill="#4caf50" font-weight="bold">Personal way</text>
+                                
+                                <path d="M300,240 Q300,210 300,200" stroke="#ff9800" stroke-width="3" fill="none" marker-end="url(#arrowhead6)" />
+                                <text x="340" y="220" font-size="14" fill="#ff9800" font-weight="bold">Institutional way</text>
+                                
+                                <!-- Pressure arrows -->
+                                <line x1="250" y1="160" x2="250" y2="220" stroke="#f44336" stroke-width="5" />
+                                <line x1="350" y1="160" x2="350" y2="220" stroke="#f44336" stroke-width="5" />
+                                
+                                <text x="250" y="150" text-anchor="middle" font-size="14" fill="#f44336" font-weight="bold">← Pressure →</text>
+                                <text x="350" y="150" text-anchor="middle" font-size="14" fill="#f44336" font-weight="bold">← Pressure →</text>
+                                
+                                <defs>
+                                    <marker id="arrowhead5" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                        <polygon points="0 0, 10 3.5, 0 7" fill="#4caf50" />
+                                    </marker>
+                                    <marker id="arrowhead6" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                        <polygon points="0 0, 10 3.5, 0 7" fill="#ff9800" />
+                                    </marker>
+                                </defs>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Step 6 -->
+                <div class="step-panel" id="step6">
+                    <h2 class="step-title">Step 6: Positive Feedback Loop</h2>
+                    <div class="step-description">
+                        <p>The tension between personal and institutional approaches drives further innovation:</p>
+                        
+                        <ol style="margin-left: 20px; margin-bottom: 20px;">
+                            <li>Users create workarounds and new tools to bridge the gap</li>
+                            <li>These innovations become new technologies</li>
+                            <li>New technologies increase environmental complexity</li>
+                            <li>Increased complexity creates more uncertainty</li>
+                            <li>Institutions respond with more attenuation</li>
+                            <li>The cycle repeats, accelerating over time</li>
+                        </ol>
+                        
+                        <p>This creates a positive feedback loop where complexity begets more complexity, and attenuation mechanisms struggle to keep pace with the rate of innovation. The result is an ever-accelerating cycle of technological change and institutional adaptation.</p>
+                        
+                        <div class="note-box">
+                            <p><strong>Example:</strong> The proliferation of communication tools (Slack, Teams, Zoom, etc.) was a response to email overload. But now organizations have to manage multiple communication platforms, creating new complexity that requires new management approaches.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="visualization-container">
+                        <div class="visualization">
+                            <svg class="visual-svg" viewBox="0 0 600 400">
+                                <!-- Loop -->
+                                <path d="M300,80 C420,80 520,120 520,200 C520,280 420,320 300,320 C180,320 80,280 80,200 C80,120 180,80 300,80" 
+                                      fill="none" stroke="#f44336" stroke-width="4" stroke-dasharray="6,6" />
+                                
+                                <!-- Loop steps -->
+                                <circle cx="300" cy="80" r="30" fill="#ffebee" stroke="#f44336" stroke-width="3" />
+                                <text x="300" y="80" text-anchor="middle" dominant-baseline="central" font-size="12" font-weight="bold">1. User Tension</text>
+                                
+                                <circle cx="520" cy="200" r="30" fill="#ffebee" stroke="#f44336" stroke-width="3" />
+                                <text x="520" y="200" text-anchor="middle" dominant-baseline="central" font-size="12" font-weight="bold">2. New Tech</text>
+                                
+                                <circle cx="300" cy="320" r="30" fill="#ffebee" stroke="#f44336" stroke-width="3" />
+                                <text x="300" y="320" text-anchor="middle" dominant-baseline="central" font-size="12" font-weight="bold">3. More Complexity</text>
+                                
+                                <circle cx="80" cy="200" r="30" fill="#ffebee" stroke="#f44336" stroke-width="3" />
+                                <text x="80" y="200" text-anchor="middle" dominant-baseline="central" font-size="12" font-weight="bold">4. More Uncertainty</text>
+                                
+                                <!-- Arrow showing direction -->
+                                <path d="M300,110 Q410,110 490,170" fill="none" stroke="#f44336" stroke-width="3" marker-end="url(#arrowhead7)" />
+                                
+                                <!-- Center text -->
+                                <text x="300" y="200" text-anchor="middle" dominant-baseline="central" font-size="22" font-weight="bold" fill="#f44336">
+                                    Positive
+                                    <tspan x="300" dy="25">Feedback Loop</tspan>
+                                </text>
+                                
+                                <text x="300" y="250" text-anchor="middle" dominant-baseline="central" font-size="16" fill="#666" font-weight="bold">
+                                    Complexity →
+                                    <tspan x="300" dy="20">More Complexity</tspan>
+                                </text>
+                                
+                                <defs>
+                                    <marker id="arrowhead7" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                        <polygon points="0 0, 10 3.5, 0 7" fill="#f44336" />
+                                    </marker>
+                                </defs>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="controls">
+                    <button class="btn-prev" id="prevBtn">
+                        <i class="fas fa-arrow-left btn-icon"></i> Previous
+                    </button>
+                    
+                    <button class="btn-restart" id="restartBtn">
+                        <i class="fas fa-redo btn-icon"></i> Restart Analysis
+                    </button>
+                    
+                    <button class="btn-next" id="nextBtn">
+                        Next <i class="fas fa-arrow-right btn-icon"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Complexity Management Analysis Tool | Conceptual Framework for Technology Adoption & Institutional Adaptation</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const steps = document.querySelectorAll('.step-panel');
+            const stepItems = document.querySelectorAll('.progress-step');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const restartBtn = document.getElementById('restartBtn');
+            const progressFill = document.getElementById('progressFill');
+            const currentStepSpan = document.getElementById('currentStep');
+            
+            let currentStep = 1;
+            const totalSteps = steps.length;
+            
+            // Initialize the app
+            updateStepDisplay();
+            
+            // Next button click handler
+            nextBtn.addEventListener('click', function() {
+                if (currentStep < totalSteps) {
+                    currentStep++;
+                    updateStepDisplay();
+                }
+            });
+            
+            // Previous button click handler
+            prevBtn.addEventListener('click', function() {
+                if (currentStep > 1) {
+                    currentStep--;
+                    updateStepDisplay();
+                }
+            });
+            
+            // Restart button click handler
+            restartBtn.addEventListener('click', function() {
+                currentStep = 1;
+                updateStepDisplay();
+            });
+            
+            // Step item click handlers
+            stepItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    const stepNumber = parseInt(this.getAttribute('data-step'));
+                    currentStep = stepNumber;
+                    updateStepDisplay();
+                });
+            });
+            
+            // Update the step display
+            function updateStepDisplay() {
+                // Update step panels
+                steps.forEach(panel => {
+                    panel.classList.remove('active');
+                });
+                
+                document.getElementById(`step${currentStep}`).classList.add('active');
+                
+                // Update progress steps
+                stepItems.forEach((item, index) => {
+                    const stepNumber = index + 1;
+                    
+                    item.classList.remove('active', 'completed');
+                    
+                    if (stepNumber === currentStep) {
+                        item.classList.add('active');
+                    } else if (stepNumber < currentStep) {
+                        item.classList.add('completed');
+                    }
+                });
+                
+                // Update progress bar
+                const progressPercentage = (currentStep / totalSteps) * 100;
+                progressFill.style.width = `${progressPercentage}%`;
+                
+                // Update current step text
+                currentStepSpan.textContent = currentStep;
+                
+                // Update button states
+                prevBtn.disabled = currentStep === 1;
+                nextBtn.disabled = currentStep === totalSteps;
+                
+                // Update next button text on last step
+                if (currentStep === totalSteps) {
+                    nextBtn.innerHTML = 'Complete <i class="fas fa-check btn-icon"></i>';
+                } else {
+                    nextBtn.innerHTML = 'Next <i class="fas fa-arrow-right btn-icon"></i>';
+                }
+            }
+            
+            // Add some interactive effects to complexity items
+            const complexityItems = document.querySelectorAll('.complexity-item');
+            complexityItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    complexityItems.forEach(i => i.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+            
+            // Make sure SVGs are visible
+            setTimeout(() => {
+                const svgs = document.querySelectorAll('.visual-svg');
+                svgs.forEach(svg => {
+                    svg.style.opacity = '1';
+                });
+            }, 100);
+        });
+    </script>
+</body>
+</html>
