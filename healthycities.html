@@ -1,0 +1,826 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Healthy Cities Dataset — Guided Analysis Lab</title>
+
+  <!-- Tabulator (spreadsheet-like grid) -->
+  <link href="https://unpkg.com/tabulator-tables@6.3.1/dist/css/tabulator.min.css" rel="stylesheet">
+  <script src="https://unpkg.com/tabulator-tables@6.3.1/dist/js/tabulator.min.js"></script>
+
+  <!-- JSZip for .zip -->
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+
+  <!-- PapaParse for CSV -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
+  <!-- Plotly for charts -->
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+
+  <style>
+    :root { color-scheme: light; }
+    body { margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; }
+    header { padding: 14px 16px; border-bottom: 1px solid #e5e7eb; display:flex; gap:12px; align-items:center; }
+    header h1 { font-size: 16px; margin: 0; font-weight: 650; }
+    header .sub { color:#6b7280; font-size: 12px; }
+    main { display:grid; grid-template-columns: 380px 1fr; height: calc(100vh - 56px); }
+    aside { border-right:1px solid #e5e7eb; padding: 14px; overflow:auto; }
+    section { padding: 14px; overflow:auto; }
+    .card { border:1px solid #e5e7eb; border-radius: 12px; padding: 12px; margin-bottom: 12px; box-shadow: 0 1px 0 rgba(0,0,0,.02); }
+    .steps { display:flex; flex-direction:column; gap:8px; }
+    .step { border:1px solid #e5e7eb; border-radius: 12px; padding: 10px; cursor:pointer; background:#fff; }
+    .step.active { border-color:#111827; box-shadow: 0 0 0 2px rgba(17,24,39,.08); }
+    .step .t { font-weight: 650; font-size: 13px; margin-bottom: 4px; }
+    .step .d { color:#6b7280; font-size: 12px; line-height: 1.35; }
+    .row { display:flex; gap:8px; flex-wrap: wrap; align-items:center; }
+    label { font-size: 12px; color:#374151; }
+    select, input[type="file"], button, input[type="text"] {
+      font: inherit; font-size: 12px;
+      border:1px solid #d1d5db; border-radius: 10px; padding: 8px 10px; background:#fff;
+    }
+    button { cursor:pointer; }
+    button.primary { background:#111827; color:white; border-color:#111827; }
+    button:disabled { opacity:.5; cursor:not-allowed; }
+    .muted { color:#6b7280; font-size: 12px; }
+    .kpi { display:grid; grid-template-columns: 1fr 1fr; gap:8px; }
+    .kpi > div { border:1px solid #e5e7eb; border-radius: 12px; padding: 10px; }
+    .kpi .v { font-size: 18px; font-weight: 750; }
+    .kpi .l { font-size: 11px; color:#6b7280; }
+    #grid { height: 420px; border:1px solid #e5e7eb; border-radius: 12px; overflow:hidden; }
+    #chart { height: 420px; border:1px solid #e5e7eb; border-radius: 12px; }
+    .split { display:grid; grid-template-columns: 1.15fr .85fr; gap:12px; }
+    .warn { background:#fff7ed; border:1px solid #fed7aa; padding: 10px; border-radius: 12px; color:#9a3412; font-size: 12px; }
+    code.inline { background:#f3f4f6; padding: 2px 6px; border-radius: 8px; }
+    a { color: inherit; }
+    @media (max-width: 980px){
+      main{ grid-template-columns: 1fr; }
+      aside{ border-right:none; border-bottom:1px solid #e5e7eb; }
+      .split{ grid-template-columns: 1fr; }
+      #grid{ height: 360px; }
+      #chart{ height: 360px; }
+    }
+  </style>
+</head>
+
+<body>
+<header>
+  <h1>Healthy Cities Dataset — Guided Analysis Lab</h1>
+  <div class="sub">Load → Inspect → Filter → Build analysis table → Reproduce paper’s simple correlation experiments</div>
+</header>
+
+<main>
+  <aside>
+    <div class="card">
+      <div class="row" style="justify-content:space-between;">
+        <div>
+          <div style="font-weight:700; font-size:13px;">Data source</div>
+          <div class="muted">Uses <code class="inline">all_data.csv.zip</code> from the repository.</div>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:10px;">
+        <button id="btnLoadGithub" class="primary">Load from GitHub</button>
+        <label class="muted">or</label>
+        <input id="fileZip" type="file" accept=".zip" />
+      </div>
+
+      <div id="loadStatus" class="muted" style="margin-top:10px;">Not loaded.</div>
+    </div>
+
+    <div class="card">
+      <div style="font-weight:700; font-size:13px; margin-bottom:8px;">Guided steps</div>
+      <div class="steps" id="steps"></div>
+      <div class="row" style="margin-top:10px;">
+        <button id="btnPrev">← Prev</button>
+        <button id="btnNext" class="primary">Next →</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="font-weight:700; font-size:13px; margin-bottom:8px;">Controls (used in later steps)</div>
+
+      <div class="row" style="margin-bottom:8px;">
+        <label>City</label>
+        <select id="citySelect" disabled></select>
+      </div>
+
+      <div class="row" style="margin-bottom:8px;">
+        <label>Experiment</label>
+        <select id="expSelect" disabled>
+          <option value="tobacco_asthma">Tobacco availability ↔ Asthma expenditure</option>
+          <option value="walk_dementia">Walkability ↔ Dementia expenditure</option>
+        </select>
+      </div>
+
+      <div class="row">
+        <button id="btnBuildWide" disabled>Build “wide” analysis table</button>
+        <button id="btnRunExp" class="primary" disabled>Run experiment</button>
+      </div>
+
+      <div class="muted" style="margin-top:10px;">
+        Tip: The dataset is stored in a “long” format with columns like
+        <code class="inline">TopCategory</code>, <code class="inline">SecondCategory</code>, <code class="inline">ThirdCategory</code>, <code class="inline">Time</code>, <code class="inline">Key</code>, <code class="inline">Value</code>.
+        We’ll pivot it into a “wide” table for analysis.
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="font-weight:700; font-size:13px;">About the two demo experiments</div>
+      <div class="muted" style="margin-top:6px; line-height:1.35;">
+        The paper reports simple correlation checks:
+        <br/>• tobacco availability vs per-citizen asthma expenditure (positive)
+        <br/>• walkability vs per-citizen dementia expenditure (negative)
+        <br/>We reproduce the workflow and compute Pearson r on the loaded dataset.
+      </div>
+    </div>
+  </aside>
+
+  <section>
+    <div class="card">
+      <div id="stepTitle" style="font-weight:800; font-size:14px;"></div>
+      <div id="stepBody" class="muted" style="margin-top:6px; line-height:1.45;"></div>
+      <div id="stepHint" class="warn" style="display:none; margin-top:10px;"></div>
+    </div>
+
+    <div class="split">
+      <div>
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+            <div>
+              <div style="font-weight:800; font-size:13px;">Spreadsheet view</div>
+              <div class="muted">You can sort/filter columns; later steps rebuild the table.</div>
+            </div>
+            <input id="quickFilter" type="text" placeholder="Quick filter (any field)..." disabled />
+          </div>
+          <div style="margin-top:10px;" id="grid"></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <div style="font-weight:800; font-size:13px;">Chart / results</div>
+          <div class="muted" id="chartCaption" style="margin-top:6px;">Load data to begin.</div>
+          <div id="chart" style="margin-top:10px;"></div>
+        </div>
+
+        <div class="card">
+          <div style="font-weight:800; font-size:13px; margin-bottom:8px;">Quick stats (current view)</div>
+          <div class="kpi">
+            <div><div class="v" id="kpiRows">—</div><div class="l">Rows shown</div></div>
+            <div><div class="v" id="kpiMSOA">—</div><div class="l">Distinct MSOAs (if present)</div></div>
+          </div>
+          <div class="muted" style="margin-top:8px;" id="kpiNote">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="font-weight:800; font-size:13px;">What this app is doing (plain English)</div>
+      <ol class="muted" style="line-height:1.5; margin-top:8px;">
+        <li>Loads the repository’s <code class="inline">all_data.csv.zip</code> long table (or a local copy you upload).</li>
+        <li>Lets you inspect the schema and filter by city/MSOA/category/time.</li>
+        <li>Pivots key indicators into a “wide” per-MSOA analysis table.</li>
+        <li>Runs the paper-style correlation checks and shows scatter plots + Pearson r.</li>
+      </ol>
+      <div class="muted">
+        Source: repository structure and long-table schema described in the repo README. Paper describes indicator families and the two example correlation checks. :contentReference[oaicite:2]{index=2} :contentReference[oaicite:3]{index=3}
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+/**
+ * Guided Analysis Lab for HealthyCitiesDataset
+ * - Loads all_data.csv.zip from GitHub (or local upload)
+ * - Shows long-format data in Tabulator
+ * - Builds a wide per-MSOA analysis table and reproduces two correlation experiments
+ */
+
+const GITHUB_ZIP_URL =
+  "https://raw.githubusercontent.com/0oshowero0/HealthyCitiesDataset/main/all_data.csv.zip";
+
+const state = {
+  longRows: null,          // full long table (array of objects)
+  currentRows: null,       // what is currently shown in grid
+  wideRows: null,          // per-MSOA wide table for experiments
+  cities: [],
+  stepIndex: 0,
+  grid: null,
+  gridMode: "long",        // "long" or "wide"
+};
+
+const steps = [
+  {
+    title: "1) Load the dataset",
+    desc: "Load all_data.csv.zip (long format) from GitHub or upload locally.",
+    render() {
+      setStepText(
+        "Load the dataset",
+        `This dataset is organized as a single “long table” where each row is one metric observation:
+         <br/><br/>
+         <b>Columns</b>: TopCategory, SecondCategory, ThirdCategory, CityCode/Name, MSOACode/Name, Time, Key, Value.
+         <br/><br/>
+         Click <b>Load from GitHub</b> or upload <code class="inline">all_data.csv.zip</code> from the repo.`
+      );
+      requireLoadedHint();
+    }
+  },
+  {
+    title: "2) Inspect the schema in a spreadsheet",
+    desc: "See how categories/time/keys structure the data.",
+    render() {
+      setStepText(
+        "Inspect the long-table schema",
+        `Use the grid like a spreadsheet: sort columns, scroll, and try the Quick filter.
+         <br/><br/>
+         Notice how:
+         <ul>
+           <li><b>TopCategory</b> splits HealthOutcome vs EnvironmentalDeterminants</li>
+           <li><b>SecondCategory</b> groups (PhysicalHealth, BuiltEnvironment, etc.)</li>
+           <li><b>ThirdCategory</b> is a concrete indicator family (e.g., TobaccoAvailability, Walkability, DementiaExpenditure)</li>
+           <li><b>Time</b> can be daily/weekly/monthly/quarterly or <code class="inline">None</code> (not time series)</li>
+         </ul>
+         Next we’ll filter to a single city and pivot key indicators into a wide analysis table.`
+      );
+      requireLoadedHint();
+    }
+  },
+  {
+    title: "3) Filter to a city (optional)",
+    desc: "Choose a city and view only its rows.",
+    render() {
+      setStepText(
+        "Filter to a city",
+        `Pick a city from the dropdown. We’ll filter the long table to just that city to make analysis faster and easier.
+         <br/><br/>
+         Later, the experiment runs per-MSOA within your selected city (or across all cities if you pick “All cities”).`
+      );
+      requireLoadedHint();
+    }
+  },
+  {
+    title: "4) Build a wide analysis table",
+    desc: "Pivot long rows into per-MSOA columns used in the paper’s example experiments.",
+    render() {
+      setStepText(
+        "Build a “wide” per-MSOA analysis table",
+        `Most analyses (correlations, regressions) are easier with one row per MSOA and one column per indicator.
+         <br/><br/>
+         Click <b>Build “wide” analysis table</b>. This app will compute:
+         <ul>
+           <li><b>TobaccoAvailability</b> (non-time-series; uses the single value)</li>
+           <li><b>Walkability</b> (non-time-series; uses the single value)</li>
+           <li><b>AsthmaExpenditure_mean</b> = mean across time for each MSOA</li>
+           <li><b>DementiaExpenditure_mean</b> = mean across time for each MSOA</li>
+         </ul>
+         Then the grid switches to the wide table.`
+      );
+      requireLoadedHint();
+    }
+  },
+  {
+    title: "5) Reproduce the paper’s simple correlation experiments",
+    desc: "Run tobacco↔asthma and walkability↔dementia correlations + scatter plots.",
+    render() {
+      setStepText(
+        "Run the correlation experiment",
+        `Choose an experiment and click <b>Run experiment</b>.
+         <br/><br/>
+         We compute Pearson correlation r and draw a scatter plot using the wide per-MSOA table:
+         <ul>
+           <li>Tobacco availability ↔ asthma expenditure (mean per MSOA)</li>
+           <li>Walkability ↔ dementia expenditure (mean per MSOA)</li>
+         </ul>
+         This mirrors the “simple correlation test” examples shown in the paper.`
+      );
+      requireLoadedHint();
+    }
+  },
+  {
+    title: "6) Explore and extend",
+    desc: "Try other indicators, different aggregation choices, or add a simple regression.",
+    render() {
+      setStepText(
+        "Explore and extend",
+        `Ideas:
+         <ul>
+           <li>Change the aggregation: median instead of mean; or pick a specific month/year.</li>
+           <li>Filter by MSOA subsets (e.g., by population density ranges).</li>
+           <li>Add a simple linear regression line and compare slopes by city.</li>
+           <li>Extend the pivot to include air pollution (NOx/PM2.5/PM10) and mental health expenditure.</li>
+         </ul>
+         The key skill: <b>join/pivot by MSOACode</b> and be explicit about <b>time alignment</b>.`
+      );
+      requireLoadedHint();
+    }
+  },
+];
+
+// ---------- UI wiring ----------
+const el = (id) => document.getElementById(id);
+
+function setStepText(title, html) {
+  el("stepTitle").textContent = title;
+  el("stepBody").innerHTML = html;
+}
+
+function setHint(msg) {
+  const hint = el("stepHint");
+  if (!msg) { hint.style.display = "none"; hint.textContent = ""; return; }
+  hint.style.display = "block";
+  hint.textContent = msg;
+}
+
+function requireLoadedHint() {
+  if (!state.longRows) setHint("Load the dataset first (Step 1).");
+  else setHint("");
+}
+
+function renderSteps() {
+  const wrap = el("steps");
+  wrap.innerHTML = "";
+  steps.forEach((s, i) => {
+    const d = document.createElement("div");
+    d.className = "step" + (i === state.stepIndex ? " active" : "");
+    d.innerHTML = `<div class="t">${s.title}</div><div class="d">${s.desc}</div>`;
+    d.onclick = () => { state.stepIndex = i; refreshStep(); };
+    wrap.appendChild(d);
+  });
+}
+
+function refreshStep() {
+  renderSteps();
+  steps[state.stepIndex].render();
+  el("btnPrev").disabled = state.stepIndex === 0;
+  el("btnNext").disabled = state.stepIndex === steps.length - 1;
+}
+
+el("btnPrev").onclick = () => { state.stepIndex = Math.max(0, state.stepIndex - 1); refreshStep(); };
+el("btnNext").onclick = () => { state.stepIndex = Math.min(steps.length - 1, state.stepIndex + 1); refreshStep(); };
+
+el("btnLoadGithub").onclick = async () => {
+  try {
+    setLoadStatus("Downloading zip from GitHub…");
+    const res = await fetch(GITHUB_ZIP_URL, { cache: "no-store" });
+    if (!res.ok) throw new Error("Download failed: " + res.status);
+    const buf = await res.arrayBuffer();
+    await loadZipBuffer(buf);
+  } catch (e) {
+    console.error(e);
+    setLoadStatus("Error: " + e.message);
+  }
+};
+
+el("fileZip").addEventListener("change", async (evt) => {
+  const f = evt.target.files?.[0];
+  if (!f) return;
+  try {
+    setLoadStatus("Reading uploaded zip…");
+    const buf = await f.arrayBuffer();
+    await loadZipBuffer(buf);
+  } catch (e) {
+    console.error(e);
+    setLoadStatus("Error: " + e.message);
+  }
+});
+
+el("quickFilter").addEventListener("input", () => {
+  if (!state.grid) return;
+  const q = el("quickFilter").value.trim().toLowerCase();
+  if (!q) {
+    state.grid.clearFilter(true);
+    updateKPIsFromGrid();
+    return;
+  }
+  // Any-field filter
+  state.grid.setFilter((data) => {
+    return Object.values(data).some(v => String(v ?? "").toLowerCase().includes(q));
+  });
+  updateKPIsFromGrid();
+});
+
+el("citySelect").addEventListener("change", () => {
+  if (!state.longRows) return;
+  if (state.gridMode !== "long") {
+    // if currently in wide mode, rebuild wide table with new city selection
+    state.wideRows = null;
+    el("btnRunExp").disabled = true;
+    el("btnBuildWide").disabled = false;
+  }
+  showLongTableFiltered();
+});
+
+el("btnBuildWide").onclick = () => {
+  if (!state.longRows) return;
+  buildWideTable();
+  showWideTable();
+};
+
+el("btnRunExp").onclick = () => {
+  if (!state.wideRows) return;
+  runExperiment();
+};
+
+// ---------- Data loading ----------
+function setLoadStatus(msg) {
+  el("loadStatus").textContent = msg;
+}
+
+async function loadZipBuffer(buf) {
+  const zip = await JSZip.loadAsync(buf);
+  // Try to find CSV inside (repo zip is all_data.csv.zip, likely contains all_data.csv)
+  const csvName = Object.keys(zip.files).find(n => n.toLowerCase().endsWith(".csv"));
+  if (!csvName) throw new Error("No .csv found inside zip.");
+  setLoadStatus("Extracting " + csvName + "…");
+  const csvText = await zip.file(csvName).async("string");
+  setLoadStatus("Parsing CSV (this can take a bit)…");
+
+  const parsed = await new Promise((resolve, reject) => {
+    Papa.parse(csvText, {
+      header: true,
+      dynamicTyping: false,
+      skipEmptyLines: true,
+      complete: resolve,
+      error: reject,
+    });
+  });
+
+  if (parsed.errors?.length) {
+    console.warn(parsed.errors.slice(0, 5));
+  }
+
+  const rows = (parsed.data || []).filter(r => r && Object.keys(r).length > 1);
+  // Normalize column names expected from repo README:
+  // TopCategory, SecondCategory, ThirdCategory, CityCode, CityName, MSOACode, MSOAName, Time, Key, Value
+  state.longRows = rows.map(r => ({
+    TopCategory: r.TopCategory ?? r.topcategory ?? "",
+    SecondCategory: r.SecondCategory ?? r.secondcategory ?? "",
+    ThirdCategory: r.ThirdCategory ?? r.thirdcategory ?? "",
+    CityCode: r.CityCode ?? "",
+    CityName: r.CityName ?? "",
+    MSOACode: r.MSOACode ?? "",
+    MSOAName: r.MSOAName ?? "",
+    Time: r.Time ?? "",
+    Key: r.Key ?? "",
+    Value: r.Value ?? "",
+  }));
+
+  // Build city list
+  const citySet = new Set(state.longRows.map(r => r.CityName).filter(Boolean));
+  state.cities = ["All cities", ...Array.from(citySet).sort((a,b)=>a.localeCompare(b))];
+  populateCitySelect();
+
+  setLoadStatus(`Loaded ${state.longRows.length.toLocaleString()} rows from long table.`);
+  enableControlsAfterLoad();
+
+  // Initialize grid
+  initGridIfNeeded();
+  showLongTableFiltered();
+
+  // Reset chart
+  Plotly.purge("chart");
+  Plotly.newPlot("chart", [], { margin: {t: 20, r: 10, b: 40, l: 50}, xaxis: {title: ""}, yaxis: {title: ""} }, {displaylogo:false});
+  el("chartCaption").textContent = "Data loaded. Follow the steps to build a wide table and run experiments.";
+
+  refreshStep();
+}
+
+function populateCitySelect() {
+  const sel = el("citySelect");
+  sel.innerHTML = "";
+  state.cities.forEach(c => {
+    const opt = document.createElement("option");
+    opt.value = c;
+    opt.textContent = c;
+    sel.appendChild(opt);
+  });
+  sel.value = "All cities";
+}
+
+function enableControlsAfterLoad() {
+  el("citySelect").disabled = false;
+  el("expSelect").disabled = false;
+  el("btnBuildWide").disabled = false;
+  el("quickFilter").disabled = false;
+}
+
+function initGridIfNeeded() {
+  if (state.grid) return;
+
+  state.grid = new Tabulator("#grid", {
+    height: "420px",
+    layout: "fitDataStretch",
+    placeholder: "Load data to begin.",
+    movableColumns: true,
+    pagination: true,
+    paginationSize: 25,
+    paginationSizeSelector: [25, 50, 100, 250],
+    columns: [
+      { title: "TopCategory", field: "TopCategory", headerFilter: true, widthGrow: 2 },
+      { title: "SecondCategory", field: "SecondCategory", headerFilter: true, widthGrow: 2 },
+      { title: "ThirdCategory", field: "ThirdCategory", headerFilter: true, widthGrow: 2 },
+      { title: "CityName", field: "CityName", headerFilter: true, widthGrow: 2 },
+      { title: "MSOAName", field: "MSOAName", headerFilter: true, widthGrow: 2 },
+      { title: "MSOACode", field: "MSOACode", headerFilter: true, widthGrow: 2 },
+      { title: "Time", field: "Time", headerFilter: true, widthGrow: 2 },
+      { title: "Key", field: "Key", headerFilter: true, widthGrow: 1 },
+      { title: "Value", field: "Value", headerFilter: true, widthGrow: 1 },
+    ],
+    dataFiltered: updateKPIsFromGrid,
+    dataLoaded: updateKPIsFromGrid,
+    dataSorted: updateKPIsFromGrid,
+    dataChanged: updateKPIsFromGrid,
+  });
+}
+
+// ---------- Views ----------
+function showLongTableFiltered() {
+  if (!state.longRows) return;
+
+  state.gridMode = "long";
+  el("btnRunExp").disabled = true;
+
+  // Restore long-table columns
+  state.grid.setColumns([
+    { title: "TopCategory", field: "TopCategory", headerFilter: true, widthGrow: 2 },
+    { title: "SecondCategory", field: "SecondCategory", headerFilter: true, widthGrow: 2 },
+    { title: "ThirdCategory", field: "ThirdCategory", headerFilter: true, widthGrow: 2 },
+    { title: "CityName", field: "CityName", headerFilter: true, widthGrow: 2 },
+    { title: "MSOAName", field: "MSOAName", headerFilter: true, widthGrow: 2 },
+    { title: "MSOACode", field: "MSOACode", headerFilter: true, widthGrow: 2 },
+    { title: "Time", field: "Time", headerFilter: true, widthGrow: 2 },
+    { title: "Key", field: "Key", headerFilter: true, widthGrow: 1 },
+    { title: "Value", field: "Value", headerFilter: true, widthGrow: 1 },
+  ]);
+
+  const city = el("citySelect").value;
+  const rows = (city === "All cities")
+    ? state.longRows
+    : state.longRows.filter(r => r.CityName === city);
+
+  state.grid.setData(rows);
+  el("kpiNote").textContent = city === "All cities"
+    ? "Viewing long-table rows for all cities."
+    : `Viewing long-table rows for ${city}.`;
+
+  // Wide table becomes stale when city changes
+  state.wideRows = null;
+  el("btnRunExp").disabled = true;
+}
+
+function showWideTable() {
+  state.gridMode = "wide";
+  el("btnRunExp").disabled = false;
+
+  state.grid.setColumns([
+    { title: "CityName", field: "CityName", headerFilter: true, widthGrow: 2 },
+    { title: "MSOAName", field: "MSOAName", headerFilter: true, widthGrow: 2 },
+    { title: "MSOACode", field: "MSOACode", headerFilter: true, widthGrow: 2 },
+    { title: "TobaccoAvailability", field: "TobaccoAvailability", hozAlign:"right", sorter:"number", widthGrow: 1 },
+    { title: "Walkability", field: "Walkability", hozAlign:"right", sorter:"number", widthGrow: 1 },
+    { title: "AsthmaExpenditure_mean", field: "AsthmaExpenditure_mean", hozAlign:"right", sorter:"number", widthGrow: 1 },
+    { title: "DementiaExpenditure_mean", field: "DementiaExpenditure_mean", hozAlign:"right", sorter:"number", widthGrow: 1 },
+    { title: "Asthma_n", field: "Asthma_n", hozAlign:"right", sorter:"number", widthGrow: 1 },
+    { title: "Dementia_n", field: "Dementia_n", hozAlign:"right", sorter:"number", widthGrow: 1 },
+  ]);
+
+  state.grid.setData(state.wideRows);
+
+  const city = el("citySelect").value;
+  el("kpiNote").textContent =
+    `Wide table built${city === "All cities" ? " across all cities" : " for " + city}: one row per MSOA.`;
+
+  el("chartCaption").textContent = "Wide table ready. Choose an experiment and click “Run experiment”.";
+}
+
+// ---------- Wide-table construction ----------
+function toNum(x) {
+  if (x === null || x === undefined) return NaN;
+  const s = String(x).trim();
+  if (!s || s.toLowerCase() === "none") return NaN;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : NaN;
+}
+
+function mean(arr) {
+  let s = 0, c = 0;
+  for (const v of arr) if (Number.isFinite(v)) { s += v; c++; }
+  return c ? (s / c) : NaN;
+}
+
+function buildWideTable() {
+  const city = el("citySelect").value;
+  const base = (city === "All cities") ? state.longRows : state.longRows.filter(r => r.CityName === city);
+
+  // Identify the rows we need by ThirdCategory.
+  // Repo README describes ThirdCategory examples; paper uses TobaccoAvailability, Walkability,
+  // and physical health expenditures like Asthma/Dementia.
+  const tobaccoRows = base.filter(r => r.ThirdCategory === "TobaccoAvailability");
+  const walkRows    = base.filter(r => r.ThirdCategory === "Walkability");
+
+  // PhysicalHealth: repo long table uses ThirdCategory like AsthmaExpenditure, DementiaExpenditure (based on paper wording).
+  // If your extract uses slightly different labels, we attempt common alternates.
+  const asthmaRows  = base.filter(r => ["AsthmaExpenditure","Asthma","asthma"].includes(r.ThirdCategory));
+  const dementiaRows= base.filter(r => ["DementiaExpenditure","Dementia","dementia"].includes(r.ThirdCategory));
+
+  // Build map by MSOACode
+  const m = new Map();
+
+  function ensure(ms) {
+    if (!m.has(ms)) m.set(ms, {
+      CityName: "",
+      MSOAName: "",
+      MSOACode: ms,
+      TobaccoAvailability: NaN,
+      Walkability: NaN,
+      AsthmaExpenditure_mean: NaN,
+      DementiaExpenditure_mean: NaN,
+      Asthma_n: 0,
+      Dementia_n: 0,
+      _asthmaVals: [],
+      _dementiaVals: [],
+    });
+    return m.get(ms);
+  }
+
+  for (const r of tobaccoRows) {
+    const ms = r.MSOACode;
+    if (!ms) continue;
+    const row = ensure(ms);
+    row.CityName = r.CityName || row.CityName;
+    row.MSOAName = r.MSOAName || row.MSOAName;
+    // Usually non-time-series; take the first valid numeric
+    const v = toNum(r.Value);
+    if (Number.isFinite(v) && !Number.isFinite(row.TobaccoAvailability)) row.TobaccoAvailability = v;
+  }
+
+  for (const r of walkRows) {
+    const ms = r.MSOACode;
+    if (!ms) continue;
+    const row = ensure(ms);
+    row.CityName = r.CityName || row.CityName;
+    row.MSOAName = r.MSOAName || row.MSOAName;
+    const v = toNum(r.Value);
+    if (Number.isFinite(v) && !Number.isFinite(row.Walkability)) row.Walkability = v;
+  }
+
+  for (const r of asthmaRows) {
+    const ms = r.MSOACode;
+    if (!ms) continue;
+    const row = ensure(ms);
+    row.CityName = r.CityName || row.CityName;
+    row.MSOAName = r.MSOAName || row.MSOAName;
+    const v = toNum(r.Value);
+    if (Number.isFinite(v)) row._asthmaVals.push(v);
+  }
+
+  for (const r of dementiaRows) {
+    const ms = r.MSOACode;
+    if (!ms) continue;
+    const row = ensure(ms);
+    row.CityName = r.CityName || row.CityName;
+    row.MSOAName = r.MSOAName || row.MSOAName;
+    const v = toNum(r.Value);
+    if (Number.isFinite(v)) row._dementiaVals.push(v);
+  }
+
+  // Finalize means + counts
+  const wide = [];
+  for (const row of m.values()) {
+    row.Asthma_n = row._asthmaVals.length;
+    row.Dementia_n = row._dementiaVals.length;
+    row.AsthmaExpenditure_mean = mean(row._asthmaVals);
+    row.DementiaExpenditure_mean = mean(row._dementiaVals);
+    delete row._asthmaVals;
+    delete row._dementiaVals;
+    wide.push(row);
+  }
+
+  // Sort for readability
+  wide.sort((a,b) => (a.CityName || "").localeCompare(b.CityName || "") || (a.MSOAName || "").localeCompare(b.MSOAName || ""));
+
+  state.wideRows = wide;
+
+  // Button availability
+  el("btnRunExp").disabled = false;
+}
+
+// ---------- Experiments ----------
+function pearson(x, y) {
+  // returns {r, n}
+  const pts = [];
+  for (let i=0; i<x.length; i++) {
+    const xi = x[i], yi = y[i];
+    if (Number.isFinite(xi) && Number.isFinite(yi)) pts.push([xi, yi]);
+  }
+  const n = pts.length;
+  if (n < 3) return { r: NaN, n };
+
+  let sx=0, sy=0;
+  for (const [xi,yi] of pts){ sx+=xi; sy+=yi; }
+  const mx = sx/n, my = sy/n;
+
+  let num=0, dx=0, dy=0;
+  for (const [xi,yi] of pts){
+    const vx = xi-mx, vy=yi-my;
+    num += vx*vy;
+    dx += vx*vx;
+    dy += vy*vy;
+  }
+  const den = Math.sqrt(dx*dy);
+  return { r: den ? num/den : NaN, n };
+}
+
+function runExperiment() {
+  const exp = el("expSelect").value;
+  const data = state.wideRows || [];
+
+  let xField, yField, xLabel, yLabel, title;
+  if (exp === "tobacco_asthma") {
+    xField = "TobaccoAvailability";
+    yField = "AsthmaExpenditure_mean";
+    xLabel = "Tobacco availability (POI fraction per population)";
+    yLabel = "Asthma expenditure (mean across time per MSOA)";
+    title  = "Tobacco availability ↔ Asthma expenditure";
+  } else {
+    xField = "Walkability";
+    yField = "DementiaExpenditure_mean";
+    xLabel = "Walkability score";
+    yLabel = "Dementia expenditure (mean across time per MSOA)";
+    title  = "Walkability ↔ Dementia expenditure";
+  }
+
+  const xs = [], ys = [], labels = [];
+  for (const r of data) {
+    xs.push(toNum(r[xField]));
+    ys.push(toNum(r[yField]));
+    labels.push(`${r.CityName} — ${r.MSOAName} (${r.MSOACode})`);
+  }
+
+  const { r, n } = pearson(xs, ys);
+
+  const trace = {
+    type: "scatter",
+    mode: "markers",
+    x: xs,
+    y: ys,
+    text: labels,
+    hovertemplate: "%{text}<br><b>x</b>=%{x}<br><b>y</b>=%{y}<extra></extra>",
+    marker: { size: 7, opacity: 0.75 },
+  };
+
+  const layout = {
+    title: { text: `${title}<br><span style="font-size:12px;color:#6b7280">Pearson r = ${Number.isFinite(r) ? r.toFixed(3) : "NA"} (n=${n})</span>`, x: 0, xanchor: "left" },
+    margin: { t: 60, r: 10, b: 50, l: 60 },
+    xaxis: { title: xLabel, zeroline: false },
+    yaxis: { title: yLabel, zeroline: false },
+  };
+
+  Plotly.react("chart", [trace], layout, { displaylogo:false, responsive:true });
+
+  el("chartCaption").textContent =
+    `Computed Pearson correlation on per-MSOA points with finite x and y: r=${Number.isFinite(r) ? r.toFixed(3) : "NA"}, n=${n}.`;
+
+  // Show the relevant columns up top by sorting temporarily (optional)
+  // (We leave user control to sort in the grid.)
+}
+
+// ---------- KPIs ----------
+function updateKPIsFromGrid() {
+  if (!state.grid) return;
+
+  // Tabulator doesn't expose filtered data synchronously in all modes;
+  // getData("active") returns rows after filters/sorts.
+  const rows = state.grid.getData("active") || [];
+  el("kpiRows").textContent = rows.length.toLocaleString();
+
+  // Try count distinct MSOACode if present
+  const ms = new Set();
+  for (const r of rows) {
+    if (r.MSOACode) ms.add(r.MSOACode);
+  }
+  el("kpiMSOA").textContent = ms.size ? ms.size.toLocaleString() : "—";
+
+  if (state.gridMode === "long") {
+    // Basic note about time mix
+    const nones = rows.filter(r => String(r.Time).toLowerCase() === "none" || r.Time === "").length;
+    el("kpiNote").textContent = `Long-table view. Rows with Time=None/empty in current view: ${nones.toLocaleString()}.`;
+  }
+}
+
+// ---------- Boot ----------
+(function boot(){
+  renderSteps();
+  refreshStep();
+
+  // Placeholder chart
+  Plotly.newPlot("chart", [], { margin: {t: 20, r: 10, b: 40, l: 50} }, {displaylogo:false});
+
+  // Disable experiment button until wide table exists
+  el("btnRunExp").disabled = true;
+})();
+</script>
+</body>
+</html>
