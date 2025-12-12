@@ -1,0 +1,852 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Fundus Diagram + DR Growth Simulator + Difference</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:#0b0e12; color:#e9eef7; }
+    header { padding: 14px 16px; border-bottom: 1px solid #1d2430; background:#0d1118; }
+    header h1 { font-size: 16px; margin: 0 0 6px 0; }
+    header p { margin: 0; opacity: .8; font-size: 12px; line-height: 1.35; }
+
+    .wrap { display: grid; grid-template-columns: 380px 1fr; gap: 12px; padding: 12px; }
+    .panel { background:#0d1118; border:1px solid #1d2430; border-radius: 14px; padding: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+    .panel h2 { font-size: 13px; margin: 0 0 10px 0; opacity:.95; }
+
+    label { font-size: 12px; opacity: .9; display:block; margin: 10px 0 6px; }
+    input[type="range"]{ width: 100%; }
+    .row { display:flex; gap: 8px; align-items:center; flex-wrap: wrap; }
+    .small { font-size: 12px; opacity: .85; }
+    .pill { font-size: 11px; padding: 3px 8px; border: 1px solid #2b3648; border-radius: 999px; background:#0f1622; opacity:.95; }
+
+    button{
+      background:#1b2330; color:#e9eef7; border:1px solid #2b3648;
+      padding: 9px 10px; border-radius: 10px; cursor:pointer; font-weight:700;
+    }
+    button:hover{ background:#212c3b; }
+    button:active{ transform: translateY(1px); }
+    button.primary{ background:#2a3a52; border-color:#3b5377; }
+    button.primary:hover{ background:#314461; }
+
+    .grid2 { display:grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    canvas { width: 100%; height: auto; border-radius: 14px; background:#070a0f; border:1px solid #1d2430; }
+    .stat { display:flex; justify-content:space-between; font-size: 12px; padding: 6px 0; border-bottom: 1px dashed #223047; }
+    .stat:last-child { border-bottom: 0; }
+    .muted { opacity: .75; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>Fundus Diagram + Diabetic Retinopathy Growth Simulator</h1>
+  <p>
+    Generates a synthetic fundus drawing (disc, macula, vessels) then animates lesion proliferation.
+    Capture Snapshot A and B at different severities and compute a difference heatmap + metrics.
+  </p>
+</header>
+
+<div class="wrap">
+  <div class="panel">
+    <h2>Controls</h2>
+
+    <div class="row">
+      <button id="playBtn" class="primary">▶ Play</button>
+      <button id="resetBtn">↺ Reset</button>
+      <span class="pill" id="tLabel">t = 0.00</span>
+      <span class="pill" id="sevLabel">severity = 0.00</span>
+    </div>
+
+    <label>Severity (manual scrub)</label>
+    <input id="severity" type="range" min="0" max="1000" value="0" />
+    <div class="small muted">Tip: press Play, or drag severity to jump to a stage.</div>
+
+    <label>Growth speed</label>
+    <input id="speed" type="range" min="0" max="200" value="60" />
+    <div class="small muted">0 = paused, 60 ≈ normal, 200 = fast</div>
+
+    <label>Lesion mix</label>
+    <div class="row">
+      <span class="pill">Microaneurysms</span>
+      <input id="wMA" type="range" min="0" max="200" value="120" style="flex:1;" />
+    </div>
+    <div class="row">
+      <span class="pill">Hemorrhages</span>
+      <input id="wH" type="range" min="0" max="200" value="80" style="flex:1;" />
+    </div>
+    <div class="row">
+      <span class="pill">Hard exudates</span>
+      <input id="wEX" type="range" min="0" max="200" value="90" style="flex:1;" />
+    </div>
+    <div class="row">
+      <span class="pill">Neovascular wisps</span>
+      <input id="wNV" type="range" min="0" max="200" value="35" style="flex:1;" />
+    </div>
+
+    <label>Random seed</label>
+    <div class="row">
+      <input id="seed" type="range" min="1" max="9999" value="1337" style="flex:1;" />
+      <span class="pill" id="seedLabel">1337</span>
+      <button id="rerollBtn">🎲 Reroll</button>
+    </div>
+
+    <hr style="border:0;border-top:1px solid #1d2430;margin:12px 0;">
+
+    <h2>Snapshots & Difference</h2>
+    <div class="row">
+      <button id="snapABtn" class="primary">Capture A</button>
+      <button id="snapBBtn" class="primary">Capture B</button>
+      <button id="diffBtn">Compute Diff</button>
+    </div>
+    <div class="small muted">Capture at two severities, then compute the difference heatmap.</div>
+
+    <div style="margin-top:10px;">
+      <div class="stat"><span class="muted">Mean abs diff</span><span id="meanAbs">—</span></div>
+      <div class="stat"><span class="muted">Changed pixels (τ)</span><span id="changedPx">—</span></div>
+      <div class="stat"><span class="muted">Approx lesion area Δ</span><span id="lesionDelta">—</span></div>
+      <div class="stat"><span class="muted">Centroid shift (px)</span><span id="centroidShift">—</span></div>
+      <div class="small muted" style="margin-top:8px;">
+        τ threshold is adaptive (based on noise floor). Metrics are heuristic.
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Views</h2>
+    <div class="grid2">
+      <div>
+        <div class="small muted" style="margin:0 0 6px;">Live (animated)</div>
+        <canvas id="live" width="720" height="720"></canvas>
+      </div>
+      <div>
+        <div class="small muted" style="margin:0 0 6px;">Difference heatmap (A vs B)</div>
+        <canvas id="diff" width="720" height="720"></canvas>
+      </div>
+      <div>
+        <div class="small muted" style="margin:0 0 6px;">Snapshot A</div>
+        <canvas id="snapA" width="720" height="720"></canvas>
+      </div>
+      <div>
+        <div class="small muted" style="margin:0 0 6px;">Snapshot B</div>
+        <canvas id="snapB" width="720" height="720"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* -----------------------
+   Deterministic RNG
+------------------------ */
+function mulberry32(seed){
+  let a = seed >>> 0;
+  return function(){
+    a += 0x6D2B79F5;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t ^= t + Math.imul(t ^ (t >>> 7), 61 | t);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function clamp(x,a,b){ return Math.max(a, Math.min(b, x)); }
+function lerp(a,b,t){ return a + (b-a)*t; }
+function smoothstep(edge0, edge1, x){
+  const t = clamp((x-edge0)/(edge1-edge0), 0, 1);
+  return t*t*(3-2*t);
+}
+
+/* -----------------------
+   Canvas + state
+------------------------ */
+const live = document.getElementById('live');
+const diff = document.getElementById('diff');
+const snapA = document.getElementById('snapA');
+const snapB = document.getElementById('snapB');
+
+const ctxL = live.getContext('2d', { willReadFrequently: true });
+const ctxD = diff.getContext('2d', { willReadFrequently: true });
+const ctxA = snapA.getContext('2d', { willReadFrequently: true });
+const ctxB = snapB.getContext('2d', { willReadFrequently: true });
+
+const W = live.width, H = live.height;
+const cx = W/2, cy = H/2;
+const fundusR = Math.min(W,H)*0.46;
+
+let playing = false;
+let t = 0;              // time in seconds-ish
+let severity = 0;       // 0..1
+let seed = 1337;
+let rng = mulberry32(seed);
+
+/* Precomputed vessel paths (deterministic) */
+let vesselPaths = [];
+
+/* Lesions are procedural "generators" to keep animation stable */
+let lesionField = {
+  MA: [], H: [], EX: [], NV: []
+};
+
+function reseed(newSeed){
+  seed = newSeed;
+  rng = mulberry32(seed);
+  vesselPaths = makeVessels(rng);
+  lesionField = makeLesionField(rng);
+}
+
+/* -----------------------
+   Synthetic fundus drawing
+------------------------ */
+function drawFundusBase(ctx){
+  ctx.clearRect(0,0,W,H);
+
+  // black background
+  ctx.fillStyle = '#05070b';
+  ctx.fillRect(0,0,W,H);
+
+  // circular fundus gradient
+  const grad = ctx.createRadialGradient(cx, cy, fundusR*0.1, cx, cy, fundusR);
+  grad.addColorStop(0, '#3b0a0a');     // central reddish
+  grad.addColorStop(0.55, '#1b0a0a');  // dark red
+  grad.addColorStop(1, '#07070a');     // vignette
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, fundusR, 0, Math.PI*2);
+  ctx.closePath();
+  ctx.clip();
+  ctx.fillStyle = grad;
+  ctx.fillRect(0,0,W,H);
+
+  // subtle texture / noise speckle
+  ctx.globalAlpha = 0.12;
+  for(let i=0;i<900;i++){
+    const a = rng()*Math.PI*2;
+    const r = Math.sqrt(rng())*fundusR;
+    const x = cx + Math.cos(a)*r;
+    const y = cy + Math.sin(a)*r;
+    const s = 0.5 + rng()*1.2;
+    ctx.fillStyle = rng() < 0.5 ? 'rgba(255,210,190,1)' : 'rgba(120,60,60,1)';
+    ctx.fillRect(x,y,s,s);
+  }
+  ctx.globalAlpha = 1;
+
+  // optic disc (nasal side): assume right eye view -> disc on left
+  const discX = cx - fundusR*0.42;
+  const discY = cy - fundusR*0.05;
+  ctx.save();
+  const discGrad = ctx.createRadialGradient(discX, discY, fundusR*0.03, discX, discY, fundusR*0.14);
+  discGrad.addColorStop(0, '#ffe6b8');
+  discGrad.addColorStop(1, '#b9894a');
+  ctx.beginPath();
+  ctx.arc(discX, discY, fundusR*0.14, 0, Math.PI*2);
+  ctx.fillStyle = discGrad;
+  ctx.fill();
+  // cup
+  const cupGrad = ctx.createRadialGradient(discX, discY, fundusR*0.01, discX, discY, fundusR*0.07);
+  cupGrad.addColorStop(0, 'rgba(255,245,220,0.9)');
+  cupGrad.addColorStop(1, 'rgba(255,220,160,0.0)');
+  ctx.beginPath();
+  ctx.arc(discX, discY, fundusR*0.07, 0, Math.PI*2);
+  ctx.fillStyle = cupGrad;
+  ctx.fill();
+  ctx.restore();
+
+  // macula (temporal): darker region to the right
+  const macX = cx + fundusR*0.18;
+  const macY = cy + fundusR*0.04;
+  const macGrad = ctx.createRadialGradient(macX, macY, 0, macX, macY, fundusR*0.2);
+  macGrad.addColorStop(0, 'rgba(30,10,10,0.9)');
+  macGrad.addColorStop(1, 'rgba(30,10,10,0.0)');
+  ctx.fillStyle = macGrad;
+  ctx.beginPath();
+  ctx.arc(macX, macY, fundusR*0.22, 0, Math.PI*2);
+  ctx.fill();
+
+  // foveal light reflex (tiny)
+  ctx.globalAlpha = 0.6;
+  ctx.fillStyle = 'rgba(240,220,210,1)';
+  ctx.beginPath();
+  ctx.arc(macX, macY, fundusR*0.012, 0, Math.PI*2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+
+  // border vignette ring
+  ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+  ctx.lineWidth = fundusR*0.08;
+  ctx.beginPath();
+  ctx.arc(cx, cy, fundusR + ctx.lineWidth*0.22, 0, Math.PI*2);
+  ctx.stroke();
+
+  // vessel tree overlay
+  drawVessels(ctx, vesselPaths);
+  ctx.restore();
+}
+
+function makeVessels(rngFn){
+  const discX = cx - fundusR*0.42;
+  const discY = cy - fundusR*0.05;
+
+  function branch(startX, startY, angle, len, width, depth){
+    const pts = [];
+    let x = startX, y = startY, a = angle, w = width;
+    const steps = Math.max(10, Math.floor(len/10));
+    for(let i=0;i<=steps;i++){
+      const t = i/steps;
+      const jitter = (rngFn()-0.5)*0.08;
+      a += jitter;
+      const stepLen = len/steps * (0.85 + rngFn()*0.3);
+      x += Math.cos(a)*stepLen;
+      y += Math.sin(a)*stepLen;
+      // keep within fundus
+      const dx = x-cx, dy=y-cy;
+      const rr = Math.sqrt(dx*dx+dy*dy);
+      if(rr > fundusR*0.98) break;
+      pts.push({x,y,w: w*(1 - t*0.65)});
+    }
+
+    const paths = [{ pts, baseW: width, depth }];
+    if(depth > 0){
+      const forks = 1 + (rngFn() < 0.35 ? 1 : 0);
+      for(let f=0; f<forks; f++){
+        const idx = Math.floor(pts.length*(0.35 + rngFn()*0.45));
+        const p = pts[idx] || pts[pts.length-1];
+        if(!p) continue;
+        const newAng = angle + (rngFn()<0.5 ? -1 : 1) * (0.35 + rngFn()*0.55);
+        const newLen = len*(0.55 + rngFn()*0.25);
+        const newW = width*(0.62 + rngFn()*0.15);
+        paths.push(...branch(p.x, p.y, newAng, newLen, newW, depth-1));
+      }
+    }
+    return paths;
+  }
+
+  // start 4 main trunks
+  const trunks = [];
+  const base = [
+    -0.15, 0.10, 0.55, -0.60
+  ];
+  for(const delta of base){
+    const ang = delta + (rngFn()-0.5)*0.25; // slight variation
+    const len = fundusR*(0.95 + rngFn()*0.15);
+    const w = fundusR*0.018*(0.9 + rngFn()*0.2);
+    trunks.push(...branch(discX, discY, ang, len, w, 3));
+  }
+  return trunks;
+}
+
+function drawVessels(ctx, paths){
+  ctx.save();
+  ctx.globalCompositeOperation = 'screen';
+  for(const path of paths){
+    const pts = path.pts;
+    if(pts.length < 2) continue;
+
+    // vessel "shadow"
+    ctx.globalAlpha = 0.16;
+    ctx.strokeStyle = 'rgba(30,0,0,1)';
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = pts[0].w*1.25;
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.stroke();
+
+    // vessel body
+    ctx.globalAlpha = 0.7;
+    ctx.strokeStyle = 'rgba(180,40,40,1)';
+    ctx.lineWidth = pts[0].w;
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.stroke();
+
+    // highlight
+    ctx.globalAlpha = 0.22;
+    ctx.strokeStyle = 'rgba(255,160,160,1)';
+    ctx.lineWidth = pts[0].w*0.45;
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.stroke();
+  }
+  ctx.restore();
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+/* -----------------------
+   Lesion field generators
+------------------------ */
+function insideFundus(x,y){
+  const dx=x-cx, dy=y-cy;
+  return (dx*dx + dy*dy) <= (fundusR*fundusR);
+}
+
+// bias lesions away from the disc a bit and around posterior pole
+function samplePosteriorPole(rngFn){
+  for(let tries=0; tries<30; tries++){
+    const a = rngFn()*Math.PI*2;
+    const r = Math.sqrt(rngFn())*fundusR*0.95;
+    let x = cx + Math.cos(a)*r;
+    let y = cy + Math.sin(a)*r;
+
+    // weighted toward macular region (temporal side)
+    const macX = cx + fundusR*0.18;
+    const macY = cy + fundusR*0.04;
+    const w = rngFn();
+    x = lerp(x, macX, w*0.35);
+    y = lerp(y, macY, w*0.35);
+
+    // avoid disc center zone
+    const discX = cx - fundusR*0.42;
+    const discY = cy - fundusR*0.05;
+    const ddx=x-discX, ddy=y-discY;
+    if(ddx*ddx+ddy*ddy < (fundusR*0.13)**2) continue;
+
+    if(insideFundus(x,y)) return {x,y};
+  }
+  return {x: cx, y: cy};
+}
+
+function nearestVesselDistance(x,y){
+  // crude distance to nearest vessel polyline (sample points only)
+  let best = 1e9;
+  for(const path of vesselPaths){
+    const pts = path.pts;
+    for(let i=0;i<pts.length;i+=2){
+      const dx = x-pts[i].x, dy = y-pts[i].y;
+      const d2 = dx*dx+dy*dy;
+      if(d2 < best) best = d2;
+    }
+  }
+  return Math.sqrt(best);
+}
+
+function makeLesionField(rngFn){
+  // deterministic “potential lesions”; appearance is gated by severity
+  const field = { MA: [], H: [], EX: [], NV: [] };
+
+  // counts = maximum potential lesions; severity controls how many become visible + size/opacity
+  const nMA = 900, nH = 220, nEX = 260, nNV = 70;
+
+  for(let i=0;i<nMA;i++){
+    const p = samplePosteriorPole(rngFn);
+    const dv = nearestVesselDistance(p.x,p.y);
+    // microaneurysms often near capillaries/vessels -> bias closer
+    const bias = clamp(1 - dv/(fundusR*0.12), 0, 1);
+    if(rngFn() > (0.35 + bias*0.65)) continue;
+    field.MA.push({
+      x:p.x, y:p.y,
+      r: 0.7 + rngFn()*1.8,
+      appear: rngFn()*0.75,           // earlier onset
+      wobble: rngFn()*Math.PI*2
+    });
+  }
+
+  for(let i=0;i<nH;i++){
+    const p = samplePosteriorPole(rngFn);
+    const dv = nearestVesselDistance(p.x,p.y);
+    const bias = clamp(1 - dv/(fundusR*0.18), 0, 1);
+    if(rngFn() > (0.55 + bias*0.45)) continue;
+    field.H.push({
+      x:p.x, y:p.y,
+      rx: 2 + rngFn()*8,
+      ry: 2 + rngFn()*10,
+      rot: rngFn()*Math.PI,
+      appear: 0.15 + rngFn()*0.8,     // later than MA
+      type: rngFn()<0.55 ? 'dot' : 'blot'
+    });
+  }
+
+  for(let i=0;i<nEX;i++){
+    const p = samplePosteriorPole(rngFn);
+    // hard exudates: bias toward macula ring
+    const macX = cx + fundusR*0.18, macY = cy + fundusR*0.04;
+    const dx = p.x-macX, dy=p.y-macY;
+    const d = Math.sqrt(dx*dx+dy*dy);
+    const ring = Math.exp(-((d - fundusR*0.18)*(d - fundusR*0.18)) / (2*(fundusR*0.10)**2));
+    if(rngFn() > (0.35 + ring*0.65)) continue;
+    field.EX.push({
+      x:p.x, y:p.y,
+      r: 1.2 + rngFn()*5.5,
+      appear: 0.25 + rngFn()*0.7,
+      sparkle: rngFn()
+    });
+  }
+
+  // neovascular “wisps” near disc/midperiphery
+  for(let i=0;i<nNV;i++){
+    // sample near disc and also in mid-periphery
+    const discX = cx - fundusR*0.42, discY = cy - fundusR*0.05;
+    const mix = rngFn();
+    let x,y;
+    if(mix < 0.55){
+      const a = rngFn()*Math.PI*2;
+      const r = (0.10 + rngFn()*0.22)*fundusR;
+      x = discX + Math.cos(a)*r;
+      y = discY + Math.sin(a)*r;
+    }else{
+      const a = rngFn()*Math.PI*2;
+      const r = (0.55 + rngFn()*0.35)*fundusR;
+      x = cx + Math.cos(a)*r;
+      y = cy + Math.sin(a)*r;
+    }
+    if(!insideFundus(x,y)) continue;
+    field.NV.push({
+      x,y,
+      len: fundusR*(0.02 + rngFn()*0.06),
+      branches: 2 + Math.floor(rngFn()*4),
+      appear: 0.55 + rngFn()*0.45,
+      ang: rngFn()*Math.PI*2
+    });
+  }
+
+  return field;
+}
+
+/* -----------------------
+   Lesion rendering
+------------------------ */
+function drawLesions(ctx, sev01){
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, fundusR, 0, Math.PI*2);
+  ctx.clip();
+
+  // lesion weights
+  const wMA = document.getElementById('wMA').valueAsNumber / 200;
+  const wH  = document.getElementById('wH').valueAsNumber  / 200;
+  const wEX = document.getElementById('wEX').valueAsNumber / 200;
+  const wNV = document.getElementById('wNV').valueAsNumber / 200;
+
+  // helper: how "active" is a lesion given its appear threshold
+  function act(appear){
+    // smooth ramp after appear; also modulated by global severity
+    return smoothstep(appear, Math.min(1, appear+0.18), sev01);
+  }
+
+  // Microaneurysms (tiny dark red dots)
+  ctx.globalCompositeOperation = 'multiply';
+  for(const p of lesionField.MA){
+    const a = act(p.appear) * wMA;
+    if(a <= 0) continue;
+    const pulse = 0.85 + 0.15*Math.sin(t*2.0 + p.wobble);
+    const r = p.r * (0.9 + 0.9*a) * pulse;
+
+    ctx.globalAlpha = 0.35 * a;
+    ctx.fillStyle = 'rgba(120,0,0,1)';
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, r, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  // Hemorrhages (blots)
+  for(const p of lesionField.H){
+    const a = act(p.appear) * wH;
+    if(a <= 0) continue;
+
+    const grow = (p.type === 'dot') ? (1 + 1.2*a) : (1 + 2.4*a);
+    const rx = p.rx * grow;
+    const ry = p.ry * grow;
+
+    ctx.globalAlpha = (p.type === 'dot' ? 0.20 : 0.18) * a;
+    ctx.fillStyle = 'rgba(85,0,0,1)';
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.rot);
+    ctx.beginPath();
+    ctx.ellipse(0,0, rx, ry, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // Hard exudates (yellow-white, slightly sparkly)
+  ctx.globalCompositeOperation = 'screen';
+  for(const p of lesionField.EX){
+    const a = act(p.appear) * wEX;
+    if(a <= 0) continue;
+
+    const tw = 0.8 + 0.2*Math.sin(t*3.0 + p.sparkle*10);
+    const r = p.r * (0.65 + 1.25*a) * tw;
+
+    // core
+    ctx.globalAlpha = 0.22 * a;
+    ctx.fillStyle = 'rgba(255,240,190,1)';
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, r, 0, Math.PI*2);
+    ctx.fill();
+
+    // rim sparkle
+    ctx.globalAlpha = 0.12 * a;
+    ctx.strokeStyle = 'rgba(255,255,220,1)';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, r*0.9, 0, Math.PI*2);
+    ctx.stroke();
+  }
+
+  // Neovascular wisps (thin bright, later onset)
+  ctx.globalCompositeOperation = 'screen';
+  for(const p of lesionField.NV){
+    const a = act(p.appear) * wNV;
+    if(a <= 0) continue;
+
+    const alpha = 0.10 * a;
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = 'rgba(255,140,140,1)';
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    const baseW = 0.8 + 2.2*a;
+    for(let b=0;b<p.branches;b++){
+      const ang = p.ang + (b - (p.branches-1)/2) * (0.35 + 0.35*Math.sin(t*0.9 + b));
+      const len = p.len * (0.7 + 1.4*a);
+      const steps = 10;
+      ctx.lineWidth = baseW * (0.65 + 0.25*Math.sin(t*1.1 + b));
+
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+      let x=p.x, y=p.y;
+      for(let i=1;i<=steps;i++){
+        const tt = i/steps;
+        const wob = (Math.sin(t*1.8 + tt*6 + b)*0.6 + (rng()-0.5)*0.1) * (0.8 + 1.2*a);
+        x = p.x + Math.cos(ang + wob*0.15)*len*tt;
+        y = p.y + Math.sin(ang + wob*0.15)*len*tt;
+        // mild curly
+        x += Math.cos(ang + tt*4 + b)*2.0*a;
+        y += Math.sin(ang + tt*4 + b)*2.0*a;
+        ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+    }
+  }
+
+  ctx.restore();
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+function renderLive(){
+  drawFundusBase(ctxL);
+  drawLesions(ctxL, severity);
+
+  // subtle blur-like bloom by drawing a faint scaled overlay (cheap trick)
+  ctxL.save();
+  ctxL.globalAlpha = 0.10;
+  ctxL.globalCompositeOperation = 'screen';
+  ctxL.drawImage(live, -2, -2, W+4, H+4);
+  ctxL.restore();
+}
+
+/* -----------------------
+   Difference computation
+------------------------ */
+let imgA = null, imgB = null;
+
+function captureTo(ctxTarget){
+  ctxTarget.clearRect(0,0,W,H);
+  ctxTarget.drawImage(live, 0, 0);
+  return ctxTarget.getImageData(0,0,W,H);
+}
+
+function computeDiff(){
+  if(!imgA || !imgB){
+    alert('Capture both Snapshot A and Snapshot B first.');
+    return;
+  }
+
+  const a = imgA.data, b = imgB.data;
+  const out = ctxD.createImageData(W,H);
+  const o = out.data;
+
+  // compute grayscale diff + adaptive thresholding stats
+  let sumAbs = 0;
+  const diffs = new Float32Array(W*H);
+
+  // only consider inside fundus for stats
+  let nIn = 0;
+  for(let y=0; y<H; y++){
+    for(let x=0; x<W; x++){
+      const idx = (y*W + x);
+      const i = idx*4;
+
+      // mask outside fundus
+      const dx=x-cx, dy=y-cy;
+      if(dx*dx+dy*dy > fundusR*fundusR){
+        diffs[idx] = 0;
+        o[i+0]=6; o[i+1]=7; o[i+2]=11; o[i+3]=255;
+        continue;
+      }
+
+      // luminance
+      const la = 0.2126*a[i] + 0.7152*a[i+1] + 0.0722*a[i+2];
+      const lb = 0.2126*b[i] + 0.7152*b[i+1] + 0.0722*b[i+2];
+      const d = Math.abs(lb - la);
+      diffs[idx] = d;
+      sumAbs += d;
+      nIn++;
+    }
+  }
+  const meanAbs = sumAbs / Math.max(1,nIn);
+
+  // estimate noise floor using percentile-ish sampling
+  // (quick: sample every 11th pixel, take median)
+  const sample = [];
+  for(let i=0; i<diffs.length; i+=11){
+    if(diffs[i] > 0) sample.push(diffs[i]);
+  }
+  sample.sort((x,y)=>x-y);
+  const med = sample.length ? sample[Math.floor(sample.length*0.5)] : 0;
+  const tau = Math.max(8, med*3.5);
+
+  // create heatmap + metrics: changed pixels + centroid of change
+  let changed = 0;
+  let sumX=0, sumY=0, sumW=0;
+
+  for(let y=0; y<H; y++){
+    for(let x=0; x<W; x++){
+      const idx = y*W + x;
+      const i = idx*4;
+
+      const dx=x-cx, dy=y-cy;
+      if(dx*dx+dy*dy > fundusR*fundusR) continue;
+
+      const d = diffs[idx];
+      const w = clamp((d - tau) / 80, 0, 1); // normalize to [0,1]
+      // heatmap: dark -> bright (white-ish)
+      const base = 8;
+      const intensity = Math.floor(base + w*235);
+
+      // paint over a faint copy of snapshot A to contextualize
+      // (do it once by sampling A)
+      const la = 0.2126*a[i] + 0.7152*a[i+1] + 0.0722*a[i+2];
+      const bg = Math.floor(la*0.35);
+
+      // heat overlay (simple: add intensity)
+      o[i+0] = clamp(bg + intensity, 0, 255);
+      o[i+1] = clamp(bg + intensity, 0, 255);
+      o[i+2] = clamp(bg + intensity, 0, 255);
+      o[i+3] = 255;
+
+      if(d > tau){
+        changed++;
+        const ww = d;
+        sumX += x*ww;
+        sumY += y*ww;
+        sumW += ww;
+      }
+    }
+  }
+
+  ctxD.putImageData(out,0,0);
+
+  // heuristic "lesion area delta": number of changed pixels scaled
+  const lesionDelta = changed / Math.max(1, nIn) * 100;
+
+  // centroid shift: compare centroids of change between A and B using diffs only
+  const cX = sumW ? (sumX/sumW) : cx;
+  const cY = sumW ? (sumY/sumW) : cy;
+  const shift = Math.sqrt((cX-cx)*(cX-cx)+(cY-cy)*(cY-cy));
+
+  // update UI
+  document.getElementById('meanAbs').textContent = meanAbs.toFixed(2);
+  document.getElementById('changedPx').textContent = `${changed.toLocaleString()} (τ≈${tau.toFixed(1)})`;
+  document.getElementById('lesionDelta').textContent = `${lesionDelta.toFixed(2)} % of fundus`;
+  document.getElementById('centroidShift').textContent = shift.toFixed(1);
+}
+
+/* -----------------------
+   Animation loop
+------------------------ */
+function tick(dt){
+  // dt in seconds
+  const speed = document.getElementById('speed').valueAsNumber;
+  if(playing && speed > 0){
+    t += dt * (speed/60);
+    // severity rises slowly with time; clamp
+    severity = clamp(t/25, 0, 1);
+    document.getElementById('severity').value = Math.round(severity*1000);
+  }else{
+    // still advance a tiny bit for subtle pulsations, but much slower
+    t += dt * 0.25;
+  }
+
+  renderLive();
+  document.getElementById('tLabel').textContent = `t = ${t.toFixed(2)}`;
+  document.getElementById('sevLabel').textContent = `severity = ${severity.toFixed(2)}`;
+}
+
+let last = performance.now();
+function loop(now){
+  const dt = (now-last)/1000;
+  last = now;
+  tick(dt);
+  requestAnimationFrame(loop);
+}
+
+/* -----------------------
+   UI wiring
+------------------------ */
+const playBtn = document.getElementById('playBtn');
+const resetBtn = document.getElementById('resetBtn');
+const sevSlider = document.getElementById('severity');
+const seedSlider = document.getElementById('seed');
+const seedLabel = document.getElementById('seedLabel');
+
+playBtn.addEventListener('click', ()=>{
+  playing = !playing;
+  playBtn.textContent = playing ? '⏸ Pause' : '▶ Play';
+});
+
+resetBtn.addEventListener('click', ()=>{
+  playing = false;
+  playBtn.textContent = '▶ Play';
+  t = 0;
+  severity = 0;
+  sevSlider.value = 0;
+  renderLive();
+});
+
+sevSlider.addEventListener('input', ()=>{
+  severity = sevSlider.valueAsNumber/1000;
+  // sync time so play continues from scrubbed point
+  t = severity*25;
+  renderLive();
+});
+
+seedSlider.addEventListener('input', ()=>{
+  seedLabel.textContent = String(seedSlider.valueAsNumber);
+});
+
+document.getElementById('rerollBtn').addEventListener('click', ()=>{
+  const newSeed = Math.floor(1 + Math.random()*9999);
+  seedSlider.value = newSeed;
+  seedLabel.textContent = String(newSeed);
+  reseed(newSeed);
+  renderLive();
+});
+
+document.getElementById('snapABtn').addEventListener('click', ()=>{
+  imgA = captureTo(ctxA);
+});
+document.getElementById('snapBBtn').addEventListener('click', ()=>{
+  imgB = captureTo(ctxB);
+});
+document.getElementById('diffBtn').addEventListener('click', computeDiff);
+
+/* Initialize */
+(function init(){
+  reseed(seed);
+  renderLive();
+
+  // prime diff canvas with a label
+  ctxD.fillStyle = '#05070b';
+  ctxD.fillRect(0,0,W,H);
+  ctxD.fillStyle = 'rgba(233,238,247,0.65)';
+  ctxD.font = '16px system-ui, -apple-system, Segoe UI, Roboto, Arial';
+  ctxD.fillText('Capture A and B, then "Compute Diff".', 18, 28);
+
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
