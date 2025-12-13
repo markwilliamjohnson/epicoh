@@ -1,0 +1,820 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Rowlands Nilpotent Dirac + Quaternion Manipulations + Symbiogenesis (Teaching Model)</title>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --ink:#e9eefc;
+      --muted:#a9b6dd;
+    }
+    html,body{height:100%; margin:0; background:radial-gradient(1200px 800px at 20% 10%, #13204a 0%, var(--bg) 55%); color:var(--ink);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;}
+    .wrap{max-width:1220px; margin:0 auto; padding:18px 14px 24px;}
+    h1{font-size:18px; margin:0 0 10px; font-weight:700; letter-spacing:.2px;}
+    .sub{color:var(--muted); margin:0 0 14px; line-height:1.35; font-size:13px;}
+    .grid{display:grid; grid-template-columns: 1.25fr .75fr; gap:12px;}
+    .card{
+      background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+      overflow:hidden;
+    }
+    .hd{padding:10px 12px; border-bottom:1px solid rgba(255,255,255,.10); display:flex; align-items:center; justify-content:space-between; gap:10px; background:rgba(0,0,0,.15);}
+    .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+    .tag{font-size:12px; color:var(--muted); padding:3px 8px; border-radius:999px; border:1px solid rgba(255,255,255,.12); background:rgba(0,0,0,.18); white-space:nowrap;}
+    .pill{display:inline-flex; align-items:center; gap:6px; padding:3px 8px; border-radius:999px; border:1px solid rgba(255,255,255,.12); background:rgba(0,0,0,.14); font-size:12px; color:var(--muted);}
+    .dot{width:8px; height:8px; border-radius:999px; background:var(--muted);}
+    canvas{display:block; width:100%; height:auto;}
+
+    .controls{padding:12px; display:flex; flex-direction:column; gap:10px;}
+    .ctrl{display:grid; grid-template-columns: 1fr auto; gap:8px 10px; align-items:center; padding:10px; border-radius:12px; background:rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.10);}
+    .ctrl label{font-size:12px; color:var(--muted);}
+    .ctrl output{font-size:12px; color:var(--ink); opacity:.95;}
+    .ctrl input[type="range"]{grid-column:1 / -1; width:100%;}
+    .btns{display:flex; gap:8px; flex-wrap:wrap;}
+    button{border:1px solid rgba(255,255,255,.14); background:rgba(0,0,0,.22); color:var(--ink); padding:8px 10px; border-radius:12px; cursor:pointer; font-size:12px;}
+    button:hover{border-color:rgba(122,167,255,.55);}
+
+    .eq{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size:12px; line-height:1.45; color:rgba(233,238,252,.95);
+      padding:10px 12px 12px; border-top:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.12); white-space:pre-wrap;
+    }
+
+    .twoCols{display:grid; grid-template-columns: 1fr 1fr; gap:10px; padding:10px 12px; border-top:1px solid rgba(255,255,255,.10); background:rgba(0,0,0,.10);}
+    .box{border:1px solid rgba(255,255,255,.10); background:rgba(0,0,0,.14); border-radius:12px; padding:10px;}
+    .box h3{margin:0 0 6px; font-size:12px; color:rgba(233,238,252,.9); font-weight:700;}
+    .mini{margin:0; font-size:11px; color:var(--muted); line-height:1.35;}
+    .log{margin-top:8px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size:11px; color:rgba(233,238,252,.92); line-height:1.35; max-height:190px; overflow:auto;}
+
+    @media (max-width: 980px){ .grid{grid-template-columns: 1fr;} .twoCols{grid-template-columns:1fr;} }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Nilpotent Dirac (Rowlands-inspired) — Four solutions, quaternion manipulations, deeper rewrite → symbiogenesis</h1>
+  <p class="sub">
+    This single-page app is a <b>teaching model</b>: it renders the <b>four nilpotent Dirac solutions</b> as sign-combination states, visualizes "multiply-by-itself" nilpotent cancellation as an animated manipulation, and extends the universal rewrite logic into a toy picture of <b>integration</b> (symbiogenesis) as a stability-improving conservation strategy.
+  </p>
+
+  <div class="grid">
+    <div class="card">
+      <div class="hd">
+        <div class="row">
+          <span class="tag">Top: quaternion/nilpotent manipulation view (no particle sim)</span>
+          <span class="pill"><span class="dot" id="nilDot"></span><span id="nilLabel">nilpotency</span></span>
+          <span class="pill"><span class="dot" id="syncDot"></span><span id="syncLabel">four-solution coherence</span></span>
+        </div>
+        <span class="tag">Bottom: simple foundation + rewrite/symbiogenesis trace</span>
+      </div>
+
+      <canvas id="viz" width="1040" height="420"></canvas>
+      <canvas id="math" width="1040" height="250"></canvas>
+
+      <div class="twoCols">
+        <div class="box">
+          <h3>Universal rewrite (toy): create / conserve / integrate</h3>
+          <p class="mini">
+            Rewrite steps climb an operator ladder (scalar → pseudoscalar → quaternion → multivector).
+            When richness is high enough, the model triggers an <b>integration event</b>: a "symbiont" alphabet becomes a conserved sub-alphabet of the "host" — the app labels this as <b>symbiogenesis</b> (constraint-sharing).
+          </p>
+          <div class="btns" style="margin-top:8px;">
+            <button id="stepBtn">Step rewrite</button>
+            <button id="autoBtn">Auto rewrite: off</button>
+            <button id="clearBtn">Clear trace</button>
+            <button id="forceSymBtn">Force symbiogenesis</button>
+          </div>
+          <div class="log" id="rwLog"></div>
+        </div>
+
+        <div class="box">
+          <h3>Emergence / complexity lens (toy)</h3>
+          <p class="mini">
+            We track: (1) interaction richness, (2) bifurcation novelty, (3) integration stability gain.
+            Symbiogenesis appears when conservation pressure is high and nonlocal correlation makes coordination cheaper than exclusion.
+          </p>
+          <div class="log" id="cxLog"></div>
+        </div>
+      </div>
+
+      <div class="eq" id="eqText"></div>
+    </div>
+
+    <div class="card">
+      <div class="hd">
+        <span class="tag">Controls</span>
+        <span class="tag" id="modeTag">Mode: balanced (nilpotent)</span>
+      </div>
+
+      <div class="controls">
+        <div class="ctrl">
+          <label for="local">Local coherence ℓ (deterministic mechanism)</label>
+          <output id="localOut"></output>
+          <input id="local" type="range" min="0" max="1" step="0.001" value="0.62"/>
+        </div>
+        <div class="ctrl">
+          <label for="nonlocal">Non-local coupling λ (long-range correlation)</label>
+          <output id="nonlocalOut"></output>
+          <input id="nonlocal" type="range" min="0" max="1" step="0.001" value="0.48"/>
+        </div>
+        <div class="ctrl">
+          <label for="m">Mass term m</label>
+          <output id="mOut"></output>
+          <input id="m" type="range" min="0" max="2" step="0.001" value="0.85"/>
+        </div>
+        <div class="ctrl">
+          <label for="pmag">Momentum magnitude |p|</label>
+          <output id="pOut"></output>
+          <input id="pmag" type="range" min="0" max="3" step="0.001" value="1.75"/>
+        </div>
+
+        <div class="ctrl">
+          <label for="breakBalance">Break balance (allow ψ² ≠ 0)</label>
+          <output id="breakOut"></output>
+          <input id="breakBalance" type="range" min="0" max="1" step="1" value="0"/>
+          <p class="mini" style="grid-column:1 / -1; margin:0;">
+            When off: enforce <code>E² = p² + m²</code> so each solution is nilpotent. When on: <code>E</code> drifts and nilpotency fails.
+          </p>
+        </div>
+
+        <div class="ctrl">
+          <label for="showAll">Render all four solutions</label>
+          <output id="showAllOut"></output>
+          <input id="showAll" type="range" min="0" max="1" step="1" value="1"/>
+          <p class="mini" style="grid-column:1 / -1; margin:0;">
+            If off, the view highlights one solution at a time; if on, it renders the full quartet (particle/antiparticle × spin up/down).
+          </p>
+        </div>
+
+        <div class="btns">
+          <button id="pauseBtn">Pause</button>
+          <button id="pulseBtn">Nonlocal phase pulse</button>
+          <button id="cycleBtn">Cycle highlight</button>
+        </div>
+
+        <p class="mini" style="margin-top:2px;">
+          Suggested: keep balance on, set λ≈0.65, step rewrite until integration triggers — then break balance and watch stability degrade.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  // ===== Canvas =====
+  const viz = document.getElementById('viz');
+  const math = document.getElementById('math');
+  const vctx = viz.getContext('2d');
+  const mctx = math.getContext('2d');
+
+  // ===== UI =====
+  const localEl = document.getElementById('local');
+  const nonlocalEl = document.getElementById('nonlocal');
+  const mEl = document.getElementById('m');
+  const pEl = document.getElementById('pmag');
+  const breakEl = document.getElementById('breakBalance');
+  const showAllEl = document.getElementById('showAll');
+
+  const localOut = document.getElementById('localOut');
+  const nonlocalOut = document.getElementById('nonlocalOut');
+  const mOut = document.getElementById('mOut');
+  const pOut = document.getElementById('pOut');
+  const breakOut = document.getElementById('breakOut');
+  const showAllOut = document.getElementById('showAllOut');
+
+  const eqText = document.getElementById('eqText');
+  const nilDot = document.getElementById('nilDot');
+  const nilLabel = document.getElementById('nilLabel');
+  const syncDot = document.getElementById('syncDot');
+  const syncLabel = document.getElementById('syncLabel');
+  const modeTag = document.getElementById('modeTag');
+
+  const pauseBtn = document.getElementById('pauseBtn');
+  const pulseBtn = document.getElementById('pulseBtn');
+  const cycleBtn = document.getElementById('cycleBtn');
+
+  const stepBtn = document.getElementById('stepBtn');
+  const autoBtn = document.getElementById('autoBtn');
+  const clearBtn = document.getElementById('clearBtn');
+  const forceSymBtn = document.getElementById('forceSymBtn');
+  const rwLog = document.getElementById('rwLog');
+  const cxLog = document.getElementById('cxLog');
+
+  // ===== Utils =====
+  const clamp = (x,a,b)=>Math.max(a,Math.min(b,x));
+  const lerp = (a,b,t)=>a+(b-a)*t;
+
+  function logLine(el, s){
+    const div = document.createElement('div');
+    div.textContent = s;
+    el.appendChild(div);
+    el.scrollTop = el.scrollHeight;
+  }
+
+  // ===== Core state =====
+  let t = 0;
+  let paused = false;
+  let highlight = 0;
+
+  // Dirac-ish nilpotent amplitude (teaching model)
+  // ψ = ( sE * ikE  + sp * i(σ·p)  + jm ) exp(-i(Et - p·r))
+  // The nilpotency scalar proxy: N2 = E^2 - (px^2 + py^2 + m^2)
+  // Four solutions = sign choices (sE, sp): (+,+), (+,-), (-,+), (-,-)
+
+  let state = {
+    local: parseFloat(localEl.value),
+    nonlocal: parseFloat(nonlocalEl.value),
+    m: parseFloat(mEl.value),
+    pMag: parseFloat(pEl.value),
+    px: 0,
+    py: 0,
+    E: 0,
+    breakBalance: parseInt(breakEl.value,10),
+    showAll: parseInt(showAllEl.value,10),
+
+    // phase coupling
+    pulse: 0,
+
+    // rewrite / integration (host + symbiont)
+    rwAuto: false,
+    rwSteps: 0,
+    rwDepth: 0,
+    rwNewOps: 0,
+    host: { name:"host", alphabet:["0"], depth:0 },
+    sym:  { name:"symbiont", alphabet:["0"], depth:0 },
+    integrated: false,
+    stabilityGain: 0,
+  };
+
+  function updateOutputs(){
+    localOut.textContent = state.local.toFixed(3);
+    nonlocalOut.textContent = state.nonlocal.toFixed(3);
+    mOut.textContent = state.m.toFixed(3);
+    pOut.textContent = state.pMag.toFixed(3);
+    breakOut.textContent = state.breakBalance ? "on" : "off";
+    showAllOut.textContent = state.showAll ? "on" : "off";
+    modeTag.textContent = state.breakBalance ? "Mode: unbalanced (ψ² ≠ 0)" : "Mode: balanced (nilpotent)";
+  }
+
+  // ===== Quaternion helpers (for visualization, not claiming full Clifford fidelity) =====
+  // We use quaternion-like components q = (w, x, y, z) for drawn arrows and "manipulations".
+  // Map conceptual terms into orthogonal components:
+  //   w: mass contribution (jm)  [drawn as scalar bar]
+  //   x: momentum/spin channel  (i σ·p)
+  //   y: energy channel         (ikE)
+  //   z: nonlocal phase channel (global coupling marker)
+
+  function makeVizQuat(sE, sp, phase){
+    // phase shared by nonlocal coupling; local coherence damps wandering
+    const px = state.px, py = state.py;
+    const p = Math.hypot(px,py);
+
+    const q = {
+      w: state.m,
+      x: sp * p * Math.cos(phase),
+      y: sE * state.E * Math.sin(phase),
+      z: state.nonlocal * Math.sin(phase*0.7)
+    };
+    return q;
+  }
+
+  // A lightweight "nilpotent self-product" proxy for drawing: compute scalar residue
+  function nilResidue(){
+    return state.E*state.E - (state.px*state.px + state.py*state.py + state.m*state.m);
+  }
+
+  // ===== Evolution =====
+  function updatePhysics(dt){
+    state.local = parseFloat(localEl.value);
+    state.nonlocal = parseFloat(nonlocalEl.value);
+    state.m = parseFloat(mEl.value);
+    state.pMag = parseFloat(pEl.value);
+    state.breakBalance = parseInt(breakEl.value,10);
+    state.showAll = parseInt(showAllEl.value,10);
+
+    // Momentum direction rotates; nonlocal adds wobble
+    const osc = Math.sin(t*0.35);
+    const osc2 = Math.cos(t*0.22);
+
+    const ang = t*0.28 + state.nonlocal*0.9*osc + 0.6*osc2;
+    const wob = 0.25*state.nonlocal*Math.sin(t*1.1);
+
+    state.px = state.pMag * Math.cos(ang + wob);
+    state.py = state.pMag * Math.sin(ang - wob);
+
+    const p2 = state.px*state.px + state.py*state.py;
+    const targetE = Math.sqrt(Math.max(0, p2 + state.m*state.m));
+
+    if(!state.breakBalance){
+      state.E = targetE;
+    } else {
+      const push = 0.25*(state.local - 0.5)*Math.sin(t*0.9) + 0.35*(state.nonlocal - 0.5)*Math.cos(t*0.7);
+      state.E = Math.max(0, targetE + push);
+    }
+
+    state.pulse *= Math.exp(-dt*1.8);
+  }
+
+  // ===== Rewrite & symbiogenesis =====
+  const ladder = [
+    {name:"scalar",        add:["1"],             meaning:"mass (scalar)"},
+    {name:"pseudoscalar",  add:["i"],             meaning:"time (imag scalar)"},
+    {name:"quaternion",    add:["j","k"],         meaning:"charge (quaternion units)"},
+    {name:"multivector",   add:["e1","e2","e3"], meaning:"space (vector units)"},
+    {name:"higher",        add:["E","P","M"],     meaning:"operator closure (toy)"},
+    {name:"network",       add:["⊗","∘"],         meaning:"composition / hierarchy"}
+  ];
+
+  function createConserve(system){
+    const step = ladder[Math.min(system.depth, ladder.length-1)];
+    const created = step.add;
+    created.forEach(sym => { if(!system.alphabet.includes(sym)) system.alphabet.push(sym); });
+    const duals = created.map(s => s + "̄");
+    duals.forEach(sym => { if(!system.alphabet.includes(sym)) system.alphabet.push(sym); });
+
+    system.depth = Math.min(system.depth + 1, ladder.length);
+    return {step, created, duals};
+  }
+
+  function richness(){
+    // Depth increases channels; integration increases closure
+    const depthFactor = 1 + (state.rwDepth/7);
+    const integFactor = state.integrated ? 1.25 : 1.0;
+    return clamp(state.local * state.nonlocal * depthFactor * integFactor, 0, 1);
+  }
+
+  function maybeIntegrate(reason){
+    if(state.integrated) return;
+
+    // A toy threshold: deep enough + enough nonlocal + enough conservation pressure
+    const r = richness();
+    const pressure = clamp((state.rwDepth/6) * (0.4 + state.nonlocal), 0, 1);
+
+    const ok = (r > 0.33 && pressure > 0.38 && state.rwDepth >= 3);
+    if(!ok && reason !== "forced") return;
+
+    // Integration event: symbiont becomes sub-alphabet of host
+    state.integrated = true;
+
+    const before = state.host.alphabet.length;
+    for(const sym of state.sym.alphabet){
+      if(!state.host.alphabet.includes(sym)) state.host.alphabet.push(sym);
+    }
+    const after = state.host.alphabet.length;
+
+    // Stability gain is higher when nilpotency is good (constraint really binds)
+    const absN2 = Math.abs(nilResidue());
+    const eps = 0.02;
+    const nilQuality = clamp(1 - absN2/eps, 0, 1);
+
+    state.stabilityGain = clamp(0.35 + 0.55*nilQuality + 0.25*state.nonlocal, 0, 1);
+
+    logLine(rwLog, `★ symbiogenesis: ${state.sym.name} integrated into ${state.host.name} (alphabet ${before} → ${after}) [${reason}]`);
+    logLine(cxLog, `integration_stability_gain=${state.stabilityGain.toFixed(3)}  (constraint-sharing beats exclusion)`);
+
+    // Kick the phase to show new coherent channels
+    state.pulse += 1.4;
+  }
+
+  function stepRewrite(){
+    state.rwSteps += 1;
+
+    // Alternate growth of host and symbiont to make integration meaningful
+    const target = (state.rwSteps % 2 === 1) ? state.host : state.sym;
+    const {step, created, duals} = createConserve(target);
+
+    // Track global depth as max of subsystems
+    state.rwDepth = Math.max(state.host.depth, state.sym.depth);
+    state.rwNewOps += created.length;
+
+    const bif = (created.length > 1) ? "  ↯ bifurcation" : "";
+    logLine(rwLog, `step ${state.rwSteps}: ${target.name} create {${created.join(', ')}}; conserve {${duals.join(', ')}}  → ${step.name} (${step.meaning})${bif}`);
+
+    // Complexity proxy logs
+    const bifScore = clamp(state.rwNewOps / Math.max(1,state.rwSteps*3), 0, 1);
+    logLine(cxLog, `depth=${state.rwDepth}  host=${state.host.alphabet.length}  sym=${state.sym.alphabet.length}  richness=${richness().toFixed(3)}  novelty=${bifScore.toFixed(3)}`);
+
+    // Integration check
+    maybeIntegrate("threshold");
+  }
+
+  function clearRewrite(){
+    rwLog.innerHTML = "";
+    cxLog.innerHTML = "";
+    state.rwSteps = 0;
+    state.rwDepth = 0;
+    state.rwNewOps = 0;
+    state.integrated = false;
+    state.stabilityGain = 0;
+    state.host = { name:"host", alphabet:["0"], depth:0 };
+    state.sym  = { name:"symbiont", alphabet:["0"], depth:0 };
+    state.pulse = 0;
+    logLine(rwLog, "(trace cleared) start from 0: nothing → create/conserve → alphabets → integration");
+    logLine(cxLog, "(trace cleared)" );
+  }
+
+  // ===== Drawing =====
+  function drawBackground(ctx, W, H){
+    ctx.fillStyle = "rgba(0,0,0,0.12)";
+    ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle = "rgba(255,255,255,0.08)";
+    ctx.lineWidth = 1;
+    for(let x=0;x<=W;x+=40){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+    for(let y=0;y<=H;y+=40){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+  }
+
+  function drawArrow(ctx, x0,y0, x1,y1, col){
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke();
+
+    // arrowhead
+    const dx = x1-x0, dy = y1-y0;
+    const a = Math.atan2(dy,dx);
+    const L = 10;
+    ctx.beginPath();
+    ctx.moveTo(x1,y1);
+    ctx.lineTo(x1 - L*Math.cos(a-0.5), y1 - L*Math.sin(a-0.5));
+    ctx.lineTo(x1 - L*Math.cos(a+0.5), y1 - L*Math.sin(a+0.5));
+    ctx.closePath();
+    ctx.fillStyle = col;
+    ctx.fill();
+  }
+
+  function drawViz(){
+    const W = viz.width, H = viz.height;
+    vctx.clearRect(0,0,W,H);
+    drawBackground(vctx,W,H);
+
+    // Regions
+    const leftW = Math.floor(W*0.62);
+    const rightW = W - leftW;
+
+    // Titles
+    vctx.fillStyle = "rgba(233,238,252,0.92)";
+    vctx.font = "12px ui-sans-serif, system-ui";
+    vctx.fillText("Quaternion-mapped nilpotent manipulation (ψ → ψ·ψ cancellation)", 16, 20);
+    vctx.fillText("Symbiogenesis diagram (host + symbiont → integrated constraints)", leftW + 16, 20);
+
+    // ----- Left: four solutions as vectors in a plane + scalar bars
+    const cx = Math.floor(leftW*0.52);
+    const cy = Math.floor(H*0.58);
+    const R = Math.min(leftW*0.40, H*0.36);
+
+    // axes
+    vctx.strokeStyle = "rgba(255,255,255,0.18)";
+    vctx.beginPath(); vctx.moveTo(cx-R, cy); vctx.lineTo(cx+R, cy); vctx.stroke();
+    vctx.beginPath(); vctx.moveTo(cx, cy-R); vctx.lineTo(cx, cy+R); vctx.stroke();
+
+    vctx.fillStyle = "rgba(169,182,221,0.95)";
+    vctx.font = "11px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace";
+    vctx.fillText("x: i(σ·p)", cx+R-90, cy-6);
+    vctx.fillText("y: ikE", cx+6, cy-R+14);
+
+    // shared phase (nonlocal couples them) and local coherence reduces random drift
+    const phase = t*0.9 + state.nonlocal*2.2 + state.pulse;
+
+    const solutions = [
+      {name:"ψ₁ (+E,+p) particle ↑", sE:+1, sp:+1},
+      {name:"ψ₂ (+E,-p) particle ↓", sE:+1, sp:-1},
+      {name:"ψ₃ (-E,+p) antiparticle ↑", sE:-1, sp:+1},
+      {name:"ψ₄ (-E,-p) antiparticle ↓", sE:-1, sp:-1},
+    ];
+
+    const colors = [
+      "rgba(122,167,255,0.95)",
+      "rgba(59,230,176,0.90)",
+      "rgba(255,204,102,0.92)",
+      "rgba(255,107,107,0.92)"
+    ];
+
+    const absN2 = Math.abs(nilResidue());
+    const eps = 0.02;
+    const nilQuality = clamp(1 - absN2/eps, 0, 1);
+
+    // nilpotent cancellation ring
+    vctx.lineWidth = 6;
+    vctx.strokeStyle = "rgba(255,255,255,0.18)";
+    vctx.beginPath(); vctx.arc(cx,cy,R*0.78,0,Math.PI*2); vctx.stroke();
+    vctx.strokeStyle = nilQuality > 0.7 ? "rgba(59,230,176,0.75)" : nilQuality > 0.35 ? "rgba(255,204,102,0.75)" : "rgba(255,107,107,0.75)";
+    vctx.beginPath();
+    vctx.arc(cx,cy,R*0.78,-Math.PI/2, -Math.PI/2 + Math.PI*2*nilQuality);
+    vctx.stroke();
+
+    vctx.fillStyle = "rgba(169,182,221,0.95)";
+    vctx.fillText("nilpotent quality", cx - 55, cy + R*0.90);
+
+    // draw solutions
+    const showAll = state.showAll === 1;
+    const active = highlight % solutions.length;
+
+    solutions.forEach((s, i) => {
+      if(!showAll && i !== active) return;
+
+      // per-solution phase offset: local (ℓ) keeps quartet aligned; nonlocal adds shared phase; small internal offsets differentiate
+      const off = (i*0.55) * (0.35 + 0.65*(1-state.local));
+      const q = makeVizQuat(s.sE, s.sp, phase + off);
+
+      // map x/y into plane
+      const vx = q.x;
+      const vy = q.y;
+
+      // scale to fit
+      const scale = R / Math.max(1e-6, Math.max(Math.abs(state.E), Math.abs(state.pMag)));
+      const x1 = cx + vx*scale*0.75;
+      const y1 = cy - vy*scale*0.75;
+
+      // thickness boost for active solution
+      const col = colors[i];
+      vctx.globalAlpha = (!showAll || i===active) ? 1.0 : 0.65;
+      drawArrow(vctx, cx, cy, x1, y1, col);
+
+      // label
+      vctx.globalAlpha = 1.0;
+      vctx.fillStyle = col;
+      vctx.font = "11px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace";
+      vctx.fillText(s.name, 16, 44 + i*16);
+
+      // scalar bar for mass term (jm) + nonlocal channel z
+      const bx = 16 + i* (showAll? 0:0);
+      const by = 130 + i*18;
+      const barW = 120;
+      vctx.fillStyle = "rgba(255,255,255,0.10)";
+      vctx.fillRect(16, by, barW, 8);
+      vctx.fillStyle = col;
+      vctx.fillRect(16, by, barW*clamp(q.w/2,0,1), 8);
+      vctx.fillStyle = "rgba(169,182,221,0.95)";
+      vctx.fillText("jm", 142, by+8);
+
+      vctx.fillStyle = "rgba(255,255,255,0.10)";
+      vctx.fillRect(170, by, barW, 8);
+      vctx.fillStyle = col;
+      vctx.fillRect(170, by, barW*clamp((q.z+1)/2,0,1), 8);
+      vctx.fillStyle = "rgba(169,182,221,0.95)";
+      vctx.fillText("nonlocal", 298, by+8);
+    });
+
+    // "ψ → ψ·ψ" manipulation strip
+    const stripY = 54;
+    const stripX = cx - R;
+    const stripW = R*2;
+    vctx.fillStyle = "rgba(0,0,0,0.16)";
+    vctx.fillRect(stripX, stripY, stripW, 48);
+
+    vctx.fillStyle = "rgba(233,238,252,0.92)";
+    vctx.font = "12px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace";
+    const N2 = nilResidue();
+    vctx.fillText(`ψ² ≈ E² − p² − m² = ${N2.toFixed(4)}  (drives cancellation when ~0)`, stripX+10, stripY+20);
+    vctx.fillStyle = "rgba(169,182,221,0.95)";
+    vctx.fillText("visual: quartet sign-solutions remain phase-locked when constraint holds", stripX+10, stripY+38);
+
+    // ----- Right: symbiogenesis diagram
+    const rx0 = leftW;
+    const rCx = rx0 + rightW*0.52;
+    const rCy = H*0.60;
+
+    const hostR = 55;
+    const symR = 42;
+
+    // positions depend on integration
+    const sep = state.integrated ? 14 : 120;
+    const hx = rCx - sep/2;
+    const sx = rCx + sep/2;
+
+    // draw host
+    vctx.fillStyle = "rgba(122,167,255,0.20)";
+    vctx.strokeStyle = "rgba(122,167,255,0.70)";
+    vctx.lineWidth = 2;
+    vctx.beginPath(); vctx.arc(hx, rCy, hostR, 0, Math.PI*2); vctx.fill(); vctx.stroke();
+
+    // draw symbiont
+    vctx.fillStyle = "rgba(59,230,176,0.20)";
+    vctx.strokeStyle = "rgba(59,230,176,0.70)";
+    vctx.beginPath(); vctx.arc(sx, rCy, symR, 0, Math.PI*2); vctx.fill(); vctx.stroke();
+
+    // integration overlay
+    if(state.integrated){
+      vctx.strokeStyle = "rgba(255,255,255,0.18)";
+      vctx.lineWidth = 10;
+      vctx.beginPath();
+      vctx.arc(hx, rCy, hostR+8, 0, Math.PI*2);
+      vctx.stroke();
+
+      vctx.fillStyle = "rgba(233,238,252,0.92)";
+      vctx.font = "12px ui-sans-serif, system-ui";
+      vctx.fillText("integrated constraints (symbiogenesis)", rx0+18, 44);
+
+      // stability gain bar
+      const bx = rx0 + 18;
+      const by = 62;
+      const bw = rightW - 36;
+      vctx.fillStyle = "rgba(255,255,255,0.10)";
+      vctx.fillRect(bx, by, bw, 10);
+      vctx.fillStyle = "rgba(59,230,176,0.55)";
+      vctx.fillRect(bx, by, bw*state.stabilityGain, 10);
+      vctx.fillStyle = "rgba(169,182,221,0.95)";
+      vctx.font = "11px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace";
+      vctx.fillText("integration stability gain", bx, by-8);
+      vctx.fillText(state.stabilityGain.toFixed(3), bx + bw + 10, by+10);
+
+    } else {
+      vctx.fillStyle = "rgba(169,182,221,0.95)";
+      vctx.font = "12px ui-sans-serif, system-ui";
+      vctx.fillText("separate subsystems (no integration yet)", rx0+18, 44);
+    }
+
+    // labels + alphabet sizes
+    vctx.font = "11px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace";
+    vctx.fillStyle = "rgba(233,238,252,0.92)";
+    vctx.fillText(`host alphabet: ${state.host.alphabet.length}`, rx0+18, H-52);
+    vctx.fillText(`sym alphabet:  ${state.sym.alphabet.length}`, rx0+18, H-34);
+    vctx.fillStyle = "rgba(169,182,221,0.95)";
+    vctx.fillText(`depth=${state.rwDepth}  richness=${richness().toFixed(3)}`, rx0+18, H-16);
+
+    // coherence indicator: how close quartet phases are (toy)
+    const coh = clamp(state.local*(0.65 + 0.35*(1-state.nonlocal)) + 0.25*nilQuality, 0, 1);
+    syncDot.style.background = coh > 0.7 ? "rgba(59,230,176,0.9)" : coh > 0.35 ? "rgba(255,204,102,0.9)" : "rgba(255,107,107,0.9)";
+    syncLabel.textContent = `quartet coherence ~ ${coh.toFixed(3)}`;
+
+    // nilpotency indicator
+    nilDot.style.background = nilQuality > 0.7 ? "rgba(59,230,176,0.9)" : nilQuality > 0.35 ? "rgba(255,204,102,0.9)" : "rgba(255,107,107,0.9)";
+    nilLabel.textContent = `|ψ²| = ${Math.abs(N2).toFixed(4)}`;
+  }
+
+  function drawMathPanel(){
+    const W = math.width, H = math.height;
+    mctx.clearRect(0,0,W,H);
+    drawBackground(mctx,W,H);
+
+    // Bars for E, px, py, m
+    const comps = [
+      {name:"E", v:state.E},
+      {name:"pₓ", v:state.px},
+      {name:"pᵧ", v:state.py},
+      {name:"m", v:state.m},
+    ];
+    const maxAbs = Math.max(0.001, ...comps.map(c=>Math.abs(c.v)));
+    const bx0 = 40, by0 = 40;
+    const bw = W - 80, bh = H - 130;
+
+    // axis
+    mctx.strokeStyle = "rgba(255,255,255,0.22)";
+    mctx.beginPath();
+    mctx.moveTo(bx0, by0 + bh/2);
+    mctx.lineTo(bx0 + bw, by0 + bh/2);
+    mctx.stroke();
+
+    const barW = bw / comps.length * 0.62;
+    const gap = bw / comps.length;
+
+    comps.forEach((c,i)=>{
+      const x = bx0 + gap*i + (gap-barW)/2;
+      const mid = by0 + bh/2;
+      const h = (Math.abs(c.v)/maxAbs) * (bh*0.42);
+      const y = c.v >= 0 ? mid - h : mid;
+
+      mctx.fillStyle = (c.name === "m") ? "rgba(59,230,176,0.55)" : "rgba(122,167,255,0.55)";
+      mctx.fillRect(x, y, barW, h);
+
+      mctx.fillStyle = "rgba(233,238,252,0.92)";
+      mctx.font = "12px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace";
+      mctx.fillText(c.name, x + 2, by0 + bh + 22);
+
+      mctx.fillStyle = "rgba(169,182,221,0.95)";
+      mctx.font = "11px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace";
+      mctx.fillText(c.v.toFixed(3), x + 2, by0 + bh + 38);
+    });
+
+    // Richness + nilpotency meters
+    const r = richness();
+    const N2 = nilResidue();
+    const absN2 = Math.abs(N2);
+    const eps = 0.02;
+    const nilQ = clamp(1 - absN2/eps, 0, 1);
+
+    const gx = 40, gy = H - 64, gw = W - 220, gh = 12;
+    mctx.fillStyle = "rgba(255,255,255,0.10)";
+    mctx.fillRect(gx, gy, gw, gh);
+    mctx.fillStyle = "rgba(122,167,255,0.55)";
+    mctx.fillRect(gx, gy, gw*r, gh);
+    mctx.fillStyle = "rgba(169,182,221,0.95)";
+    mctx.font = "11px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace";
+    mctx.fillText("complexity proxy (richness)", gx, gy-8);
+    mctx.fillText(r.toFixed(3), gx + gw + 10, gy + 10);
+
+    const gx2 = 40, gy2 = H - 34;
+    mctx.fillStyle = "rgba(255,255,255,0.10)";
+    mctx.fillRect(gx2, gy2, gw, gh);
+    mctx.fillStyle = nilQ > 0.7 ? "rgba(59,230,176,0.55)" : "rgba(255,204,102,0.55)";
+    mctx.fillRect(gx2, gy2, gw*nilQ, gh);
+    mctx.fillStyle = "rgba(169,182,221,0.95)";
+    mctx.fillText("nilpotent quality", gx2, gy2-8);
+    mctx.fillText(nilQ.toFixed(3), gx2 + gw + 10, gy2 + 10);
+  }
+
+  function updateEquationText(){
+    const p2 = state.px*state.px + state.py*state.py;
+    const m2 = state.m*state.m;
+    const E2 = state.E*state.E;
+    const N2 = nilResidue();
+
+    const lines = [];
+    lines.push("Rowlands-inspired nilpotent Dirac form (teaching model):");
+    lines.push("  ψ = ( ± i k E  ± i (σ·p)  + j m ) · exp( - i (E t − p·r) )");
+    lines.push("Four solutions = independent signs for (E) and (σ·p):");
+    lines.push("  ψ₁ (+E,+p) particle ↑   ψ₂ (+E,-p) particle ↓   ψ₃ (-E,+p) antiparticle ↑   ψ₄ (-E,-p) antiparticle ↓");
+    lines.push("Nilpotency (free case): ψ² = 0  ⇔  E² − p² − m² = 0");
+    lines.push(state.breakBalance ? "(balance broken → ψ² drifts away from 0)" : "(balanced → enforce E²=p²+m² so ψ²≈0)" );
+    lines.push("");
+    lines.push(`Current:  E=${state.E.toFixed(3)}   p=(${state.px.toFixed(3)}, ${state.py.toFixed(3)})   m=${state.m.toFixed(3)}`);
+    lines.push(`Squares:  E²=${E2.toFixed(3)}   p²=${p2.toFixed(3)}   m²=${m2.toFixed(3)}   ⇒  ψ²=${N2.toFixed(4)}`);
+    lines.push("");
+    lines.push("Rewrite → emergence mapping (toy):");
+    lines.push("  create/conserve generates operator alphabets (mass/time/charge/space ladder)." );
+    lines.push("  deeper alphabets + nonlocal coupling make integration cheaper than exclusion → symbiogenesis." );
+
+    eqText.textContent = lines.join("\n");
+  }
+
+  // ===== Main loop =====
+  function frame(ts){
+    if(!frame.last) frame.last = ts;
+    const dt = Math.min(0.05, (ts - frame.last)/1000);
+    frame.last = ts;
+
+    if(!paused){
+      t += dt;
+      updatePhysics(dt);
+
+      // auto rewrite
+      if(state.rwAuto){
+        const rate = 0.35 + 1.15*state.nonlocal;
+        state._rwAcc = (state._rwAcc || 0) + dt*rate;
+        if(state._rwAcc > 1){
+          state._rwAcc = 0;
+          stepRewrite();
+        }
+      }
+    }
+
+    drawViz();
+    drawMathPanel();
+    updateEquationText();
+
+    requestAnimationFrame(frame);
+  }
+
+  // ===== Events =====
+  function syncFromUI(){
+    state.local = parseFloat(localEl.value);
+    state.nonlocal = parseFloat(nonlocalEl.value);
+    state.m = parseFloat(mEl.value);
+    state.pMag = parseFloat(pEl.value);
+    state.breakBalance = parseInt(breakEl.value,10);
+    state.showAll = parseInt(showAllEl.value,10);
+    updateOutputs();
+  }
+
+  [localEl, nonlocalEl, mEl, pEl, breakEl, showAllEl].forEach(el => el.addEventListener('input', syncFromUI));
+
+  pauseBtn.addEventListener('click', () => {
+    paused = !paused;
+    pauseBtn.textContent = paused ? "Resume" : "Pause";
+  });
+
+  pulseBtn.addEventListener('click', () => {
+    state.pulse += 2.0;
+  });
+
+  cycleBtn.addEventListener('click', () => {
+    highlight = (highlight + 1) % 4;
+  });
+
+  stepBtn.addEventListener('click', stepRewrite);
+
+  autoBtn.addEventListener('click', () => {
+    state.rwAuto = !state.rwAuto;
+    autoBtn.textContent = state.rwAuto ? "Auto rewrite: on" : "Auto rewrite: off";
+  });
+
+  clearBtn.addEventListener('click', clearRewrite);
+
+  forceSymBtn.addEventListener('click', () => {
+    maybeIntegrate("forced");
+  });
+
+  // ===== Init =====
+  clearRewrite();
+  syncFromUI();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
