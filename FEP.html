@@ -1,0 +1,1156 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Free Energy Principle: Evolution & Organismic Agency</title>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --panel:#121a33;
+      --panel2:#0f1630;
+      --text:#e8ecff;
+      --muted:#aab3e6;
+      --accent:#7aa6ff;
+      --good:#6ef0b6;
+      --warn:#ffd36e;
+      --bad:#ff6e9d;
+      --line:rgba(255,255,255,.12);
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius:18px;
+      font-synthesis-weight:none;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background: radial-gradient(1200px 800px at 15% 10%, rgba(122,166,255,.18), transparent 60%),
+                  radial-gradient(900px 700px at 85% 30%, rgba(110,240,182,.12), transparent 55%),
+                  var(--bg);
+      color:var(--text);
+    }
+    header{
+      padding:18px 18px 6px;
+      max-width: 1200px;
+      margin:0 auto;
+    }
+    h1{margin:0;font-size:22px;letter-spacing:.2px}
+    .sub{margin-top:6px;color:var(--muted);font-size:13px;line-height:1.35}
+
+    .wrap{max-width:1200px;margin:0 auto;padding:12px 18px 26px;display:grid;grid-template-columns: 360px 1fr;gap:14px;}
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .controls{padding:14px;position:sticky;top:12px;align-self:start;}
+    .section{margin-top:12px;padding-top:12px;border-top:1px dashed rgba(255,255,255,.14)}
+    .section:first-child{margin-top:0;padding-top:0;border-top:0}
+
+    .row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:10px 0 6px;}
+    label{font-size:12px;color:var(--muted)}
+    .val{font-size:12px;color:var(--text);opacity:.95;min-width:84px;text-align:right}
+    input[type=range]{width:100%}
+    .btns{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap}
+    button{
+      border:1px solid rgba(255,255,255,.18);
+      background: rgba(122,166,255,.12);
+      color:var(--text);
+      padding:9px 10px;
+      border-radius: 14px;
+      cursor:pointer;
+      font-weight:600;
+      font-size:12px;
+    }
+    button:hover{filter:brightness(1.1)}
+    button.secondary{background: rgba(255,255,255,.06)}
+    button.danger{background: rgba(255,110,157,.14)}
+
+    .main{padding:14px;display:grid;grid-template-columns: 1.2fr .8fr;gap:14px;}
+
+    .viz{
+      padding:12px;
+      background: linear-gradient(180deg, rgba(0,0,0,.18), rgba(0,0,0,.08));
+      border-radius: var(--radius);
+      border:1px solid rgba(255,255,255,.10);
+    }
+
+    .stack{display:grid;grid-template-rows: auto auto;gap:14px;}
+
+    canvas{width:100%;height:auto;border-radius:14px;border:1px solid rgba(255,255,255,.10);background: rgba(0,0,0,.20)}
+
+    .pill{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:6px 10px;border-radius:999px;
+      background: rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.12);
+      font-size:12px;color:var(--muted)
+    }
+    .dot{width:8px;height:8px;border-radius:999px;background:var(--accent)}
+    .dot.good{background:var(--good)}
+    .dot.warn{background:var(--warn)}
+    .dot.bad{background:var(--bad)}
+
+    .notes{padding:12px 12px 6px}
+    .notes h2{margin:0 0 8px;font-size:14px}
+    .notes p{margin:0 0 10px;color:var(--muted);font-size:12.5px;line-height:1.45}
+    ul{margin:8px 0 10px;padding-left:18px;color:var(--muted);font-size:12.5px;line-height:1.45}
+    li{margin:6px 0}
+    .kpi{display:grid;grid-template-columns: 1fr 1fr;gap:10px;margin-top:10px}
+    .metric{padding:10px;border-radius:14px;background: rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10)}
+    .metric .t{font-size:11px;color:var(--muted)}
+    .metric .n{font-size:16px;font-weight:800;margin-top:2px}
+
+    .footer{max-width:1200px;margin:0 auto;padding:0 18px 26px;color:var(--muted);font-size:12px;line-height:1.5}
+
+    @media (max-width: 980px){
+      .wrap{grid-template-columns:1fr}
+      .controls{position:relative;top:0}
+      .main{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1>Free Energy Principle — Evolution & Organismic Agency (Toy Model)</h1>
+  <div class="sub">
+    This interactive toy world links <b>organismic agency</b> (acting to reduce surprise/prediction error) with <b>biological evolution</b>
+    (traits that reduce <i>expected</i> free energy tend to persist). It is not a proof of the Free Energy Principle—it's a sandpit to build intuition.
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="card controls" id="controls">
+
+    <div class="section">
+      <div class="pill"><span class="dot"></span><b>Run controls</b></div>
+      <div class="btns">
+        <button id="toggleBtn">Pause</button>
+        <button id="stepBtn" class="secondary">Step</button>
+        <button id="resetBtn" class="danger">Reset world</button>
+        <button id="seedBtn" class="secondary">New seed</button>
+      </div>
+      <div class="kpi">
+        <div class="metric"><div class="t">Stage</div><div class="n" id="stageKpi">Early</div></div>
+        <div class="metric"><div class="t">Generation</div><div class="n" id="genKpi">0</div></div>
+        <div class="metric"><div class="t">Mean free energy</div><div class="n" id="feKpi">—</div></div>
+        <div class="metric"><div class="t">Mean fitness</div><div class="n" id="fitKpi">—</div></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="pill"><span class="dot good"></span><b>Environment</b></div>
+
+      <div class="row"><label>World size (grid)</label><div class="val" id="v_world">25</div></div>
+      <input id="world" type="range" min="16" max="45" value="25" step="1" />
+
+      <div class="row"><label>Resource density</label><div class="val" id="v_density">0.18</div></div>
+      <input id="density" type="range" min="0.06" max="0.35" value="0.18" step="0.01" />
+
+      <div class="row"><label>Volatility (resource moves)</label><div class="val" id="v_vol">0.08</div></div>
+      <input id="vol" type="range" min="0" max="0.25" value="0.08" step="0.01" />
+
+      <div class="row"><label>Sensory noise</label><div class="val" id="v_noise">0.18</div></div>
+      <input id="noise" type="range" min="0" max="0.5" value="0.18" step="0.01" />
+
+      <div class="row"><label>Danger density (hazards)</label><div class="val" id="v_hazard">0.10</div></div>
+      <input id="hazard" type="range" min="0" max="0.25" value="0.10" step="0.01" />
+
+      <div class="row"><label>Homeostasis strength (need decay)</label><div class="val" id="v_decay">0.020</div></div>
+      <input id="decay" type="range" min="0.005" max="0.06" value="0.020" step="0.001" />
+    </div>
+
+    <div class="section">
+      <div class="pill"><span class="dot"></span><b>Agent (inference & action)</b></div>
+
+      <div class="row"><label>Population size</label><div class="val" id="v_pop">60</div></div>
+      <input id="pop" type="range" min="10" max="160" value="60" step="1" />
+
+      <div class="row"><label>Action cost</label><div class="val" id="v_cost">0.12</div></div>
+      <input id="cost" type="range" min="0" max="0.35" value="0.12" step="0.01" />
+
+      <div class="row"><label>Policy precision ("confidence")</label><div class="val" id="v_prec">3.0</div></div>
+      <input id="prec" type="range" min="0.5" max="8" value="3" step="0.1" />
+
+      <div class="row"><label>Epistemic drive (information-seeking)</label><div class="val" id="v_epi">0.55</div></div>
+      <input id="epi" type="range" min="0" max="1" value="0.55" step="0.01" />
+
+      <div class="row"><label>Pragmatic drive (need-satisfaction)</label><div class="val" id="v_prag">0.65</div></div>
+      <input id="prag" type="range" min="0" max="1" value="0.65" step="0.01" />
+
+      <div class="row"><label>Learning rate (belief update)</label><div class="val" id="v_lr">0.35</div></div>
+      <input id="lr" type="range" min="0.05" max="0.9" value="0.35" step="0.01" />
+
+      <div class="row"><label>Memory (belief decay)</label><div class="val" id="v_mem">0.04</div></div>
+      <input id="mem" type="range" min="0" max="0.18" value="0.04" step="0.01" />
+    </div>
+
+    <div class="section">
+      <div class="pill"><span class="dot warn"></span><b>Evolution</b></div>
+
+      <div class="row"><label>Selection strength</label><div class="val" id="v_sel">1.4</div></div>
+      <input id="sel" type="range" min="0" max="3" value="1.4" step="0.1" />
+
+      <div class="row"><label>Mutation rate</label><div class="val" id="v_mut">0.12</div></div>
+      <input id="mut" type="range" min="0" max="0.35" value="0.12" step="0.01" />
+
+      <div class="row"><label>Generations per minute</label><div class="val" id="v_gpm">12</div></div>
+      <input id="gpm" type="range" min="3" max="40" value="12" step="1" />
+
+      <div class="row"><label>Trait heritability (noise)</label><div class="val" id="v_her">0.10</div></div>
+      <input id="her" type="range" min="0" max="0.35" value="0.10" step="0.01" />
+
+      <div class="row"><label>What evolves?</label><div class="val" id="v_what">precision, epi, prag</div></div>
+      <div class="btns">
+        <button class="secondary" id="evolveToggle">Evolve: ON</button>
+        <button class="secondary" id="traitBtn">Traits: precision+drives</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="pill"><span class="dot bad"></span><b>Model caveats</b></div>
+      <p style="margin:8px 0 0;color:var(--muted);font-size:12.5px;line-height:1.45">
+        This model intentionally collapses many ideas into a few numbers. Use it to generate hypotheses, not conclusions.
+      </p>
+      <ul id="caveats">
+        <li><b>Free energy here is heuristic</b>: we blend prediction error + risk + action cost. Real variational free energy is defined over a generative model and approximate posterior.</li>
+        <li><b>Evolution is simplified</b>: reproduction is proportional to fitness over short horizons, with fixed population size and coarse mutation.</li>
+        <li><b>Agency is simplified</b>: actions are grid moves. Real organisms act through complex morphology, dynamics, and multi-scale control.</li>
+        <li><b>No true generative model</b>: agents keep a single belief field, not a structured causal model with hidden states, policies, and likelihood matrices.</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <div class="card main">
+    <div class="viz">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+        <div class="pill"><span class="dot"></span><b>World</b> <span style="opacity:.7">(agents minimize expected free energy)</span></div>
+        <div class="pill"><span class="dot good"></span>Food&nbsp;&nbsp;<span class="dot bad"></span>Hazard&nbsp;&nbsp;<span class="dot"></span>Agents</div>
+      </div>
+      <canvas id="worldCanvas" width="720" height="520" aria-label="World visualization"></canvas>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">
+        <span class="pill"><span class="dot"></span>Click canvas to place a <b>food hotspot</b></span>
+        <span class="pill"><span class="dot bad"></span>Shift+Click to place a <b>hazard hotspot</b></span>
+      </div>
+    </div>
+
+    <div class="stack">
+      <div class="viz">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+          <div class="pill"><span class="dot"></span><b>Trends</b></div>
+          <div class="pill" id="hintPill"><span class="dot warn"></span><span id="hintText">Try increasing volatility to see epistemic drive become useful.</span></div>
+        </div>
+        <canvas id="chartCanvas" width="520" height="240" aria-label="Charts"></canvas>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+          <div class="metric"><div class="t">Mean precision</div><div class="n" id="precKpi">—</div></div>
+          <div class="metric"><div class="t">Mean drives (epi / prag)</div><div class="n" id="drivesKpi">—</div></div>
+        </div>
+      </div>
+
+      <div class="viz notes">
+        <h2>Questions to ask (and what to watch)</h2>
+        <ul id="questions"></ul>
+
+        <h2>Key observations (stage-based)</h2>
+        <p id="observations"></p>
+
+        <h2>How the model might be wrong</h2>
+        <p id="wrongness"></p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="footer">
+  Tip: interpret “free energy” here as a <b>score</b> that penalizes: (1) sensory prediction error, (2) expected risk (hunger/hazard), and (3) action cost.
+  Agents update beliefs (a crude posterior) and select actions (a crude policy) that reduce <b>expected</b> free energy.
+</div>
+
+<script>
+(() => {
+  // -----------------------------
+  // Utilities
+  // -----------------------------
+  const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+  const lerp = (a,b,t) => a + (b-a)*t;
+  const rand = (a=0,b=1)=> a + Math.random()*(b-a);
+  const choice = (arr)=> arr[(Math.random()*arr.length)|0];
+  const softmax = (xs, beta=1) => {
+    const m = Math.max(...xs);
+    const exps = xs.map(v => Math.exp((v-m)*beta));
+    const s = exps.reduce((p,c)=>p+c,0) || 1;
+    return exps.map(e=>e/s);
+  };
+  const weightedPick = (weights) => {
+    let r = Math.random() * (weights.reduce((p,c)=>p+c,0) || 1);
+    for(let i=0;i<weights.length;i++){
+      r -= weights[i];
+      if(r<=0) return i;
+    }
+    return weights.length-1;
+  };
+
+  // Seedable PRNG for reproducible demos
+  let seed = (Date.now() % 2147483647) | 0;
+  function sRand(){
+    // Park-Miller LCG
+    seed = (seed * 48271) % 2147483647;
+    return seed / 2147483647;
+  }
+  function sRandRange(a=0,b=1){return a + (b-a)*sRand();}
+
+  // -----------------------------
+  // DOM
+  // -----------------------------
+  const $ = (id)=>document.getElementById(id);
+  const sliders = {
+    world: $('world'), density:$('density'), vol:$('vol'), noise:$('noise'), hazard:$('hazard'), decay:$('decay'),
+    pop:$('pop'), cost:$('cost'), prec:$('prec'), epi:$('epi'), prag:$('prag'), lr:$('lr'), mem:$('mem'),
+    sel:$('sel'), mut:$('mut'), gpm:$('gpm'), her:$('her')
+  };
+  const vals = {
+    world:$('v_world'), density:$('v_density'), vol:$('v_vol'), noise:$('v_noise'), hazard:$('v_hazard'), decay:$('v_decay'),
+    pop:$('v_pop'), cost:$('v_cost'), prec:$('v_prec'), epi:$('v_epi'), prag:$('v_prag'), lr:$('v_lr'), mem:$('v_mem'),
+    sel:$('v_sel'), mut:$('v_mut'), gpm:$('v_gpm'), her:$('v_her'), what:$('v_what')
+  };
+
+  const toggleBtn = $('toggleBtn');
+  const stepBtn = $('stepBtn');
+  const resetBtn = $('resetBtn');
+  const seedBtn = $('seedBtn');
+  const evolveToggle = $('evolveToggle');
+  const traitBtn = $('traitBtn');
+
+  const worldCanvas = $('worldCanvas');
+  const ctxW = worldCanvas.getContext('2d');
+  const chartCanvas = $('chartCanvas');
+  const ctxC = chartCanvas.getContext('2d');
+
+  const stageKpi = $('stageKpi');
+  const genKpi = $('genKpi');
+  const feKpi = $('feKpi');
+  const fitKpi = $('fitKpi');
+  const precKpi = $('precKpi');
+  const drivesKpi = $('drivesKpi');
+
+  const questionsEl = $('questions');
+  const observationsEl = $('observations');
+  const wrongnessEl = $('wrongness');
+  const hintText = $('hintText');
+
+  // -----------------------------
+  // Model overview (toy mapping)
+  // -----------------------------
+  // Hidden state: where food/hazards are.
+  // Observation: local smell cue ~ nearby food field + noise.
+  // Belief: each agent maintains a belief field b[x,y] about food availability.
+  // Variational-ish free energy proxy:
+  //   F = prediction_error + risk + action_cost
+  //   prediction_error: (obs - predicted_obs)^2
+  //   risk: hunger + expected hazard at new position
+  // Expected free energy for an action a:
+  //   G(a) = epi_weight * expected_information_gain(a) + prag_weight * expected_risk(a) + action_cost
+  // but we approximate IG by "uncertainty at the target" (higher entropy -> more epistemic value).
+
+  // -----------------------------
+  // Environment
+  // -----------------------------
+  let N = parseInt(sliders.world.value,10);
+  let food = [];      // [N][N] in [0,1]
+  let hazard = [];    // [N][N] in [0,1]
+
+  function makeGrid(n, fill=0){
+    const g = new Array(n);
+    for(let i=0;i<n;i++){
+      g[i] = new Float32Array(n);
+      if(fill!==0) g[i].fill(fill);
+    }
+    return g;
+  }
+
+  function stamp(grid, x, y, strength, radius){
+    const r2 = radius*radius;
+    for(let i=Math.max(0, x-radius); i<=Math.min(N-1, x+radius); i++){
+      for(let j=Math.max(0, y-radius); j<=Math.min(N-1, y+radius); j++){
+        const dx=i-x, dy=j-y;
+        const d2 = dx*dx+dy*dy;
+        if(d2<=r2){
+          const add = strength * Math.exp(-d2/(r2*0.6+1e-6));
+          grid[i][j] = clamp(grid[i][j] + add, 0, 1);
+        }
+      }
+    }
+  }
+
+  function randomizeEnvironment(){
+    N = parseInt(sliders.world.value,10);
+    food = makeGrid(N, 0);
+    hazard = makeGrid(N, 0);
+
+    const density = parseFloat(sliders.density.value);
+    const hz = parseFloat(sliders.hazard.value);
+
+    // Create several hotspots plus background speckles
+    const foodHotspots = Math.max(2, Math.round(N * density * 0.9));
+    for(let k=0;k<foodHotspots;k++){
+      const x = (sRand()*N)|0;
+      const y = (sRand()*N)|0;
+      stamp(food, x, y, sRandRange(0.35, 0.85), (sRandRange(2, Math.max(3, N/6)))|0);
+    }
+    const hazardHotspots = Math.max(1, Math.round(N * hz * 0.9));
+    for(let k=0;k<hazardHotspots;k++){
+      const x = (sRand()*N)|0;
+      const y = (sRand()*N)|0;
+      stamp(hazard, x, y, sRandRange(0.35, 0.9), (sRandRange(2, Math.max(3, N/7)))|0);
+    }
+
+    // Speckle
+    for(let i=0;i<N;i++){
+      for(let j=0;j<N;j++){
+        food[i][j] = clamp(food[i][j] + (sRand()<density ? sRandRange(0.0,0.25) : 0), 0, 1);
+        hazard[i][j] = clamp(hazard[i][j] + (sRand()<hz ? sRandRange(0.0,0.18) : 0), 0, 1);
+      }
+    }
+  }
+
+  // Volatility: drift hotspots slightly
+  function volatilityStep(){
+    const v = parseFloat(sliders.vol.value);
+    if(v<=0) return;
+    // random diffusion-ish step
+    for(let t=0;t<Math.round(N*N*v*0.07);t++){
+      const x = (sRand()*N)|0, y=(sRand()*N)|0;
+      const nx = clamp(x + ((sRand()<0.5)?-1:1), 0, N-1);
+      const ny = clamp(y + ((sRand()<0.5)?-1:1), 0, N-1);
+      // move a little mass
+      const m = food[x][y]*sRandRange(0.02, 0.08);
+      food[x][y] -= m; food[nx][ny] = clamp(food[nx][ny] + m, 0, 1);
+      const h = hazard[x][y]*sRandRange(0.02, 0.06);
+      hazard[x][y] -= h; hazard[nx][ny] = clamp(hazard[nx][ny] + h, 0, 1);
+    }
+  }
+
+  // -----------------------------
+  // Agents
+  // -----------------------------
+  const ACTIONS = [
+    {dx:0, dy:0, name:'stay'},
+    {dx:1, dy:0, name:'E'},
+    {dx:-1, dy:0, name:'W'},
+    {dx:0, dy:1, name:'S'},
+    {dx:0, dy:-1, name:'N'},
+  ];
+
+  // Traits that can evolve (configurable)
+  let evolveEnabled = true;
+  let evolvingTraitMode = 0; // 0: precision+drives, 1: lr+mem, 2: all
+
+  function traitNames(){
+    if(evolvingTraitMode===0) return 'precision, epi, prag';
+    if(evolvingTraitMode===1) return 'lr, mem';
+    return 'precision, epi, prag, lr, mem';
+  }
+
+  function newAgent(){
+    const x=(sRand()*N)|0, y=(sRand()*N)|0;
+    return {
+      x, y,
+      // physiological need: hunger (0 good, 1 bad)
+      hunger: sRandRange(0.2, 0.6),
+      alive: true,
+      // belief about food field (posterior-ish) and uncertainty
+      b: makeGrid(N, 0.1),
+      u: makeGrid(N, 0.9), // uncertainty high initially
+      // last metrics
+      F: 0,
+      fitness: 0,
+      // traits (some will evolve)
+      prec: parseFloat(sliders.prec.value) * sRandRange(0.85, 1.15),
+      epi: clamp(parseFloat(sliders.epi.value) + sRandRange(-0.12, 0.12), 0, 1),
+      prag: clamp(parseFloat(sliders.prag.value) + sRandRange(-0.12, 0.12), 0, 1),
+      lr: clamp(parseFloat(sliders.lr.value) + sRandRange(-0.10, 0.10), 0.02, 0.95),
+      mem: clamp(parseFloat(sliders.mem.value) + sRandRange(-0.04, 0.04), 0, 0.35),
+    };
+  }
+
+  let agents = [];
+
+  function spawnPopulation(){
+    const pop = parseInt(sliders.pop.value,10);
+    agents = new Array(pop);
+    for(let i=0;i<pop;i++) agents[i]=newAgent();
+  }
+
+  function senseFood(agent){
+    // Local cue: average food in a small radius around agent position.
+    const noise = parseFloat(sliders.noise.value);
+    let s=0, c=0;
+    for(let dx=-2;dx<=2;dx++){
+      for(let dy=-2;dy<=2;dy++){
+        const x=agent.x+dx, y=agent.y+dy;
+        if(x>=0 && x<N && y>=0 && y<N){
+          const w = 1/(1+dx*dx+dy*dy);
+          s += w * food[x][y];
+          c += w;
+        }
+      }
+    }
+    const trueCue = (c>0? s/c : 0);
+    // Add noise then clamp
+    const obs = clamp(trueCue + (Math.random()*2-1)*noise, 0, 1);
+    return {obs, trueCue};
+  }
+
+  function predictedCue(agent){
+    // Predict cue from belief field around current position.
+    let s=0, c=0;
+    for(let dx=-2;dx<=2;dx++){
+      for(let dy=-2;dy<=2;dy++){
+        const x=agent.x+dx, y=agent.y+dy;
+        if(x>=0 && x<N && y>=0 && y<N){
+          const w = 1/(1+dx*dx+dy*dy);
+          s += w * agent.b[x][y];
+          c += w;
+        }
+      }
+    }
+    return (c>0? s/c : 0);
+  }
+
+  function updateBelief(agent, obs){
+    // Crude Bayesian-ish update: push belief at (x,y) toward obs; diffuse to neighbors; uncertainty shrinks.
+    const lr = agent.lr;
+    const mem = agent.mem;
+
+    // decay beliefs slightly (forgetting / changing context)
+    for(let i=0;i<N;i++){
+      const bi = agent.b[i];
+      const ui = agent.u[i];
+      for(let j=0;j<N;j++){
+        bi[j] = clamp(bi[j] * (1-mem), 0, 1);
+        ui[j] = clamp(ui[j] + mem*0.15, 0, 1);
+      }
+    }
+
+    // local update
+    const x=agent.x, y=agent.y;
+    const bxy = agent.b[x][y];
+    agent.b[x][y] = clamp(lerp(bxy, obs, lr), 0, 1);
+    agent.u[x][y] = clamp(agent.u[x][y] * (1 - lr*0.55), 0, 1);
+
+    // small diffusion: interpret cue as evidence about nearby cells
+    for(let dx=-1;dx<=1;dx++){
+      for(let dy=-1;dy<=1;dy++){
+        const nx=x+dx, ny=y+dy;
+        if(nx>=0 && nx<N && ny>=0 && ny<N && (dx||dy)){
+          const w = 0.22/(1+dx*dx+dy*dy);
+          agent.b[nx][ny] = clamp(lerp(agent.b[nx][ny], obs, lr*w), 0, 1);
+          agent.u[nx][ny] = clamp(agent.u[nx][ny] * (1 - lr*w*0.35), 0, 1);
+        }
+      }
+    }
+  }
+
+  function expectedRiskAt(agent, x, y){
+    // risk mixes hunger (internal) and hazard (external) + opportunity cost of missing food
+    const h = agent.hunger;
+    const hz = hazard[x][y];
+    const wantFood = h; // hunger increases the penalty for low food
+    const expectedFood = agent.b[x][y];
+    const foodPenalty = wantFood * (1 - expectedFood);
+    return 0.6*h + 0.9*hz + 0.7*foodPenalty;
+  }
+
+  function expectedInfoValueAt(agent, x, y){
+    // epistemic value ~ uncertainty at target
+    return agent.u[x][y];
+  }
+
+  function chooseAction(agent){
+    const cost = parseFloat(sliders.cost.value);
+    const epiW = agent.epi;
+    const pragW = agent.prag;
+
+    const Gs = ACTIONS.map(a => {
+      const nx = clamp(agent.x + a.dx, 0, N-1);
+      const ny = clamp(agent.y + a.dy, 0, N-1);
+
+      const info = expectedInfoValueAt(agent, nx, ny);       // "epistemic"
+      const risk = expectedRiskAt(agent, nx, ny);            // "pragmatic" (homeostatic)
+      const moveCost = (a.dx!==0 || a.dy!==0) ? cost : cost*0.25;
+
+      // Expected free energy proxy: risk minus info-seeking bonus (we subtract info)
+      // so actions toward uncertain places are preferred when epiW is high.
+      const G = pragW*risk + moveCost - epiW*0.65*info;
+      return G;
+    });
+
+    const precision = agent.prec; // higher -> more greedy
+    const probs = softmax(Gs.map(g => -g), precision);
+    const idx = weightedPick(probs);
+
+    return {a:ACTIONS[idx], G:Gs[idx], probs, Gs};
+  }
+
+  function physiologyStep(agent){
+    const decay = parseFloat(sliders.decay.value);
+    // hunger drifts up; food reduces it; hazard increases it a bit (stress)
+    agent.hunger = clamp(agent.hunger + decay, 0, 1);
+  }
+
+  function interact(agent){
+    // eating
+    const f = food[agent.x][agent.y];
+    if(f>0.02){
+      const eat = Math.min(f, 0.09 + 0.18*(1-agent.hunger));
+      food[agent.x][agent.y] = clamp(f - eat, 0, 1);
+      agent.hunger = clamp(agent.hunger - (0.35*eat), 0, 1);
+    }
+    // hazard
+    const hz = hazard[agent.x][agent.y];
+    if(hz>0.65 && Math.random() < hz*0.14){
+      agent.alive = false;
+    } else {
+      agent.hunger = clamp(agent.hunger + hz*0.02, 0, 1);
+    }
+  }
+
+  function freeEnergyProxy(agent, obs, pred, chosenG){
+    const pe = (obs - pred);
+    const predErr = pe*pe;
+    const risk = expectedRiskAt(agent, agent.x, agent.y);
+    // F is instantaneous: prediction error + current risk + (a bit of expected cost)
+    const F = 1.2*predErr + 0.9*risk + 0.35*chosenG;
+    return F;
+  }
+
+  // -----------------------------
+  // Evolution step
+  // -----------------------------
+  let generation = 0;
+  function reproduce(){
+    if(!evolveEnabled) return;
+
+    const sel = parseFloat(sliders.sel.value);
+    const mut = parseFloat(sliders.mut.value);
+    const her = parseFloat(sliders.her.value);
+
+    // Fitness: prefer low average free energy and survival.
+    // Convert to positive weights.
+    const fitness = agents.map(a => {
+      const aliveBonus = a.alive ? 1.0 : 0.15;
+      // Free energy is a cost; transform to fitness.
+      const w = aliveBonus * Math.exp(-sel * clamp(a.F, 0, 4));
+      return w;
+    });
+
+    const newAgents = new Array(agents.length);
+
+    for(let i=0;i<newAgents.length;i++){
+      const parent = agents[weightedPick(fitness)];
+      const child = newAgent();
+
+      // inherit traits
+      child.prec = parent.prec;
+      child.epi = parent.epi;
+      child.prag = parent.prag;
+      child.lr = parent.lr;
+      child.mem = parent.mem;
+
+      // heritability noise (developmental variation)
+      const dev = () => (Math.random()*2-1)*her;
+      child.prec = clamp(child.prec * (1 + dev()*0.6), 0.3, 12);
+      child.epi = clamp(child.epi + dev()*0.35, 0, 1);
+      child.prag = clamp(child.prag + dev()*0.35, 0, 1);
+      child.lr = clamp(child.lr + dev()*0.25, 0.02, 0.95);
+      child.mem = clamp(child.mem + dev()*0.18, 0, 0.35);
+
+      // mutation
+      const m = () => (Math.random()*2-1) * mut;
+      const mutateTrait = (p)=> (Math.random() < mut);
+
+      if(evolvingTraitMode===0 || evolvingTraitMode===2){
+        if(mutateTrait()) child.prec = clamp(child.prec * (1 + m()*0.55), 0.3, 12);
+        if(mutateTrait()) child.epi  = clamp(child.epi  + m()*0.35, 0, 1);
+        if(mutateTrait()) child.prag = clamp(child.prag + m()*0.35, 0, 1);
+      }
+      if(evolvingTraitMode===1 || evolvingTraitMode===2){
+        if(mutateTrait()) child.lr  = clamp(child.lr  + m()*0.20, 0.02, 0.95);
+        if(mutateTrait()) child.mem = clamp(child.mem + m()*0.18, 0, 0.35);
+      }
+
+      // reset beliefs each generation (new individuals)
+      child.b = makeGrid(N, 0.1);
+      child.u = makeGrid(N, 0.95);
+      newAgents[i] = child;
+    }
+
+    agents = newAgents;
+    generation++;
+  }
+
+  // -----------------------------
+  // UI helpers
+  // -----------------------------
+  function bindSlider(sl, out, fmt=(v)=>v){
+    const update = ()=> out.textContent = fmt(sl.value);
+    sl.addEventListener('input', update);
+    update();
+  }
+
+  bindSlider(sliders.world, vals.world, v=>String(v));
+  bindSlider(sliders.density, vals.density, v=>(+v).toFixed(2));
+  bindSlider(sliders.vol, vals.vol, v=>(+v).toFixed(2));
+  bindSlider(sliders.noise, vals.noise, v=>(+v).toFixed(2));
+  bindSlider(sliders.hazard, vals.hazard, v=>(+v).toFixed(2));
+  bindSlider(sliders.decay, vals.decay, v=>(+v).toFixed(3));
+
+  bindSlider(sliders.pop, vals.pop, v=>String(v));
+  bindSlider(sliders.cost, vals.cost, v=>(+v).toFixed(2));
+  bindSlider(sliders.prec, vals.prec, v=>(+v).toFixed(1));
+  bindSlider(sliders.epi, vals.epi, v=>(+v).toFixed(2));
+  bindSlider(sliders.prag, vals.prag, v=>(+v).toFixed(2));
+  bindSlider(sliders.lr, vals.lr, v=>(+v).toFixed(2));
+  bindSlider(sliders.mem, vals.mem, v=>(+v).toFixed(2));
+
+  bindSlider(sliders.sel, vals.sel, v=>(+v).toFixed(1));
+  bindSlider(sliders.mut, vals.mut, v=>(+v).toFixed(2));
+  bindSlider(sliders.gpm, vals.gpm, v=>String(v));
+  bindSlider(sliders.her, vals.her, v=>(+v).toFixed(2));
+
+  function updateQuestionsAndNarrative(stage){
+    const v = {
+      vol:+sliders.vol.value, noise:+sliders.noise.value, cost:+sliders.cost.value,
+      hz:+sliders.hazard.value, decay:+sliders.decay.value, sel:+sliders.sel.value,
+      evolve:evolveEnabled, mode:evolvingTraitMode
+    };
+
+    const qs = [];
+
+    // Questions that depend on settings
+    qs.push("If resources are stable vs volatile, should agents prioritize exploration (epistemic) or exploitation (pragmatic)?");
+    if(v.vol>0.12) qs.push("When volatility is high, do you see higher epistemic drive becoming advantageous (if it evolves)?");
+    else qs.push("When volatility is low, does high epistemic drive become wasteful (unnecessary wandering)?");
+
+    if(v.noise>0.28) qs.push("With high sensory noise, does increasing policy precision hurt (overconfidence), and does stronger learning help or overfit noise?");
+    else qs.push("With low noise, does higher precision improve performance by committing to good policies faster?");
+
+    if(v.cost>0.22) qs.push("When movement is costly, do agents become more conservative (stay/short moves) and rely more on belief updates? What happens to survival?");
+    else qs.push("With cheap movement, does the population drift toward exploration-heavy strategies?");
+
+    if(v.hz>0.14) qs.push("If hazards are dense, do agents develop cautious policies (lower exploration / higher pragmatism) and avoid risky regions?");
+
+    if(v.decay>0.035) qs.push("As homeostatic pressure rises (need decays faster), do strategies shift toward immediate reward-seeking rather than information gathering?");
+
+    if(!v.evolve) qs.push("With evolution OFF, which parameter changes improve the population immediately, and which require time/adaptation to matter?");
+    else {
+      qs.push("Which traits are being selected? Watch mean traits: do they converge, oscillate, or diversify?");
+      if(v.mode===1) qs.push("When only learning/memory evolves, do you still see improvements without changing policy confidence and drives?");
+    }
+
+    // Render
+    questionsEl.innerHTML = qs.map(q => `<li>${q}</li>`).join('');
+
+    // Stage observations
+    const obs = [];
+    if(stage==='Early'){
+      obs.push("Beliefs are initially uncalibrated (high uncertainty), so epistemic actions can pay off: agents sample the world to reduce uncertainty.");
+      obs.push("High precision early can be bad: overconfident agents commit to poor beliefs and die in hazards or starve near low-food regions.");
+    } else if(stage==='Middle'){
+      obs.push("Some lineages discover stable ways to keep hunger low: you may see average free energy fall while mean fitness rises.");
+      obs.push("Trade-off: too much exploration wastes energy; too little exploration fails under volatility or after local depletion.");
+    } else {
+      obs.push("You may see convergence of traits (exploitation-dominant) in stable worlds, or sustained diversity in volatile/noisy worlds.");
+      obs.push("If hazards are strong, strategies may look 'anxious': minimizing surprise becomes minimizing risk, possibly at the cost of reward.");
+    }
+    observationsEl.textContent = obs.join(' ');
+
+    // Wrongness hints (dynamic)
+    const wrong = [];
+    wrong.push("This app treats 'expected information gain' as 'go where you are uncertain'. Real epistemic value depends on how observations would update a structured generative model.");
+    if(v.noise>0.3) wrong.push("With high sensory noise, the toy belief update can mistake noise for signal (overfitting). Real organisms use temporal integration, richer sensors, and hierarchical models.");
+    if(v.vol>0.15) wrong.push("Volatility here is a crude diffusion of fields. In real ecologies, changes are structured (seasonality, competitors, predators), and agents can learn models of those dynamics.");
+    if(v.sel>2.2) wrong.push("Strong selection here can wipe out variation too quickly (premature convergence). Real evolution includes population structure, drift, sexual selection, and constraints.");
+    wrong.push("Finally: the Free Energy Principle is often discussed at multiple scales (cells, brains, bodies, niches). This toy model compresses all scales into a single loop.");
+    wrongnessEl.textContent = wrong.join(' ');
+
+    // Small contextual hint
+    if(v.vol>0.12 && v.hz<0.12) hintText.textContent = "High volatility: exploration can reduce surprise later. Watch epistemic drive and memory.";
+    else if(v.hz>0.14) hintText.textContent = "Hazards dominate: risk minimization can look like 'anxiety'. Watch pragmatism rise.";
+    else if(v.noise>0.28) hintText.textContent = "High noise: high precision can be brittle. Watch if lower precision survives better.";
+    else hintText.textContent = "Stable world: exploitation often wins. Watch epistemic drive become less useful.";
+  }
+
+  // -----------------------------
+  // Charts
+  // -----------------------------
+  const history = {
+    fe: [], fit: [], prec: [], epi: [], prag: []
+  };
+  const HIST_MAX = 220;
+
+  function pushHist(k, v){
+    history[k].push(v);
+    if(history[k].length>HIST_MAX) history[k].shift();
+  }
+
+  function drawChart(){
+    const w = chartCanvas.width, h = chartCanvas.height;
+    ctxC.clearRect(0,0,w,h);
+
+    // axes
+    ctxC.globalAlpha = 0.8;
+    ctxC.strokeStyle = 'rgba(255,255,255,.18)';
+    ctxC.lineWidth = 1;
+    ctxC.beginPath();
+    ctxC.moveTo(40, 14);
+    ctxC.lineTo(40, h-26);
+    ctxC.lineTo(w-10, h-26);
+    ctxC.stroke();
+
+    // labels
+    ctxC.globalAlpha = 0.9;
+    ctxC.fillStyle = 'rgba(255,255,255,.72)';
+    ctxC.font = '12px ui-sans-serif, system-ui';
+    ctxC.fillText('mean free energy', 48, 16);
+    ctxC.fillText('mean fitness', 168, 16);
+    ctxC.fillText('traits', 290, 16);
+
+    // Determine ranges
+    const fe = history.fe, fit = history.fit;
+    const precH = history.prec, epiH = history.epi, pragH = history.prag;
+    const L = Math.max(fe.length, fit.length, precH.length);
+    if(L<2) return;
+
+    const xmin = 0, xmax = HIST_MAX-1;
+    const xTo = (i)=> 40 + (w-55) * (i-xmin)/(xmax-xmin);
+
+    const feMax = Math.max(0.7, ...fe);
+    const feMin = Math.min(0.0, ...fe);
+    const fitMax = Math.max(0.7, ...fit);
+    const fitMin = Math.min(0.0, ...fit);
+
+    const yMap = (v, a, b)=> (h-26) - (h-46) * (v-a)/(b-a + 1e-9);
+
+    function plot(arr, a, b, color){
+      ctxC.strokeStyle = color;
+      ctxC.lineWidth = 2;
+      ctxC.beginPath();
+      for(let i=0;i<arr.length;i++){
+        const x = xTo(i + (HIST_MAX-arr.length));
+        const y = yMap(arr[i], a, b);
+        if(i===0) ctxC.moveTo(x,y); else ctxC.lineTo(x,y);
+      }
+      ctxC.stroke();
+    }
+
+    // We can't specify colors per instruction? That's only for matplotlib. Here it's canvas; fine.
+    plot(fe, feMin, feMax, 'rgba(122,166,255,.9)');
+    plot(fit, fitMin, fitMax, 'rgba(110,240,182,.85)');
+
+    // traits in lower band (scale 0..1-ish)
+    const bandTop = 0.58*h;
+    ctxC.globalAlpha = 0.25;
+    ctxC.fillStyle = 'rgba(255,255,255,.10)';
+    ctxC.fillRect(40, bandTop, w-50, (h-26)-bandTop);
+    ctxC.globalAlpha = 1;
+
+    const traitY = (v)=> (h-26) - (h-26-bandTop) * v;
+
+    function plotTrait(arr, color, transform=(x)=>x){
+      ctxC.strokeStyle = color;
+      ctxC.lineWidth = 2;
+      ctxC.beginPath();
+      for(let i=0;i<arr.length;i++){
+        const x = xTo(i + (HIST_MAX-arr.length));
+        const y = traitY(clamp(transform(arr[i]),0,1));
+        if(i===0) ctxC.moveTo(x,y); else ctxC.lineTo(x,y);
+      }
+      ctxC.stroke();
+    }
+
+    // normalize precision roughly to 0..1 for display
+    plotTrait(precH, 'rgba(255,211,110,.85)', p => clamp((p-0.5)/(8-0.5), 0, 1));
+    plotTrait(epiH, 'rgba(255,110,157,.80)');
+    plotTrait(pragH,'rgba(200,210,255,.80)');
+
+    // Legend
+    ctxC.font = '11px ui-sans-serif, system-ui';
+    ctxC.fillStyle = 'rgba(255,255,255,.72)';
+    ctxC.fillText('F', 50, h-8);
+    ctxC.fillText('fitness', 65, h-8);
+    ctxC.fillText('precision', 120, h-8);
+    ctxC.fillText('epi', 175, h-8);
+    ctxC.fillText('prag', 200, h-8);
+
+    // tiny color swatches
+    const sw = (x,y,c)=>{ctxC.fillStyle=c;ctxC.fillRect(x,y,10,3)};
+    sw(44, h-12, 'rgba(122,166,255,.9)');
+    sw(58, h-12, 'rgba(110,240,182,.85)');
+    sw(112, h-12, 'rgba(255,211,110,.85)');
+    sw(168, h-12, 'rgba(255,110,157,.80)');
+    sw(194, h-12, 'rgba(200,210,255,.80)');
+  }
+
+  // -----------------------------
+  // Rendering world
+  // -----------------------------
+  function drawWorld(){
+    const w = worldCanvas.width, h = worldCanvas.height;
+    ctxW.clearRect(0,0,w,h);
+
+    const pad = 10;
+    const cell = Math.floor(Math.min((w-2*pad)/N, (h-2*pad)/N));
+    const ox = Math.floor((w - cell*N)/2);
+    const oy = Math.floor((h - cell*N)/2);
+
+    // background grid
+    ctxW.strokeStyle = 'rgba(255,255,255,.06)';
+    ctxW.lineWidth = 1;
+
+    // draw cells with food/hazard
+    for(let i=0;i<N;i++){
+      for(let j=0;j<N;j++){
+        const f = food[i][j];
+        const hz = hazard[i][j];
+        // composite color
+        // food -> greenish, hazard -> pinkish
+        const r = Math.floor(25 + 210*hz);
+        const g = Math.floor(25 + 210*f);
+        const b = Math.floor(40 + 120*(0.35*f + 0.25*hz));
+        ctxW.fillStyle = `rgba(${r},${g},${b},0.75)`;
+        ctxW.fillRect(ox + i*cell, oy + j*cell, cell, cell);
+      }
+    }
+
+    // grid lines (sparse)
+    ctxW.globalAlpha = 0.55;
+    for(let i=0;i<=N;i+=Math.max(2, (N/10)|0)){
+      ctxW.beginPath();
+      ctxW.moveTo(ox+i*cell, oy);
+      ctxW.lineTo(ox+i*cell, oy+N*cell);
+      ctxW.stroke();
+    }
+    for(let j=0;j<=N;j+=Math.max(2, (N/10)|0)){
+      ctxW.beginPath();
+      ctxW.moveTo(ox, oy+j*cell);
+      ctxW.lineTo(ox+N*cell, oy+j*cell);
+      ctxW.stroke();
+    }
+    ctxW.globalAlpha = 1;
+
+    // draw agents
+    for(const a of agents){
+      if(!a.alive) continue;
+      const x = ox + (a.x + 0.5)*cell;
+      const y = oy + (a.y + 0.5)*cell;
+
+      // agent color based on hunger (more hungry -> warmer)
+      const t = a.hunger;
+      const rr = Math.floor(120 + 120*t);
+      const gg = Math.floor(220 - 120*t);
+      const bb = 255;
+      ctxW.fillStyle = `rgba(${rr},${gg},${bb},0.95)`;
+      ctxW.beginPath();
+      ctxW.arc(x, y, Math.max(2.2, cell*0.28), 0, Math.PI*2);
+      ctxW.fill();
+    }
+
+    // caption
+    ctxW.fillStyle = 'rgba(255,255,255,.75)';
+    ctxW.font = '12px ui-sans-serif, system-ui';
+    ctxW.fillText('Agent color ≈ satiation (blue = satiated, warmer = hungry)', 12, h-10);
+  }
+
+  // -----------------------------
+  // Main loop
+  // -----------------------------
+  let running = true;
+  let lastTime = performance.now();
+  let genTimer = 0;
+  let stage = 'Early';
+
+  function stageFromGen(g){
+    if(g<10) return 'Early';
+    if(g<35) return 'Middle';
+    return 'Late';
+  }
+
+  function tick(dt){
+    // Environment step
+    volatilityStep();
+
+    // Agent steps
+    let sumF=0, sumFit=0, sumPrec=0, sumEpi=0, sumPrag=0;
+    let aliveCount=0;
+
+    for(const a of agents){
+      if(!a.alive) continue;
+
+      physiologyStep(a);
+      const {obs} = senseFood(a);
+      const pred = predictedCue(a);
+      updateBelief(a, obs);
+
+      const {a:act, G:chosenG} = chooseAction(a);
+
+      a.x = clamp(a.x + act.dx, 0, N-1);
+      a.y = clamp(a.y + act.dy, 0, N-1);
+
+      interact(a);
+
+      const F = freeEnergyProxy(a, obs, pred, chosenG);
+      // Smooth F a bit to represent ongoing cost
+      a.F = 0.75*a.F + 0.25*F;
+      // A toy fitness: low hunger, low hazard exposure, alive
+      const hz = hazard[a.x][a.y];
+      a.fitness = (a.alive ? 1 : 0) * clamp(1 - (0.75*a.hunger + 0.5*hz + 0.20*a.F), 0, 1);
+
+      sumF += a.F;
+      sumFit += a.fitness;
+      sumPrec += a.prec;
+      sumEpi += a.epi;
+      sumPrag += a.prag;
+      aliveCount++;
+    }
+
+    const meanF = aliveCount ? sumF/aliveCount : 3.0;
+    const meanFit = aliveCount ? sumFit/aliveCount : 0.0;
+    const meanPrec = aliveCount ? sumPrec/aliveCount : 0.0;
+    const meanEpi = aliveCount ? sumEpi/aliveCount : 0.0;
+    const meanPrag = aliveCount ? sumPrag/aliveCount : 0.0;
+
+    // Record
+    pushHist('fe', meanF);
+    pushHist('fit', meanFit);
+    pushHist('prec', meanPrec);
+    pushHist('epi', meanEpi);
+    pushHist('prag', meanPrag);
+
+    // Generation clock
+    const gpm = parseFloat(sliders.gpm.value);
+    const genEvery = 60 / gpm; // seconds
+    genTimer += dt;
+    if(genTimer >= genEvery){
+      genTimer = 0;
+      reproduce();
+    }
+
+    // Stage updates
+    stage = stageFromGen(generation);
+
+    // UI KPIs
+    stageKpi.textContent = stage;
+    genKpi.textContent = String(generation);
+    feKpi.textContent = meanF.toFixed(2);
+    fitKpi.textContent = meanFit.toFixed(2);
+    precKpi.textContent = meanPrec.toFixed(2);
+    drivesKpi.textContent = `${meanEpi.toFixed(2)} / ${meanPrag.toFixed(2)}`;
+
+    updateQuestionsAndNarrative(stage);
+
+    // Draw
+    drawWorld();
+    drawChart();
+  }
+
+  function loop(t){
+    const dt = Math.min(0.05, (t-lastTime)/1000);
+    lastTime = t;
+    if(running) tick(dt);
+    requestAnimationFrame(loop);
+  }
+
+  // -----------------------------
+  // Interaction
+  // -----------------------------
+  function fullReset({newSeed=false}={}){
+    if(newSeed) seed = (Date.now() % 2147483647) | 0;
+    generation = 0;
+    genTimer = 0;
+    randomizeEnvironment();
+    spawnPopulation();
+    history.fe.length=history.fit.length=history.prec.length=history.epi.length=history.prag.length=0;
+    updateQuestionsAndNarrative('Early');
+    drawWorld();
+    drawChart();
+  }
+
+  toggleBtn.addEventListener('click', ()=>{
+    running = !running;
+    toggleBtn.textContent = running ? 'Pause' : 'Run';
+  });
+
+  stepBtn.addEventListener('click', ()=>{
+    tick(1/30);
+  });
+
+  resetBtn.addEventListener('click', ()=>{
+    fullReset({newSeed:false});
+  });
+
+  seedBtn.addEventListener('click', ()=>{
+    fullReset({newSeed:true});
+  });
+
+  evolveToggle.addEventListener('click', ()=>{
+    evolveEnabled = !evolveEnabled;
+    evolveToggle.textContent = evolveEnabled ? 'Evolve: ON' : 'Evolve: OFF';
+    evolveToggle.style.opacity = evolveEnabled ? '1' : '0.85';
+  });
+
+  traitBtn.addEventListener('click', ()=>{
+    evolvingTraitMode = (evolvingTraitMode + 1) % 3;
+    if(evolvingTraitMode===0) traitBtn.textContent = 'Traits: precision+drives';
+    if(evolvingTraitMode===1) traitBtn.textContent = 'Traits: learning+memory';
+    if(evolvingTraitMode===2) traitBtn.textContent = 'Traits: all';
+    vals.what.textContent = traitNames();
+  });
+
+  // When structural parameters change, recreate environment/agents if needed
+  let lastN = N;
+  sliders.world.addEventListener('change', ()=>{
+    fullReset({newSeed:false});
+  });
+  sliders.pop.addEventListener('change', ()=>{
+    spawnPopulation();
+  });
+
+  // Canvas clicks: place hotspots
+  worldCanvas.addEventListener('click', (ev)=>{
+    const rect = worldCanvas.getBoundingClientRect();
+    const mx = ev.clientX - rect.left;
+    const my = ev.clientY - rect.top;
+
+    const w = worldCanvas.width, h = worldCanvas.height;
+    const pad = 10;
+    const cell = Math.floor(Math.min((w-2*pad)/N, (h-2*pad)/N));
+    const ox = Math.floor((w - cell*N)/2);
+    const oy = Math.floor((h - cell*N)/2);
+
+    const gx = Math.floor((mx - ox)/cell);
+    const gy = Math.floor((my - oy)/cell);
+    if(gx<0||gx>=N||gy<0||gy>=N) return;
+
+    const isHaz = ev.shiftKey;
+    if(isHaz) stamp(hazard, gx, gy, 0.8, Math.max(2, (N/12)|0));
+    else stamp(food, gx, gy, 0.8, Math.max(2, (N/10)|0));
+  });
+
+  // -----------------------------
+  // Boot
+  // -----------------------------
+  vals.what.textContent = traitNames();
+  fullReset({newSeed:true});
+  requestAnimationFrame(loop);
+
+})();
+</script>
+</body>
+</html>
