@@ -1,0 +1,656 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Nilpotent Quaternion Balance: Local ↔ Nonlocal</title>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --panel:#101a33;
+      --panel2:#0f1730;
+      --ink:#e9eefc;
+      --muted:#a9b6dd;
+      --accent:#7aa7ff;
+      --good:#3be6b0;
+      --warn:#ffcc66;
+      --bad:#ff6b6b;
+      --grid:rgba(255,255,255,.08);
+    }
+    html,body{height:100%; margin:0; background:radial-gradient(1200px 800px at 20% 10%, #13204a 0%, var(--bg) 55%); color:var(--ink); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;}
+    .wrap{max-width:1100px; margin:0 auto; padding:18px 14px 24px;}
+    h1{font-size:18px; margin:0 0 10px; font-weight:700; letter-spacing:.2px;}
+    .sub{color:var(--muted); margin:0 0 14px; line-height:1.35; font-size:13px;}
+    .grid{
+      display:grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap:12px;
+    }
+    .card{
+      background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+      overflow:hidden;
+    }
+    .card .hd{
+      padding:10px 12px;
+      border-bottom:1px solid rgba(255,255,255,.10);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      background:rgba(0,0,0,.15);
+    }
+    .tag{
+      font-size:12px;
+      color:var(--muted);
+      padding:3px 8px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.18);
+      white-space:nowrap;
+    }
+    .row{
+      display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+    }
+    canvas{display:block; width:100%; height:auto;}
+    .controls{
+      padding:12px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .ctrl{
+      display:grid;
+      grid-template-columns: 1fr auto;
+      gap:8px 10px;
+      align-items:center;
+      padding:10px;
+      border-radius:12px;
+      background:rgba(0,0,0,.18);
+      border:1px solid rgba(255,255,255,.10);
+    }
+    .ctrl label{font-size:12px; color:var(--muted);}
+    .ctrl output{font-size:12px; color:var(--ink); opacity:.95;}
+    .ctrl input[type="range"]{grid-column:1 / -1; width:100%;}
+    .btns{display:flex; gap:8px; flex-wrap:wrap;}
+    button{
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(0,0,0,.22);
+      color:var(--ink);
+      padding:8px 10px;
+      border-radius:12px;
+      cursor:pointer;
+      font-size:12px;
+    }
+    button:hover{border-color:rgba(122,167,255,.5);}
+    .eq{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size:12px;
+      line-height:1.45;
+      color:rgba(233,238,252,.95);
+      padding:10px 12px 12px;
+      border-top:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.12);
+      white-space:pre-wrap;
+    }
+    .mini{
+      font-size:11px;
+      color:var(--muted);
+      margin-top:6px;
+      line-height:1.35;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:3px 8px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.14);
+      font-size:12px;
+      color:var(--muted);
+    }
+    .dot{width:8px; height:8px; border-radius:999px; background:var(--muted);}
+    .footerNote{margin-top:10px; color:var(--muted); font-size:12px; line-height:1.4;}
+    @media (max-width: 920px){
+      .grid{grid-template-columns: 1fr;}
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Nilpotent “Quaternion” Balance: Local ↔ Non-local (Rowlands-inspired toy model)</h1>
+  <p class="sub">
+    A visual metaphor: a compact mass-energy-momentum object <b>N</b> is animated as a balance between
+    <b>local coherence</b> (deterministic flow) and <b>non-local coupling</b> (stochastic “watery” context).
+    In the lower panel we track a toy nilpotency condition via <code>N·N</code>.
+  </p>
+
+  <div class="grid">
+    <!-- LEFT: VISUALS -->
+    <div class="card">
+      <div class="hd">
+        <div class="row">
+          <span class="tag">Top: stochastic / “fluid” emergence</span>
+          <span class="pill"><span class="dot" id="nilDot"></span><span id="nilLabel">nilpotency check</span></span>
+        </div>
+        <span class="tag">Bottom: simple algebraic foundation</span>
+      </div>
+
+      <canvas id="fluid" width="980" height="420"></canvas>
+      <canvas id="math" width="980" height="220"></canvas>
+
+      <div class="eq" id="eqText"></div>
+    </div>
+
+    <!-- RIGHT: CONTROLS -->
+    <div class="card">
+      <div class="hd">
+        <span class="tag">Controls</span>
+        <span class="tag" id="modeTag">Mode: balanced (nilpotent)</span>
+      </div>
+
+      <div class="controls">
+        <div class="ctrl">
+          <label for="local">Local coherence ℓ (deterministic)</label>
+          <output id="localOut"></output>
+          <input id="local" type="range" min="0" max="1" step="0.001" value="0.62"/>
+        </div>
+
+        <div class="ctrl">
+          <label for="nonlocal">Non-local coupling λ (stochastic / long-range)</label>
+          <output id="nonlocalOut"></output>
+          <input id="nonlocal" type="range" min="0" max="1" step="0.001" value="0.48"/>
+        </div>
+
+        <div class="ctrl">
+          <label for="m">Mass term m</label>
+          <output id="mOut"></output>
+          <input id="m" type="range" min="0" max="2" step="0.001" value="0.85"/>
+        </div>
+
+        <div class="ctrl">
+          <label for="pmag">Momentum magnitude |p|</label>
+          <output id="pOut"></output>
+          <input id="pmag" type="range" min="0" max="3" step="0.001" value="1.75"/>
+        </div>
+
+        <div class="ctrl">
+          <label for="breakBalance">Break balance (allow N·N ≠ 0)</label>
+          <output id="breakOut"></output>
+          <input id="breakBalance" type="range" min="0" max="1" step="1" value="0"/>
+          <div class="mini">
+            When off: <b>E</b> is computed so that <code>E² = p² + m²</code> → <code>N·N ≈ 0</code>.<br/>
+            When on: <b>E</b> drifts with local/nonlocal forcing so <code>N·N</code> becomes nonzero.
+          </div>
+        </div>
+
+        <div class="btns">
+          <button id="pauseBtn">Pause</button>
+          <button id="resetBtn">Reset particles</button>
+          <button id="burstBtn">Nonlocal “pulse”</button>
+        </div>
+
+        <div class="footerNote">
+          <b>How to read it:</b> in this toy algebra, the “nilpotent” object is
+          <code>N = E·e₀ + pₓ·e₁ + pᵧ·e₂ + m·e₃</code> with a Minkowski-style signature so that
+          <code>N·N = E² − (p² + m²)</code>. The animation maps ℓ to local coherence (smooth flow)
+          and λ to nonlocal coupling (noise + long-range correlation).
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  // ===== Canvas setup =====
+  const fluid = document.getElementById('fluid');
+  const math = document.getElementById('math');
+  const fctx = fluid.getContext('2d');
+  const mctx = math.getContext('2d');
+
+  // ===== UI elements =====
+  const localEl = document.getElementById('local');
+  const nonlocalEl = document.getElementById('nonlocal');
+  const mEl = document.getElementById('m');
+  const pEl = document.getElementById('pmag');
+  const breakEl = document.getElementById('breakBalance');
+
+  const localOut = document.getElementById('localOut');
+  const nonlocalOut = document.getElementById('nonlocalOut');
+  const mOut = document.getElementById('mOut');
+  const pOut = document.getElementById('pOut');
+  const breakOut = document.getElementById('breakOut');
+
+  const eqText = document.getElementById('eqText');
+  const nilDot = document.getElementById('nilDot');
+  const nilLabel = document.getElementById('nilLabel');
+  const modeTag = document.getElementById('modeTag');
+
+  const pauseBtn = document.getElementById('pauseBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const burstBtn = document.getElementById('burstBtn');
+
+  // ===== Utility =====
+  const clamp = (x,a,b)=>Math.max(a,Math.min(b,x));
+  const lerp = (a,b,t)=>a+(b-a)*t;
+
+  // Simple hash/noise (fast, deterministic-ish)
+  function hash2(x,y){
+    // integer-ish mix
+    let n = (x*374761393 + y*668265263) | 0;
+    n = (n ^ (n >> 13)) | 0;
+    n = (n * 1274126177) | 0;
+    return ((n ^ (n >> 16)) >>> 0) / 4294967295;
+  }
+  function smoothstep(t){ return t*t*(3-2*t); }
+  function valueNoise(x,y){
+    const xi = Math.floor(x), yi = Math.floor(y);
+    const xf = x - xi, yf = y - yi;
+    const a = hash2(xi, yi);
+    const b = hash2(xi+1, yi);
+    const c = hash2(xi, yi+1);
+    const d = hash2(xi+1, yi+1);
+    const u = smoothstep(xf), v = smoothstep(yf);
+    return lerp(lerp(a,b,u), lerp(c,d,u), v);
+  }
+  function fbm(x,y,oct=4){
+    let amp=0.5, sum=0, freq=1;
+    for(let i=0;i<oct;i++){
+      sum += amp*(valueNoise(x*freq,y*freq)*2-1);
+      freq *= 2;
+      amp *= 0.5;
+    }
+    return sum;
+  }
+
+  // ===== Model: “local” vs “nonlocal” =====
+  let t = 0;
+  let paused = false;
+
+  // Quaternion-like components (toy):
+  // N = E e0 + px e1 + py e2 + m e3
+  // N·N = E^2 - (px^2+py^2+m^2)
+  let state = {
+    local: parseFloat(localEl.value),
+    nonlocal: parseFloat(nonlocalEl.value),
+    m: parseFloat(mEl.value),
+    pMag: parseFloat(pEl.value),
+    px: 0,
+    py: 0,
+    E: 0,
+    breakBalance: parseInt(breakEl.value,10),
+    pulse: 0
+  };
+
+  function updateOutputs(){
+    localOut.textContent = state.local.toFixed(3);
+    nonlocalOut.textContent = state.nonlocal.toFixed(3);
+    mOut.textContent = state.m.toFixed(3);
+    pOut.textContent = state.pMag.toFixed(3);
+    breakOut.textContent = state.breakBalance ? "on" : "off";
+    modeTag.textContent = state.breakBalance ? "Mode: unbalanced (N·N ≠ 0)" : "Mode: balanced (nilpotent)";
+  }
+
+  // ===== Particles for “fluid” =====
+  const PCOUNT = 1600;
+  const particles = new Array(PCOUNT).fill(0).map(()=>({
+    x: Math.random()*fluid.width,
+    y: Math.random()*fluid.height,
+    vx: 0, vy: 0,
+    age: Math.random()*200
+  }));
+
+  function resetParticles(){
+    for(const p of particles){
+      p.x = Math.random()*fluid.width;
+      p.y = Math.random()*fluid.height;
+      p.vx = 0; p.vy = 0;
+      p.age = Math.random()*200;
+    }
+    // clear canvas
+    fctx.clearRect(0,0,fluid.width,fluid.height);
+  }
+
+  // Field: local coherence -> smooth curl-ish flow
+  // nonlocal -> adds noise + a “global phase” that correlates distant points
+  function field(x,y,tt){
+    const w = fluid.width, h = fluid.height;
+
+    // normalize space
+    const nx = x / w, ny = y / h;
+
+    // Global phase: nonlocal couples distant points through shared oscillation
+    const phase = tt*0.18 + state.nonlocal*2.0 + state.pulse;
+
+    // Smooth base flow (local)
+    const s = 2.2 + 2.8*state.local;
+    const n1 = fbm(nx*s + Math.cos(phase), ny*s + Math.sin(phase), 4);
+    const n2 = fbm(nx*s + 17.3 + Math.sin(phase*0.9), ny*s + 11.7 + Math.cos(phase*1.1), 4);
+
+    // Approx curl-like direction using two noise channels
+    let fx = n2;
+    let fy = -n1;
+
+    // Inject stochasticity from nonlocal (grain + long-range jitter)
+    const g = 9 + 24*state.nonlocal;
+    const jitter = fbm(nx*g + tt*0.35, ny*g - tt*0.31, 3);
+
+    // Mix: local -> coherent; nonlocal -> watery randomness
+    const lam = state.nonlocal;
+    fx = (1-lam)*fx + lam*(fx + 0.85*jitter);
+    fy = (1-lam)*fy + lam*(fy - 0.85*jitter);
+
+    // Gentle centering so particles don't all escape
+    const cx = (0.5 - nx)*0.08;
+    const cy = (0.5 - ny)*0.08;
+
+    fx += cx;
+    fy += cy;
+
+    // Scale field strength
+    const speed = 1.1 + 2.0*state.local + 2.4*state.nonlocal;
+    return {fx: fx*speed, fy: fy*speed};
+  }
+
+  // ===== Math panel drawing =====
+  function drawMathPanel(N2){
+    const W = math.width, H = math.height;
+    mctx.clearRect(0,0,W,H);
+
+    // background grid
+    mctx.globalAlpha = 1;
+    mctx.fillStyle = "rgba(0,0,0,0.12)";
+    mctx.fillRect(0,0,W,H);
+
+    mctx.strokeStyle = "rgba(255,255,255,0.08)";
+    mctx.lineWidth = 1;
+    for(let x=0;x<=W;x+=40){
+      mctx.beginPath(); mctx.moveTo(x,0); mctx.lineTo(x,H); mctx.stroke();
+    }
+    for(let y=0;y<=H;y+=40){
+      mctx.beginPath(); mctx.moveTo(0,y); mctx.lineTo(W,y); mctx.stroke();
+    }
+
+    // Bars for components
+    const comps = [
+      {name:"E", v:state.E},
+      {name:"pₓ", v:state.px},
+      {name:"pᵧ", v:state.py},
+      {name:"m", v:state.m},
+    ];
+    const maxAbs = Math.max(0.001, ...comps.map(c=>Math.abs(c.v)));
+    const bx0 = 40, by0 = 40;
+    const bw = W - 80, bh = H - 90;
+
+    // axis
+    mctx.strokeStyle = "rgba(255,255,255,0.22)";
+    mctx.beginPath();
+    mctx.moveTo(bx0, by0 + bh/2);
+    mctx.lineTo(bx0 + bw, by0 + bh/2);
+    mctx.stroke();
+
+    const barW = bw / comps.length * 0.62;
+    const gap = bw / comps.length;
+    comps.forEach((c,i)=>{
+      const x = bx0 + gap*i + (gap-barW)/2;
+      const mid = by0 + bh/2;
+      const h = (Math.abs(c.v)/maxAbs) * (bh*0.42);
+      const y = c.v >= 0 ? mid - h : mid;
+      mctx.fillStyle = "rgba(122,167,255,0.55)";
+      if(c.name==="m") mctx.fillStyle = "rgba(59,230,176,0.55)";
+      mctx.fillRect(x, y, barW, h);
+
+      mctx.fillStyle = "rgba(233,238,252,0.92)";
+      mctx.font = "12px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace";
+      mctx.fillText(c.name, x + 2, by0 + bh + 20);
+
+      mctx.fillStyle = "rgba(169,182,221,0.95)";
+      mctx.font = "11px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace";
+      mctx.fillText(c.v.toFixed(3), x + 2, by0 + bh + 36);
+    });
+
+    // Nilpotency indicator
+    const absN2 = Math.abs(N2);
+    const eps = 0.02; // visual tolerance
+    const quality = clamp(1 - absN2/eps, 0, 1);
+
+    // Ring indicator (no custom colors beyond rgba values)
+    const cx = W - 90, cy = 72, r = 28;
+    mctx.lineWidth = 6;
+    mctx.strokeStyle = "rgba(255,255,255,0.18)";
+    mctx.beginPath(); mctx.arc(cx,cy,r,0,Math.PI*2); mctx.stroke();
+
+    mctx.strokeStyle = quality > 0.7 ? "rgba(59,230,176,0.8)"
+                     : quality > 0.35 ? "rgba(255,204,102,0.85)"
+                     : "rgba(255,107,107,0.85)";
+    mctx.beginPath();
+    mctx.arc(cx,cy,r,-Math.PI/2, -Math.PI/2 + Math.PI*2*quality);
+    mctx.stroke();
+
+    mctx.fillStyle = "rgba(233,238,252,0.95)";
+    mctx.font = "12px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial";
+    mctx.fillText("N·N", cx-14, cy+5);
+
+    mctx.fillStyle = "rgba(169,182,221,0.95)";
+    mctx.font = "11px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace";
+    mctx.fillText("= " + N2.toFixed(4), W - 160, 122);
+  }
+
+  function updateEquationText(N2){
+    // Keep it readable and honest: this is a toy signature that makes self-product cancel.
+    const sgn = (x)=> x>=0 ? "+" : "−";
+    const abs = (x)=> Math.abs(x).toFixed(3);
+
+    const p2 = state.px*state.px + state.py*state.py;
+    const m2 = state.m*state.m;
+    const E2 = state.E*state.E;
+
+    const line1 = "Toy nilpotent object (Rowlands-inspired metaphor):";
+    const line2 = "  N = E·e₀  +  pₓ·e₁  +  pᵧ·e₂  +  m·e₃";
+    const line3 = "Signature chosen so cross-terms cancel in N·N:";
+    const line4 = "  N·N = E² − (pₓ² + pᵧ² + m²)";
+    const line5 = state.breakBalance
+      ? "Balance is intentionally broken → N·N drifts away from 0."
+      : "Balanced mode enforces E² = p² + m² → N·N ≈ 0 (nilpotent).";
+    const line6 = "";
+    const line7 = `Current values:  E=${state.E.toFixed(3)}   p=(${state.px.toFixed(3)}, ${state.py.toFixed(3)})   m=${state.m.toFixed(3)}`;
+    const line8 = `Squares:        E²=${E2.toFixed(3)}   p²=${p2.toFixed(3)}   m²=${m2.toFixed(3)}   ⇒  N·N=${N2.toFixed(4)}`;
+    const line9 = "";
+    const line10 = "Interpretation in the animation:";
+    const line11 = "  ℓ (local) increases smooth, repeatable flow (deterministic mechanism).";
+    const line12 = "  λ (non-local) injects correlated noise + long-range phase (stochastic ‘watery’ context).";
+    const line13 = "  Their interplay produces structure that is neither purely random nor purely rigid—";
+    const line14 = "  a visual analogy for ‘the same equation multiplied by itself’ constraining outcomes.";
+    eqText.textContent = [line1,line2,line3,line4,line5,line6,line7,line8,line9,line10,line11,line12,line13,line14].join("\n");
+
+    // top badge indicator
+    const absN2 = Math.abs(N2);
+    const eps = 0.02;
+    const good = absN2 < eps*0.35;
+    const ok = absN2 < eps;
+    nilDot.style.background = good ? "rgba(59,230,176,0.9)" : ok ? "rgba(255,204,102,0.9)" : "rgba(255,107,107,0.9)";
+    nilLabel.textContent = `nilpotency |N·N| = ${absN2.toFixed(4)}`;
+  }
+
+  // ===== Evolving parameters & nilpotency =====
+  // We animate a gentle oscillation between local/nonlocal and map that into p-direction,
+  // while keeping magnitude from user slider.
+  function updateState(dt){
+    state.local = parseFloat(localEl.value);
+    state.nonlocal = parseFloat(nonlocalEl.value);
+    state.m = parseFloat(mEl.value);
+    state.pMag = parseFloat(pEl.value);
+    state.breakBalance = parseInt(breakEl.value,10);
+
+    // A slow “dialogue” between local and nonlocal (for visualization)
+    const osc = Math.sin(t*0.35);
+    const osc2 = Math.cos(t*0.22);
+
+    // Momentum direction rotates; nonlocal adds wobble
+    const ang = t*0.28 + state.nonlocal*0.9*osc + 0.6*osc2;
+    const wob = 0.25*state.nonlocal*Math.sin(t*1.1);
+    const px = state.pMag * Math.cos(ang + wob);
+    const py = state.pMag * Math.sin(ang - wob);
+    state.px = px;
+    state.py = py;
+
+    // Balanced mode: enforce E^2 = p^2 + m^2
+    const p2 = px*px + py*py;
+    const targetE = Math.sqrt(Math.max(0, p2 + state.m*state.m));
+
+    if(!state.breakBalance){
+      state.E = targetE;
+    } else {
+      // Unbalanced: let E be pushed by local/nonlocal forcing.
+      // (Still keep it positive for display.)
+      const push = 0.25*(state.local - 0.5)*Math.sin(t*0.9) + 0.35*(state.nonlocal - 0.5)*Math.cos(t*0.7);
+      state.E = Math.max(0, targetE + push);
+    }
+
+    // decay pulse
+    state.pulse *= Math.exp(-dt*1.8);
+  }
+
+  // ===== Rendering loop =====
+  function step(ts){
+    if(!step.last) step.last = ts;
+    const dt = Math.min(0.05, (ts - step.last)/1000);
+    step.last = ts;
+
+    if(!paused){
+      t += dt;
+      updateState(dt);
+
+      // compute nilpotency scalar
+      const N2 = state.E*state.E - (state.px*state.px + state.py*state.py + state.m*state.m);
+
+      // ----- draw fluid (fade for trails)
+      fctx.fillStyle = "rgba(11,16,32,0.10)";
+      fctx.fillRect(0,0,fluid.width,fluid.height);
+
+      // subtle vignette
+      fctx.save();
+      const vg = fctx.createRadialGradient(fluid.width*0.5, fluid.height*0.5, 30, fluid.width*0.5, fluid.height*0.5, fluid.width*0.65);
+      vg.addColorStop(0, "rgba(255,255,255,0.03)");
+      vg.addColorStop(1, "rgba(0,0,0,0.25)");
+      fctx.fillStyle = vg;
+      fctx.fillRect(0,0,fluid.width,fluid.height);
+      fctx.restore();
+
+      // particle dynamics
+      const lam = state.nonlocal;
+      const loc = state.local;
+
+      // Draw particles as points; nonlocal controls grain + dispersion; local controls coherence
+      fctx.globalAlpha = 0.95;
+
+      for(const p of particles){
+        const F = field(p.x, p.y, t);
+
+        // nonlocal adds Brownian-ish component, but correlated through shared phase (inside field()).
+        const brown = lam * (fbm(p.x*0.02 + t*1.7, p.y*0.02 - t*1.5, 2)) * 1.6;
+
+        // integrate (semi-implicit)
+        p.vx = 0.84*p.vx + 0.18*F.fx + brown;
+        p.vy = 0.84*p.vy + 0.18*F.fy - brown;
+
+        // local coherence damps random wandering
+        const damp = lerp(0.82, 0.92, loc);
+        p.vx *= damp;
+        p.vy *= damp;
+
+        p.x += p.vx;
+        p.y += p.vy;
+        p.age += 1;
+
+        // wrap around edges
+        if(p.x < 0) p.x += fluid.width;
+        if(p.x > fluid.width) p.x -= fluid.width;
+        if(p.y < 0) p.y += fluid.height;
+        if(p.y > fluid.height) p.y -= fluid.height;
+
+        // draw
+        // brightness tied to “balance quality”
+        const absN2 = Math.abs(N2);
+        const eps = 0.02;
+        const quality = clamp(1 - absN2/eps, 0, 1);
+
+        // alpha: nonlocal makes more mist; local makes clearer streaks
+        const a = lerp(0.03, 0.11, loc) + lerp(0.02, 0.07, lam);
+        fctx.fillStyle = `rgba(122,167,255,${a*lerp(0.65,1.15,quality)})`;
+
+        // occasional “droplets” when nonlocal dominates
+        if(lam > 0.55 && (p.age % 17 === 0)){
+          fctx.fillStyle = `rgba(59,230,176,${0.05 + 0.08*lam})`;
+          fctx.fillRect(p.x, p.y, 2, 2);
+        } else {
+          fctx.fillRect(p.x, p.y, 1, 1);
+        }
+
+        // rejuvenate some particles to keep distribution lively
+        if(p.age > 450 + 300*Math.random()){
+          p.x = Math.random()*fluid.width;
+          p.y = Math.random()*fluid.height;
+          p.vx = p.vy = 0;
+          p.age = 0;
+        }
+      }
+
+      // ----- draw math panel & equation
+      drawMathPanel(N2);
+      updateEquationText(N2);
+    }
+
+    requestAnimationFrame(step);
+  }
+
+  // ===== Events =====
+  function syncFromUI(){
+    state.local = parseFloat(localEl.value);
+    state.nonlocal = parseFloat(nonlocalEl.value);
+    state.m = parseFloat(mEl.value);
+    state.pMag = parseFloat(pEl.value);
+    state.breakBalance = parseInt(breakEl.value,10);
+    updateOutputs();
+  }
+
+  [localEl, nonlocalEl, mEl, pEl, breakEl].forEach(el => {
+    el.addEventListener('input', () => {
+      syncFromUI();
+    });
+  });
+
+  pauseBtn.addEventListener('click', () => {
+    paused = !paused;
+    pauseBtn.textContent = paused ? "Resume" : "Pause";
+  });
+
+  resetBtn.addEventListener('click', () => resetParticles());
+
+  burstBtn.addEventListener('click', () => {
+    // A brief nonlocal pulse that synchronizes the field (long-range kick)
+    state.pulse += 2.2;
+    // Also scatter a subset of particles for a “wavefront”
+    for(let i=0;i<particles.length;i+=6){
+      particles[i].vx += (Math.random()-0.5)*7;
+      particles[i].vy += (Math.random()-0.5)*7;
+      particles[i].age = 0;
+    }
+  });
+
+  // ===== Init =====
+  function fitCanvases(){
+    // keep internal resolution stable but allow responsive display
+    // (we keep fixed sizes for consistent behavior; CSS scales it)
+  }
+  resetParticles();
+  syncFromUI();
+  requestAnimationFrame(step);
+})();
+</script>
+</body>
+</html>
