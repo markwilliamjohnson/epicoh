@@ -1,0 +1,578 @@
+ <!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Void-Equivalent Forms Lab</title>
+  <style>
+    :root{
+      --bg:#0b1020; --panel:#0f1730; --muted:#9aa6c1; --text:#e7ecff;
+      --line:#223055; --accent:#7aa2ff; --good:#3ddc97; --warn:#ffcc66; --bad:#ff6b6b;
+      --chip:#17234a;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
+    *{box-sizing:border-box}
+    body{margin:0; background:linear-gradient(180deg,#070b16 0%, #0b1020 55%, #070b16 100%); color:var(--text); font-family:var(--sans);}
+    .wrap{max-width:1100px; margin:0 auto; padding:20px;}
+    header{display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:12px; margin-bottom:14px;}
+    h1{font-size:20px; margin:0;}
+    .sub{color:var(--muted); font-size:13px; margin-top:6px;}
+    .grid{display:grid; grid-template-columns:1.2fr .8fr; gap:14px;}
+    @media (max-width: 900px){ .grid{grid-template-columns:1fr;} }
+    .card{background:rgba(15,23,48,.9); border:1px solid var(--line); border-radius:16px; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,.35);}
+    .card h2{font-size:14px; margin:0; letter-spacing:.2px;}
+    .card .head{padding:14px 14px 10px; border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; gap:10px;}
+    .card .body{padding:14px;}
+    .row{display:flex; flex-wrap:wrap; gap:10px; align-items:center;}
+    textarea{
+      width:100%; min-height:90px; resize:vertical; padding:12px 12px;
+      border-radius:12px; border:1px solid var(--line); background:#0a1228; color:var(--text);
+      font-family:var(--mono); font-size:14px; line-height:1.4; outline:none;
+    }
+    textarea:focus{border-color:rgba(122,162,255,.7); box-shadow:0 0 0 3px rgba(122,162,255,.15);}
+    .btn{
+      background:#0a1228; color:var(--text);
+      border:1px solid var(--line); border-radius:12px; padding:10px 12px;
+      cursor:pointer; font-weight:600; font-size:13px;
+      transition:transform .04s ease, border-color .15s ease, background .15s ease;
+      user-select:none;
+    }
+    .btn:hover{border-color:rgba(122,162,255,.6); background:#0b1430;}
+    .btn:active{transform:translateY(1px);}
+    .btn.primary{background:rgba(122,162,255,.15); border-color:rgba(122,162,255,.45);}
+    .btn.primary:hover{background:rgba(122,162,255,.22); border-color:rgba(122,162,255,.7);}
+    .btn.good{background:rgba(61,220,151,.12); border-color:rgba(61,220,151,.45);}
+    .btn.good:hover{background:rgba(61,220,151,.18); border-color:rgba(61,220,151,.7);}
+    .btn.warn{background:rgba(255,204,102,.10); border-color:rgba(255,204,102,.45);}
+    .btn.warn:hover{background:rgba(255,204,102,.16); border-color:rgba(255,204,102,.7);}
+    .btn.bad{background:rgba(255,107,107,.10); border-color:rgba(255,107,107,.45);}
+    .btn.bad:hover{background:rgba(255,107,107,.16); border-color:rgba(255,107,107,.7);}
+    .chip{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:7px 10px; border-radius:999px; background:var(--chip);
+      border:1px solid var(--line); color:var(--muted); font-size:12px;
+    }
+    .chip b{color:var(--text); font-weight:700;}
+    .kpi{display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;}
+    .mono{font-family:var(--mono);}
+    .sep{height:1px; background:var(--line); margin:14px 0;}
+    .toggle{display:flex; align-items:center; gap:10px; padding:8px 10px; border:1px solid var(--line); background:#0a1228; border-radius:12px;}
+    .toggle input{accent-color:var(--accent);}
+    .small{color:var(--muted); font-size:12px; line-height:1.35;}
+    .step{
+      display:flex; align-items:flex-start; gap:10px;
+      padding:10px 10px; border:1px solid var(--line); border-radius:12px; background:#0a1228;
+      margin-bottom:10px;
+    }
+    .badge{
+      font-family:var(--mono); font-size:12px;
+      padding:4px 8px; border-radius:999px;
+      border:1px solid var(--line); background:rgba(122,162,255,.10);
+      color:var(--text);
+      min-width:70px; text-align:center;
+    }
+    .step p{margin:0; font-size:13px; color:var(--text);}
+    .step .why{color:var(--muted); margin-top:4px; font-size:12px;}
+    .hint{padding:10px 12px; border:1px dashed rgba(122,162,255,.35); border-radius:12px; background:rgba(122,162,255,.06);}
+    .list{margin:0; padding-left:18px; color:var(--muted); font-size:13px; line-height:1.5;}
+    .warnbox{padding:10px 12px; border:1px solid rgba(255,204,102,.4); border-radius:12px; background:rgba(255,204,102,.08); color:var(--muted); font-size:12px;}
+    .okbox{padding:10px 12px; border:1px solid rgba(61,220,151,.4); border-radius:12px; background:rgba(61,220,151,.08); color:var(--muted); font-size:12px;}
+    .footer{margin-top:14px; color:var(--muted); font-size:12px;}
+    .two{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+    @media (max-width: 700px){ .two{grid-template-columns:1fr;} }
+    .pillbar{display:flex; flex-wrap:wrap; gap:8px;}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Void-Equivalent Forms Lab</h1>
+        <div class="sub">Experiment with <span class="mono">)(</span> as a “face-to-face interface” that can collapse (void-equivalent), and explore meanings/applications.</div>
+      </div>
+      <div class="row">
+        <button id="btnReset" class="btn warn">Reset</button>
+        <button id="btnCopy" class="btn">Copy Normal Form</button>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- Left: Builder + Output -->
+      <section class="card">
+        <div class="head">
+          <h2>Build & Reduce</h2>
+          <span class="chip" title="Live updates as you type">
+            <b>Live</b> reducer
+          </span>
+        </div>
+        <div class="body">
+          <label class="small" for="expr">Expression (type or use buttons):</label>
+          <textarea id="expr" spellcheck="false"></textarea>
+
+          <div class="kpi">
+            <span class="chip"><b>Normal form</b> <span id="normal" class="mono"></span></span>
+            <span class="chip"><b>Length</b> <span id="len"></span></span>
+            <span class="chip"><b>Balanced?</b> <span id="balanced"></span></span>
+          </div>
+
+          <div class="sep"></div>
+
+          <div class="row" style="justify-content:space-between;">
+            <div class="pillbar">
+              <button class="btn primary" data-insert="(">(</button>
+              <button class="btn primary" data-insert=")">)</button>
+              <button class="btn primary" data-insert="()">( )</button>
+              <button class="btn primary" data-insert=")(">) (</button>
+              <button class="btn" data-insert="a">a</button>
+              <button class="btn" data-insert="b">b</button>
+              <button class="btn" data-insert="c">c</button>
+              <button class="btn" data-insert="x">x</button>
+              <button class="btn" data-insert="·">·</button>
+              <button class="btn" data-insert=" " title="Insert space">␠</button>
+            </div>
+            <div class="row">
+              <button id="btnReduceOnce" class="btn good">Reduce once</button>
+              <button id="btnReduceAll" class="btn good">Reduce fully</button>
+            </div>
+          </div>
+
+          <div class="sep"></div>
+
+          <div class="two">
+            <div class="toggle">
+              <input id="ruleVoid" type="checkbox" checked />
+              <label for="ruleVoid">
+                <span class="mono">)( → ε</span>
+                <div class="small">Treat face-to-face interface as void (remove it).</div>
+              </label>
+            </div>
+            <div class="toggle">
+              <input id="ruleUnit" type="checkbox" checked />
+              <label for="ruleUnit">
+                <span class="mono">() → 𝟙</span>
+                <div class="small">Treat empty container as a unit element (keep as a token <span class="mono">𝟙</span>).</div>
+              </label>
+            </div>
+            <div class="toggle">
+              <input id="ruleSquashSpaces" type="checkbox" checked />
+              <label for="ruleSquashSpaces">
+                <span class="mono">spaces →</span> normalize
+                <div class="small">Collapse repeated whitespace.</div>
+              </label>
+            </div>
+            <div class="toggle">
+              <input id="ruleJuxtapose" type="checkbox" checked />
+              <label for="ruleJuxtapose">
+                <span class="mono">(a)(b) → (ab)</span>
+                <div class="small">If two parenthesized atoms are adjacent, merge them.</div>
+              </label>
+            </div>
+          </div>
+
+          <div class="sep"></div>
+
+          <div id="steps"></div>
+
+          <div class="hint">
+            <div class="small">
+              Try: <span class="mono">(a)(b)(c)</span>, <span class="mono">()()(a)</span>, <span class="mono">(a)() (b)</span>, <span class="mono">(a))( (b)</span>, <span class="mono">)(</span>, <span class="mono">(()())</span>.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right: Meaning + Suggestions -->
+      <aside class="card">
+        <div class="head">
+          <h2>Meaning & Applicability</h2>
+          <span class="chip"><b>Interpreter</b> heuristics</span>
+        </div>
+        <div class="body">
+          <div id="meaningBox"></div>
+
+          <div class="sep"></div>
+
+          <h2 style="margin-bottom:8px;">Practical applicability ideas</h2>
+          <ul class="list" id="appsList"></ul>
+
+          <div class="sep"></div>
+
+          <h2 style="margin-bottom:8px;">Notes</h2>
+          <div class="warnbox">
+            This is a sandbox with configurable rewrite rules. The “meanings” are suggestions based on patterns
+            (interfaces, units, concatenation), not a single fixed formalism.
+          </div>
+
+          <div class="footer">
+            Tip: Toggle rules to see how your “theory” changes. A different choice about <span class="mono">()</span> (unit vs empty)
+            can completely change interpretation.
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+<script>
+(function(){
+  const $ = (sel) => document.querySelector(sel);
+  const exprEl = $("#expr");
+  const normalEl = $("#normal");
+  const lenEl = $("#len");
+  const balancedEl = $("#balanced");
+  const stepsEl = $("#steps");
+  const meaningBox = $("#meaningBox");
+  const appsList = $("#appsList");
+
+  const ruleVoid = $("#ruleVoid");
+  const ruleUnit = $("#ruleUnit");
+  const ruleSquashSpaces = $("#ruleSquashSpaces");
+  const ruleJuxtapose = $("#ruleJuxtapose");
+
+  const btnReset = $("#btnReset");
+  const btnCopy = $("#btnCopy");
+  const btnReduceOnce = $("#btnReduceOnce");
+  const btnReduceAll = $("#btnReduceAll");
+
+  const DEFAULT = "(a)(b)(c)";
+
+  // ---------- Builder helpers ----------
+  function insertAtCursor(text) {
+    const el = exprEl;
+    const start = el.selectionStart ?? el.value.length;
+    const end = el.selectionEnd ?? el.value.length;
+    const before = el.value.slice(0, start);
+    const after = el.value.slice(end);
+    el.value = before + text + after;
+    const pos = start + text.length;
+    el.setSelectionRange(pos, pos);
+    el.focus();
+    recompute();
+  }
+
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-insert]");
+    if (!btn) return;
+    insertAtCursor(btn.getAttribute("data-insert"));
+  });
+
+  // ---------- Core: parsing & reduction ----------
+  function isBalanced(s){
+    let bal = 0;
+    for (const ch of s){
+      if (ch === "(") bal++;
+      else if (ch === ")") bal--;
+      if (bal < 0) return false;
+    }
+    return bal === 0;
+  }
+
+  function normalizeSpaces(s){
+    if (!ruleSquashSpaces.checked) return s;
+    return s.replace(/\s+/g, " ").trim();
+  }
+
+  // Reduction rules are applied left-to-right, one rewrite per "step".
+  // We keep a log of what rule fired and why.
+  function reduceOnce(input){
+    let s = input;
+
+    // 1) Void interface: ")( -> ε"
+    if (ruleVoid.checked){
+      const idx = s.indexOf(")(");
+      if (idx !== -1){
+        const before = s.slice(0, idx);
+        const after  = s.slice(idx + 2);
+        return {
+          out: before + after,
+          rule: ")( → ε",
+          why: "A closing boundary meets an opening boundary with no payload between: interface-with-no-transfer collapses."
+        };
+      }
+    }
+
+    // 2) Unit: "() -> 𝟙" (a distinct token)
+    if (ruleUnit.checked){
+      const idx = s.indexOf("()");
+      if (idx !== -1){
+        const before = s.slice(0, idx);
+        const after  = s.slice(idx + 2);
+        return {
+          out: before + "𝟙" + after,
+          rule: "() → 𝟙",
+          why: "Empty container is treated as a unit element that preserves structure while carrying no content."
+        };
+      }
+    }
+
+    // 3) Merge adjacent parenthesized atoms: (X)(Y) -> (XY) where X,Y are 'atoms'
+    // Atom definition (heuristic): one or more non-paren, non-space characters OR 𝟙.
+    if (ruleJuxtapose.checked){
+      const re = /\(\s*([^\(\)\s]+|𝟙)\s*\)\s*\(\s*([^\(\)\s]+|𝟙)\s*\)/;
+      const m = s.match(re);
+      if (m){
+        const merged = "(" + m[1] + m[2] + ")";
+        return {
+          out: s.replace(re, merged),
+          rule: "(a)(b) → (ab)",
+          why: "Adjacent scoped chunks concatenate when the boundary between them is treated as void/transparent."
+        };
+      }
+    }
+
+    // 4) Clean up spaces (not a semantic rule, but improves readability)
+    const spaced = normalizeSpaces(s);
+    if (spaced !== s){
+      return { out: spaced, rule: "space normalization", why: "Pure formatting normalization." };
+    }
+
+    // No rule applied
+    return null;
+  }
+
+  function reduceFully(input, limit=200){
+    let s = input;
+    const steps = [];
+    for (let i=0; i<limit; i++){
+      const r = reduceOnce(s);
+      if (!r) break;
+      steps.push({ in: s, ...r });
+      s = r.out;
+    }
+    return { normal: s, steps };
+  }
+
+  // ---------- Meaning heuristics ----------
+  function analyzeMeaning(raw, normal){
+    const features = {
+      raw,
+      normal,
+      hasVoidInterface: raw.includes(")("),
+      hasEmpty: raw.includes("()"),
+      hasUnitToken: normal.includes("𝟙"),
+      balanced: isBalanced(raw.replace(/𝟙/g,"")), // ignore unit token if present
+      parenCount: (raw.match(/[()]/g)||[]).length,
+      voidCount: (raw.match(/\)\(/g)||[]).length,
+      emptyCount: (raw.match(/\(\)/g)||[]).length,
+      atomCount: (raw.replace(/[()\s]/g,"").match(/./g)||[]).length
+    };
+
+    // Heuristic interpretations (pick a few)
+    const interpretations = [];
+
+    if (features.hasVoidInterface){
+      interpretations.push({
+        title: "Interfaces / seams between contexts",
+        text: "You’re using “)(” seams. Interpretable as two boundaries meeting face-to-face (an interface). If the seam carries no payload, it can collapse (void-equivalent)."
+      });
+    }
+
+    if (features.hasEmpty && ruleUnit.checked){
+      interpretations.push({
+        title: "Unit / identity element present",
+        text: "You used “()” and you’re treating it as 𝟙 (identity). This behaves like a neutral connector: it can model ‘do-nothing’ steps, placeholders, or identity morphisms."
+      });
+    } else if (features.hasEmpty && !ruleUnit.checked){
+      interpretations.push({
+        title: "Empty container as pure emptiness",
+        text: "You used “()” but you’re not converting it to 𝟙. In this setting, emptiness may collapse more aggressively (closer to ε/empty string)."
+      });
+    }
+
+    if (!features.balanced){
+      interpretations.push({
+        title: "Unbalanced boundaries",
+        text: "The expression’s parentheses are unbalanced. That can be meaningful (open/unfinished processes) or simply a syntax issue. In interface terms: there are dangling faces."
+      });
+    } else {
+      interpretations.push({
+        title: "Well-formed boundary structure",
+        text: "Parentheses are balanced: every opening has a matching closing. This makes it easier to interpret as nested contexts/scopes."
+      });
+    }
+
+    // Interpret the normal form
+    if (normal === "" || normal === " "){
+      interpretations.push({
+        title: "Total collapse to void",
+        text: "Your rules reduced the whole form to ε (nothing). This suggests the structure was composed only of interfaces/units with no payload—pure boundary with no content."
+      });
+    } else if (/^\([^()]*\)$/.test(normal)){
+      interpretations.push({
+        title: "Single consolidated scope",
+        text: "Normal form is one parenthesized chunk. Interpretable as a single ‘composed object’ after interfaces were removed."
+      });
+    } else if (normal.includes("𝟙")){
+      interpretations.push({
+        title: "Residual identity factors",
+        text: "Normal form contains 𝟙. That can be read as explicit identity steps remaining in the composed structure."
+      });
+    }
+
+    // Applicability suggestions (pattern-based)
+    const apps = [];
+
+    apps.push({
+      title: "String/grammar normalization",
+      text: "Use rewrite rules to simplify symbolic strings (e.g., remove null separators, fold adjacent groups). Similar to normalizing markup, token streams, or DSLs."
+    });
+
+    apps.push({
+      title: "Workflow & pipeline modeling",
+      text: "Treat parentheses as stages/contexts and “)(” as handoffs. If a handoff transfers nothing, you can eliminate it—useful for simplifying process diagrams."
+    });
+
+    apps.push({
+      title: "Category theory / compositional design (intuition)",
+      text: "Read “𝟙” as identity and juxtaposition as composition. Then reduction is ‘canceling identities’ and ‘composing adjacent morphisms’ (informal but helpful)."
+    });
+
+    apps.push({
+      title: "Software boundaries & interfaces",
+      text: "Model module boundaries: “)(” as an interface between components. If no data crosses or the interface is redundant, collapse it—mirrors refactoring/merging layers."
+    });
+
+    apps.push({
+      title: "Type/system semantics (unit vs empty)",
+      text: "Explore whether empty container is a distinct unit value (like ‘unit type’) or true emptiness (like ε). This choice mirrors design decisions in type systems and protocols."
+    });
+
+    // Tailor apps: if many void seams, mention optimization
+    if (features.voidCount >= 2){
+      apps.unshift({
+        title: "Optimization by seam removal",
+        text: "You have multiple “)(” seams. Interpreting seams as overhead, reduction acts like eliminating unnecessary adapters/connectors."
+      });
+    }
+
+    // Tailor: if unbalanced, mention error detection
+    if (!features.balanced){
+      apps.unshift({
+        title: "Syntax checking / error localization",
+        text: "Unbalanced faces help identify where structure is incomplete—useful for detecting missing closures in languages or protocols."
+      });
+    }
+
+    return { features, interpretations, apps };
+  }
+
+  // ---------- Render ----------
+  function renderSteps(steps){
+    if (!steps.length){
+      stepsEl.innerHTML = `
+        <div class="okbox">
+          No rewrite fired (given the current rules). Try inserting <span class="mono">)(</span>, <span class="mono">()</span>,
+          or adjacent forms like <span class="mono">(a)(b)</span>.
+        </div>
+      `;
+      return;
+    }
+    stepsEl.innerHTML = steps.map((st, i) => {
+      const before = escapeHtml(st.in);
+      const after = escapeHtml(st.out);
+      const rule = escapeHtml(st.rule);
+      const why = escapeHtml(st.why);
+      return `
+        <div class="step">
+          <div class="badge">Step ${i+1}</div>
+          <div>
+            <p><span class="mono">${before}</span> &nbsp;→&nbsp; <span class="mono">${after}</span></p>
+            <div class="why"><span class="mono">${rule}</span> — ${why}</div>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  function renderMeaning(analysis){
+    const f = analysis.features;
+    const chips = [
+      `void seams: <b>${f.voidCount}</b>`,
+      `empties: <b>${f.emptyCount}</b>`,
+      `balanced: <b style="color:${f.balanced ? 'var(--good)' : 'var(--warn)'}">${f.balanced ? 'yes' : 'no'}</b>`
+    ];
+    meaningBox.innerHTML = `
+      <div class="kpi">
+        ${chips.map(c => `<span class="chip">${c}</span>`).join("")}
+      </div>
+      <div style="margin-top:10px;">
+        ${analysis.interpretations.map(it => `
+          <div class="step" style="margin-bottom:10px;">
+            <div class="badge" style="min-width:90px;">Meaning</div>
+            <div>
+              <p style="font-weight:700; margin-bottom:4px;">${escapeHtml(it.title)}</p>
+              <div class="why">${escapeHtml(it.text)}</div>
+            </div>
+          </div>
+        `).join("")}
+      </div>
+    `;
+  }
+
+  function renderApps(apps){
+    appsList.innerHTML = "";
+    for (const a of apps){
+      const li = document.createElement("li");
+      li.innerHTML = `<b style="color:var(--text)">${escapeHtml(a.title)}:</b> ${escapeHtml(a.text)}`;
+      appsList.appendChild(li);
+    }
+  }
+
+  function recompute(){
+    const raw = exprEl.value;
+    const reduced = reduceFully(raw);
+    const normal = normalizeSpaces(reduced.normal);
+
+    normalEl.textContent = normal === "" ? "ε" : normal;
+    lenEl.textContent = String(raw.length);
+    balancedEl.textContent = isBalanced(raw.replace(/𝟙/g,"")) ? "yes" : "no";
+
+    renderSteps(reduced.steps.slice(0, 40)); // keep UI snappy
+    const analysis = analyzeMeaning(raw, normal);
+    renderMeaning(analysis);
+    renderApps(analysis.apps);
+  }
+
+  // ---------- Actions ----------
+  exprEl.addEventListener("input", recompute);
+  [ruleVoid, ruleUnit, ruleSquashSpaces, ruleJuxtapose].forEach(el => el.addEventListener("change", recompute));
+
+  btnReset.addEventListener("click", () => { exprEl.value = DEFAULT; recompute(); exprEl.focus(); });
+  btnCopy.addEventListener("click", async () => {
+    const txt = normalEl.textContent || "";
+    try{
+      await navigator.clipboard.writeText(txt === "ε" ? "" : txt);
+      btnCopy.textContent = "Copied!";
+      setTimeout(() => btnCopy.textContent = "Copy Normal Form", 900);
+    }catch{
+      alert("Clipboard blocked by browser. Select and copy manually:\\n\\n" + txt);
+    }
+  });
+
+  btnReduceOnce.addEventListener("click", () => {
+    const r = reduceOnce(exprEl.value);
+    if (!r) return;
+    exprEl.value = r.out;
+    recompute();
+  });
+
+  btnReduceAll.addEventListener("click", () => {
+    const r = reduceFully(exprEl.value);
+    exprEl.value = r.normal;
+    recompute();
+  });
+
+  // ---------- Helpers ----------
+  function escapeHtml(s){
+    return (s ?? "").replace(/[&<>'"]/g, (c) => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"
+    }[c]));
+  }
+
+  // init
+  exprEl.value = DEFAULT;
+  recompute();
+})();
+</script>
+</body>
+</html>
