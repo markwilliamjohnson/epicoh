@@ -1,0 +1,573 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AI + Human-in-the-Loop Explorer — Occupational Asthma</title>
+  <style>
+    :root{--bg:#0b1020;--card:#121a33;--muted:#93a4c7;--text:#e9eeff;--accent:#7aa2ff;--good:#5ee6a8;--warn:#ffd36a;--bad:#ff6b7a;--line:#22305a}
+    *{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial; background:linear-gradient(180deg,#070a14, #0b1020 40%, #0b1020); color:var(--text)}
+    header{padding:18px 18px 10px; border-bottom:1px solid var(--line)}
+    header h1{margin:0;font-size:18px;letter-spacing:.2px}
+    header p{margin:6px 0 0;color:var(--muted);font-size:13px;max-width:980px}
+    main{padding:16px; max-width:1100px; margin:0 auto}
+    .grid{display:grid; gap:12px; grid-template-columns: 1.15fr .85fr}
+    @media (max-width: 980px){.grid{grid-template-columns:1fr}}
+    .card{background:rgba(18,26,51,.88); border:1px solid rgba(34,48,90,.75); border-radius:18px; padding:14px; box-shadow: 0 8px 28px rgba(0,0,0,.35)}
+    .card h2{margin:0 0 10px; font-size:14px; color:#d8e2ff}
+    .row{display:grid; gap:10px; grid-template-columns: 1fr 1fr}
+    @media (max-width: 720px){.row{grid-template-columns:1fr}}
+    .control{padding:10px; border-radius:14px; background:rgba(9,13,28,.55); border:1px solid rgba(34,48,90,.6)}
+    .control label{display:flex; justify-content:space-between; gap:10px; font-size:12px; color:#d6ddff; margin-bottom:6px}
+    .control .val{color:var(--accent); font-variant-numeric: tabular-nums}
+    input[type=range]{width:100%}
+    .hint{color:var(--muted); font-size:12px; line-height:1.35; margin-top:6px}
+    .pill{display:inline-flex; align-items:center; gap:8px; padding:8px 10px; border-radius:999px; border:1px solid rgba(34,48,90,.7); background:rgba(9,13,28,.45); color:#dce4ff; font-size:12px}
+    .pill b{font-variant-numeric:tabular-nums}
+    .kpi{display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px}
+    .kpi .box{padding:12px; border-radius:14px; background:rgba(9,13,28,.45); border:1px solid rgba(34,48,90,.6)}
+    .kpi .box .t{color:var(--muted); font-size:11px}
+    .kpi .box .v{font-size:18px; margin-top:4px; font-variant-numeric: tabular-nums}
+    .kpi .box .s{color:var(--muted); font-size:12px; margin-top:2px; line-height:1.25}
+    .canvasWrap{display:grid; gap:10px}
+    canvas{width:100%; height:260px; background:rgba(9,13,28,.35); border:1px solid rgba(34,48,90,.6); border-radius:16px}
+    .legend{display:flex; flex-wrap:wrap; gap:8px; margin-top:6px}
+    .dot{width:10px; height:10px; border-radius:50%}
+    .legend span{display:inline-flex; align-items:center; gap:8px; font-size:12px; color:var(--muted)}
+    .footerNote{margin-top:10px; color:var(--muted); font-size:12px; line-height:1.4}
+    .toggle{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px; border-radius:14px; background:rgba(9,13,28,.55); border:1px solid rgba(34,48,90,.6)}
+    .toggle .left{display:flex; flex-direction:column; gap:2px}
+    .toggle .left .title{font-size:12px; color:#d6ddff}
+    .toggle .left .sub{font-size:12px; color:var(--muted); line-height:1.35}
+    .btn{cursor:pointer; border-radius:12px; border:1px solid rgba(34,48,90,.7); background:rgba(122,162,255,.14); color:#eaf0ff; padding:8px 10px; font-size:12px}
+    .btn:active{transform:translateY(1px)}
+    .mono{font-variant-numeric:tabular-nums}
+    .small{font-size:12px; color:var(--muted)}
+    table{width:100%; border-collapse:separate; border-spacing:0; overflow:hidden; border-radius:14px; border:1px solid rgba(34,48,90,.6)}
+    th,td{padding:10px 10px; font-size:12px; border-bottom:1px solid rgba(34,48,90,.45)}
+    th{color:#d6ddff; text-align:left; background:rgba(9,13,28,.4)}
+    tr:last-child td{border-bottom:none}
+    td{color:#e9eeff}
+  </style>
+</head>
+<body>
+<header>
+  <h1>AI + Human-in-the-Loop Explorer — Occupational Asthma</h1>
+  <p>
+    A tiny sandbox to explore why diagnostic AI is uncertain: it depends on prevalence, test performance, and thresholds — and why
+    human experts matter (especially for borderline cases, messy exposure histories, and non-standard presentations).
+  </p>
+</header>
+
+<main>
+  <div class="grid">
+
+    <section class="card">
+      <h2>1) Basic parameters</h2>
+      <div class="row">
+        <div class="control">
+          <label><span>Prevalence in the screened workforce</span><span class="val" id="prevVal"></span></label>
+          <input id="prev" type="range" min="0.1" max="30" value="5" step="0.1" />
+          <div class="hint">How common occupational asthma is in the group you’re screening (not in the general population).</div>
+        </div>
+
+        <div class="control">
+          <label><span>AI sensitivity (true positive rate)</span><span class="val" id="sensVal"></span></label>
+          <input id="sens" type="range" min="50" max="99" value="85" step="0.5" />
+          <div class="hint">Chance the AI flags a worker who truly has occupational asthma.</div>
+        </div>
+
+        <div class="control">
+          <label><span>AI specificity (true negative rate)</span><span class="val" id="specVal"></span></label>
+          <input id="spec" type="range" min="50" max="99.5" value="90" step="0.5" />
+          <div class="hint">Chance the AI does <em>not</em> flag a worker who does not have occupational asthma.</div>
+        </div>
+
+        <div class="control">
+          <label><span>Referral threshold (AI risk score cut-off)</span><span class="val" id="thrVal"></span></label>
+          <input id="thr" type="range" min="0" max="1" value="0.5" step="0.01" />
+          <div class="hint">Lower threshold → more referrals (more sensitive) but more false alarms. Higher threshold → fewer referrals but more misses.</div>
+        </div>
+
+        <div class="control">
+          <label><span>Uncertainty in sensitivity/specificity</span><span class="val" id="uncVal"></span></label>
+          <input id="unc" type="range" min="0" max="25" value="10" step="1" />
+          <div class="hint">Real-world performance varies by site, device, protocol, and population. This adds a distribution (not a single number).</div>
+        </div>
+
+        <div class="toggle">
+          <div class="left">
+            <div class="title">Human expert in the loop</div>
+            <div class="sub">Adds a second review step that can catch some false positives/negatives, especially around the threshold.</div>
+          </div>
+          <button class="btn" id="toggleHil">Enabled</button>
+        </div>
+
+        <div class="control">
+          <label><span>Expert catch rate for AI false negatives</span><span class="val" id="catchFNVal"></span></label>
+          <input id="catchFN" type="range" min="0" max="90" value="35" step="1" />
+          <div class="hint">If AI misses a true case, how often does a clinician/occupational physician still catch it (history, spirometry, PEF diary, exposure clues)?</div>
+        </div>
+
+        <div class="control">
+          <label><span>Expert dismiss rate for AI false positives</span><span class="val" id="dismissFPVal"></span></label>
+          <input id="dismissFP" type="range" min="0" max="90" value="30" step="1" />
+          <div class="hint">If AI flags a non-case, how often does expert review prevent unnecessary escalation (alternative diagnosis, poor data quality, transient symptoms)?</div>
+        </div>
+
+        <div class="control">
+          <label><span>Borderline share (hard cases near the threshold)</span><span class="val" id="borderVal"></span></label>
+          <input id="border" type="range" min="0" max="60" value="20" step="1" />
+          <div class="hint">Real occupational asthma workups are messy; these are the cases where human judgement most changes the path.</div>
+        </div>
+      </div>
+
+      <div class="kpi">
+        <div class="box">
+          <div class="t">Positive predictive value (PPV)</div>
+          <div class="v" id="ppv">—</div>
+          <div class="s">If the AI flags someone, probability they truly have occupational asthma.</div>
+        </div>
+        <div class="box">
+          <div class="t">Negative predictive value (NPV)</div>
+          <div class="v" id="npv">—</div>
+          <div class="s">If the AI does not flag someone, probability they truly do not have occupational asthma.</div>
+        </div>
+        <div class="box">
+          <div class="t">Expected referrals per 1,000 workers</div>
+          <div class="v" id="referrals">—</div>
+          <div class="s">AI triage burden on clinics and on-site occupational health.</div>
+        </div>
+        <div class="box">
+          <div class="t">Expected missed cases per 1,000</div>
+          <div class="v" id="missed">—</div>
+          <div class="s">The safety-critical metric (under-diagnosis risk).</div>
+        </div>
+      </div>
+
+      <div class="footerNote">
+        Notes: This is a simplified educational model. Occupational asthma diagnosis typically involves expert clinical assessment plus objective testing
+        (e.g., serial peak expiratory flow, spirometry with reversibility, bronchial provocation, exposure linkage). AI outputs should be treated as
+        decision support — not definitive diagnosis.
+      </div>
+    </section>
+
+    <aside class="card">
+      <h2>2) Uncertainty visualisations</h2>
+      <div class="canvasWrap">
+        <canvas id="dist"></canvas>
+        <div class="legend">
+          <span><span class="dot" style="background:var(--accent)"></span>Posterior P(disease | AI flag)</span>
+          <span><span class="dot" style="background:var(--good)"></span>Posterior P(disease | AI not flag)</span>
+          <span><span class="dot" style="background:var(--warn)"></span>With human-in-the-loop (if enabled)</span>
+        </div>
+
+        <canvas id="conf"></canvas>
+        <div class="legend">
+          <span><span class="dot" style="background:var(--bad)"></span>False negatives</span>
+          <span><span class="dot" style="background:var(--warn)"></span>False positives</span>
+          <span><span class="dot" style="background:var(--good)"></span>True positives</span>
+          <span><span class="dot" style="background:var(--accent)"></span>True negatives</span>
+        </div>
+      </div>
+
+      <h2 style="margin-top:14px">3) What humans add (qualitatively)</h2>
+      <table>
+        <thead>
+          <tr><th>Human expertise</th><th>Why it matters for occupational asthma</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Exposure reasoning</td><td>Links symptoms to tasks/agents (isocyanates, flour, latex, cleaning agents), timing, controls, PPE, and co-worker clusters.</td></tr>
+          <tr><td>Data quality checks</td><td>Interprets incomplete questionnaires, noisy spirometry, poor adherence to peak flow diaries, and confounders (smoking, infections).</td></tr>
+          <tr><td>Alternative diagnoses</td><td>Distinguishes asthma from COPD, vocal cord dysfunction, rhinitis, anxiety/hyperventilation, cardiac disease.</td></tr>
+          <tr><td>Ethical & legal judgement</td><td>Decides safe actions when evidence is uncertain (workplace adjustments, temporary removal, further tests, reporting).</td></tr>
+        </tbody>
+      </table>
+
+      <div class="footerNote">
+        Tip: Try dropping prevalence to 1% and watch PPV collapse even with “good” sensitivity/specificity — a classic reason AI needs
+        expert oversight in low-prevalence screening.
+      </div>
+    </aside>
+
+  </div>
+</main>
+
+<script>
+(() => {
+  // ---------- helpers ----------
+  const $ = (id) => document.getElementById(id);
+  const fmtPct = (x, d=1) => (100*x).toFixed(d) + '%';
+  const clamp = (x,a,b)=>Math.max(a,Math.min(b,x));
+
+  // Approximate Beta distribution for uncertainty in sensitivity/specificity.
+  // We map a mean m in (0,1) and an "uncertainty" u (0..25) to alpha/beta.
+  // Higher u => lower concentration => wider distribution.
+  function betaParamsFromMeanUnc(m, u){
+    // concentration k in [8, 220] roughly
+    const k = 220 - (u/25)*212; // u=0 => 220, u=25 => 8
+    const a = clamp(m*k, 0.5, 1e6);
+    const b = clamp((1-m)*k, 0.5, 1e6);
+    return [a,b];
+  }
+
+  // Lanczos approximation for log-gamma
+  function lgamma(z){
+    const g = 7;
+    const p = [0.99999999999980993, 676.5203681218851, -1259.1392167224028,
+      771.32342877765313, -176.61502916214059, 12.507343278686905,
+      -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
+    if (z < 0.5) return Math.log(Math.PI) - Math.log(Math.sin(Math.PI*z)) - lgamma(1-z);
+    z -= 1;
+    let x = p[0];
+    for (let i=1;i<p.length;i++) x += p[i]/(z+i);
+    const t = z + g + 0.5;
+    return 0.5*Math.log(2*Math.PI) + (z+0.5)*Math.log(t) - t + Math.log(x);
+  }
+  function betaPDF(x,a,b){
+    if (x<=0 || x>=1) return 0;
+    const logB = lgamma(a)+lgamma(b)-lgamma(a+b);
+    return Math.exp((a-1)*Math.log(x) + (b-1)*Math.log(1-x) - logB);
+  }
+
+  // Bayes: PPV/NPV given prevalence p, sens se, spec sp
+  function ppv(p,se,sp){
+    const tp = se*p;
+    const fp = (1-sp)*(1-p);
+    return tp/(tp+fp);
+  }
+  function npv(p,se,sp){
+    const tn = sp*(1-p);
+    const fn = (1-se)*p;
+    return tn/(tn+fn);
+  }
+
+  // Convert threshold into an "effective" shift on se/sp.
+  // Lower threshold increases sensitivity but decreases specificity.
+  // This is an illustrative ROC-like coupling.
+  function applyThreshold(se0, sp0, thr){
+    // thr in [0,1], baseline at 0.5.
+    // shift in [-1,1]
+    const s = (0.5 - thr) * 2;
+    // sensitivity increases with s, specificity decreases with s
+    const se = clamp(se0 + 0.18*s, 0.01, 0.999);
+    const sp = clamp(sp0 - 0.18*s, 0.01, 0.999);
+    return [se, sp];
+  }
+
+  // Human-in-the-loop step: reduce FN and FP by catch/dismiss fractions,
+  // stronger effect on borderline cases.
+  function applyHuman(conf, catchFN, dismissFP, borderlineShare, enabled){
+    if (!enabled) return conf;
+    const b = borderlineShare; // 0..1
+
+    // Only some errors are "reachable" by review; assume errors are enriched in borderline region.
+    // We scale the catch/dismiss by (0.35 + 0.65*b) so humans matter more when many cases are borderline.
+    const reach = 0.35 + 0.65*b;
+
+    const FN_fixed = conf.FN * catchFN * reach;
+    const FP_fixed = conf.FP * dismissFP * reach;
+
+    // If FN is fixed, it becomes TP (found by expert).
+    // If FP is dismissed, it becomes TN.
+    return {
+      TP: conf.TP + FN_fixed,
+      FN: conf.FN - FN_fixed,
+      FP: conf.FP - FP_fixed,
+      TN: conf.TN + FP_fixed
+    };
+  }
+
+  // Compute confusion matrix per N=1000
+  function confusionPer1000(p,se,sp){
+    const N=1000;
+    const D = N*p;
+    const H = N*(1-p);
+    const TP = D*se;
+    const FN = D*(1-se);
+    const TN = H*sp;
+    const FP = H*(1-sp);
+    return {TP,FN,TN,FP};
+  }
+
+  // ---------- plotting ----------
+  function drawAxes(ctx, w, h, pad){
+    ctx.strokeStyle = 'rgba(147,164,199,.35)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(pad, h-pad);
+    ctx.lineTo(w-pad, h-pad);
+    ctx.lineTo(w-pad, pad);
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(147,164,199,.85)';
+    ctx.font = '12px system-ui, -apple-system, Segoe UI, Roboto, Arial';
+    ctx.fillText('Probability', pad, pad-2);
+  }
+
+  function plotLine(ctx, xs, ys, w, h, pad, stroke){
+    const xMin = 0, xMax = 1;
+    const yMax = Math.max(...ys)*1.08 || 1;
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i=0;i<xs.length;i++){
+      const x = pad + (xs[i]-xMin)/(xMax-xMin)*(w-2*pad);
+      const y = (h-pad) - (ys[i]/yMax)*(h-2*pad);
+      if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+    return yMax;
+  }
+
+  function drawTitle(ctx, title){
+    ctx.fillStyle = 'rgba(233,238,255,.95)';
+    ctx.font = '13px system-ui, -apple-system, Segoe UI, Roboto, Arial';
+    ctx.fillText(title, 12, 18);
+  }
+
+  function drawBarStack(ctx, conf, w, h, pad, colors, labels){
+    const total = conf.TP+conf.FN+conf.TN+conf.FP;
+    const parts = [conf.TP, conf.FN, conf.FP, conf.TN];
+    const sum = parts.reduce((a,b)=>a+b,0) || 1;
+
+    const barW = w - 2*pad;
+    const barH = 34;
+    const y0 = Math.round(h/2 - barH/2);
+    let x = pad;
+    ctx.lineWidth = 1;
+
+    // background bar
+    ctx.fillStyle = 'rgba(9,13,28,.35)';
+    ctx.fillRect(pad, y0, barW, barH);
+    ctx.strokeStyle = 'rgba(34,48,90,.6)';
+    ctx.strokeRect(pad, y0, barW, barH);
+
+    for (let i=0;i<parts.length;i++){
+      const ww = barW*(parts[i]/sum);
+      ctx.fillStyle = colors[i];
+      ctx.fillRect(x, y0, ww, barH);
+      x += ww;
+    }
+
+    // Labels
+    ctx.font = '12px system-ui, -apple-system, Segoe UI, Roboto, Arial';
+    ctx.fillStyle = 'rgba(233,238,255,.92)';
+    const baseY = y0 + barH + 22;
+    const txt = [
+      `${labels[0]} ${conf.TP.toFixed(1)}`,
+      `${labels[1]} ${conf.FN.toFixed(1)}`,
+      `${labels[2]} ${conf.FP.toFixed(1)}`,
+      `${labels[3]} ${conf.TN.toFixed(1)}`
+    ];
+    // 2 columns
+    ctx.fillText(txt[0], pad, baseY);
+    ctx.fillText(txt[1], pad + Math.round(barW/2), baseY);
+    ctx.fillText(txt[2], pad, baseY+18);
+    ctx.fillText(txt[3], pad + Math.round(barW/2), baseY+18);
+
+    // total
+    ctx.fillStyle = 'rgba(147,164,199,.95)';
+    ctx.fillText(`Total = ${total.toFixed(0)} workers`, pad, baseY+40);
+  }
+
+  // ---------- state + UI ----------
+  const state = {
+    hil: true
+  };
+
+  function read(){
+    const prev = parseFloat($('prev').value)/100;
+    const sens0 = parseFloat($('sens').value)/100;
+    const spec0 = parseFloat($('spec').value)/100;
+    const thr = parseFloat($('thr').value);
+    const unc = parseFloat($('unc').value);
+    const catchFN = parseFloat($('catchFN').value)/100;
+    const dismissFP = parseFloat($('dismissFP').value)/100;
+    const borderline = parseFloat($('border').value)/100;
+
+    return {prev, sens0, spec0, thr, unc, catchFN, dismissFP, borderline};
+  }
+
+  function render(){
+    const {prev, sens0, spec0, thr, unc, catchFN, dismissFP, borderline} = read();
+
+    // Display values
+    $('prevVal').textContent = (prev*100).toFixed(1) + '%';
+    $('sensVal').textContent = (sens0*100).toFixed(1) + '%';
+    $('specVal').textContent = (spec0*100).toFixed(1) + '%';
+    $('thrVal').textContent = thr.toFixed(2);
+    $('uncVal').textContent = unc.toFixed(0);
+    $('catchFNVal').textContent = (catchFN*100).toFixed(0) + '%';
+    $('dismissFPVal').textContent = (dismissFP*100).toFixed(0) + '%';
+    $('borderVal').textContent = (borderline*100).toFixed(0) + '%';
+
+    // Apply threshold coupling
+    const [sens, spec] = applyThreshold(sens0, spec0, thr);
+
+    // Point estimates
+    const PPV = ppv(prev, sens, spec);
+    const NPV = npv(prev, sens, spec);
+    const conf0 = confusionPer1000(prev, sens, spec);
+
+    // Human-in-loop adjusted
+    const confH = applyHuman(conf0, catchFN, dismissFP, borderline, state.hil);
+    const PPV_H = confH.TP / (confH.TP + confH.FP);
+    const NPV_H = confH.TN / (confH.TN + confH.FN);
+
+    // KPIs shown as point values (with an uncertainty plot below)
+    $('ppv').textContent = (state.hil ? `${fmtPct(PPV_H,1)} (HIL)` : fmtPct(PPV,1));
+    $('npv').textContent = (state.hil ? `${fmtPct(NPV_H,1)} (HIL)` : fmtPct(NPV,1));
+    $('referrals').textContent = (state.hil ? (confH.TP + confH.FP).toFixed(0) : (conf0.TP + conf0.FP).toFixed(0));
+    $('missed').textContent = (state.hil ? confH.FN.toFixed(1) : conf0.FN.toFixed(1));
+
+    // ---------- Uncertainty simulation ----------
+    // We model uncertainty in se/sp as beta distributions around the threshold-adjusted means.
+    const [aSe,bSe] = betaParamsFromMeanUnc(sens, unc);
+    const [aSp,bSp] = betaParamsFromMeanUnc(spec, unc);
+
+    // Sample via inverse transform with numeric CDF approximation (fast enough at small n).
+    // To keep it simple, we'll do rejection sampling on [0,1] using max pdf approx.
+    function sampleBeta(a,b){
+      // crude but effective for these ranges
+      let x, y;
+      // approximate max pdf at mode (if a,b>1)
+      const mode = (a>1 && b>1) ? (a-1)/(a+b-2) : 0.5;
+      const fmax = betaPDF(clamp(mode,1e-6,1-1e-6), a, b);
+      for (let k=0;k<2000;k++){
+        x = Math.random();
+        y = Math.random()*fmax;
+        if (y <= betaPDF(clamp(x,1e-6,1-1e-6), a, b)) return x;
+      }
+      return clamp(mode,1e-6,1-1e-6);
+    }
+
+    const n = 600;
+    const postPos = new Array(n);
+    const postNeg = new Array(n);
+    const postPosH = new Array(n);
+    const postNegH = new Array(n);
+
+    for (let i=0;i<n;i++){
+      const se = sampleBeta(aSe,bSe);
+      const sp = sampleBeta(aSp,bSp);
+      const ppv_i = ppv(prev, se, sp);
+      const npv_i = npv(prev, se, sp);
+      postPos[i] = ppv_i;
+      postNeg[i] = 1 - npv_i; // P(disease | AI not flag)
+
+      const conf_i = confusionPer1000(prev, se, sp);
+      const conf_hi = applyHuman(conf_i, catchFN, dismissFP, borderline, state.hil);
+      postPosH[i] = conf_hi.TP / (conf_hi.TP + conf_hi.FP);
+      postNegH[i] = conf_hi.FN / (conf_hi.TN + conf_hi.FN); // P(disease | not referred after HIL)
+    }
+
+    function kde(samples, xs, bw){
+      // simple gaussian kde
+      const inv = 1/(bw*Math.sqrt(2*Math.PI));
+      const out = xs.map(() => 0);
+      for (let i=0;i<xs.length;i++){
+        let s=0;
+        const x = xs[i];
+        for (let j=0;j<samples.length;j++){
+          const u = (x - samples[j]) / bw;
+          s += Math.exp(-0.5*u*u);
+        }
+        out[i] = inv * (s/samples.length);
+      }
+      return out;
+    }
+
+    // ---------- Draw distribution canvas ----------
+    const c1 = $('dist');
+    const ctx1 = c1.getContext('2d');
+    // handle high DPI
+    const dpr = Math.max(1, window.devicePixelRatio || 1);
+    const rect1 = c1.getBoundingClientRect();
+    c1.width = Math.round(rect1.width*dpr);
+    c1.height = Math.round(rect1.height*dpr);
+    ctx1.setTransform(dpr,0,0,dpr,0,0);
+
+    ctx1.clearRect(0,0,rect1.width,rect1.height);
+    drawTitle(ctx1, 'Posterior probability distributions (uncertainty-aware)');
+    drawAxes(ctx1, rect1.width, rect1.height, 36);
+
+    const xs = Array.from({length:120}, (_,i)=> i/119);
+    const bw = 0.04;
+    const yPos = kde(postPos, xs, bw);
+    const yNeg = kde(postNeg, xs, bw);
+    const yPosH = kde(postPosH, xs, bw);
+
+    // Plot
+    plotLine(ctx1, xs, yPos, rect1.width, rect1.height, 36, 'rgba(122,162,255,.95)');
+    plotLine(ctx1, xs, yNeg, rect1.width, rect1.height, 36, 'rgba(94,230,168,.9)');
+    if (state.hil){
+      plotLine(ctx1, xs, yPosH, rect1.width, rect1.height, 36, 'rgba(255,211,106,.95)');
+    }
+
+    // Mark point estimate
+    ctx1.fillStyle = 'rgba(233,238,255,.9)';
+    ctx1.font = '12px system-ui, -apple-system, Segoe UI, Roboto, Arial';
+    const point = state.hil ? PPV_H : PPV;
+    const px = 36 + point*(rect1.width-72);
+    ctx1.beginPath();
+    ctx1.arc(px, rect1.height-36, 4, 0, Math.PI*2);
+    ctx1.fill();
+    ctx1.fillStyle = 'rgba(147,164,199,.95)';
+    ctx1.fillText('Point estimate', clamp(px-44, 36, rect1.width-120), rect1.height-12);
+
+    // ---------- Draw confusion canvas ----------
+    const c2 = $('conf');
+    const ctx2 = c2.getContext('2d');
+    const rect2 = c2.getBoundingClientRect();
+    c2.width = Math.round(rect2.width*dpr);
+    c2.height = Math.round(rect2.height*dpr);
+    ctx2.setTransform(dpr,0,0,dpr,0,0);
+
+    ctx2.clearRect(0,0,rect2.width,rect2.height);
+    drawTitle(ctx2, 'Expected outcomes per 1,000 screened');
+
+    const confToDraw = state.hil ? confH : conf0;
+    drawBarStack(
+      ctx2,
+      confToDraw,
+      rect2.width,
+      rect2.height,
+      18,
+      ['rgba(94,230,168,.9)','rgba(255,107,122,.9)','rgba(255,211,106,.9)','rgba(122,162,255,.9)'],
+      ['TP','FN','FP','TN']
+    );
+
+    // small annotation
+    ctx2.fillStyle = 'rgba(147,164,199,.95)';
+    ctx2.font = '12px system-ui, -apple-system, Segoe UI, Roboto, Arial';
+    ctx2.fillText(
+      state.hil ? 'Human-in-the-loop reduces errors (not always; depends on reach and borderline share).' : 'AI-only: errors remain untreated unless someone reviews the case.',
+      18,
+      rect2.height - 14
+    );
+  }
+
+  // Toggle
+  $('toggleHil').addEventListener('click', () => {
+    state.hil = !state.hil;
+    $('toggleHil').textContent = state.hil ? 'Enabled' : 'Disabled';
+    $('toggleHil').style.background = state.hil ? 'rgba(94,230,168,.14)' : 'rgba(255,107,122,.12)';
+    render();
+  });
+
+  // Bind inputs
+  const inputs = ['prev','sens','spec','thr','unc','catchFN','dismissFP','border'];
+  inputs.forEach(id => $(id).addEventListener('input', render));
+
+  // Initial
+  $('toggleHil').style.background = 'rgba(94,230,168,.14)';
+  render();
+
+  // Resize redraw
+  window.addEventListener('resize', () => render());
+})();
+</script>
+</body>
+</html>
