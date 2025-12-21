@@ -1,0 +1,659 @@
+ <!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>WebXR VR — Occupational Asthma AI + Human-in-the-Loop Explorer</title>
+  <style>
+    html, body { margin:0; height:100%; overflow:hidden; background:#050712; color:#e9eeff; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial; }
+    #hud {
+      position:fixed; left:12px; top:12px; right:12px; pointer-events:none;
+      display:flex; gap:10px; align-items:flex-start; justify-content:space-between;
+      font-size:12px; color:#c9d5ff;
+      text-shadow:0 2px 10px rgba(0,0,0,.65);
+    }
+    #hud .box{background:rgba(0,0,0,.25); border:1px solid rgba(255,255,255,.12); padding:8px 10px; border-radius:12px; backdrop-filter: blur(6px)}
+    #hud b{color:#fff}
+    a{color:#9bb7ff}
+  </style>
+</head>
+<body>
+  <div id="hud">
+    <div class="box">
+      <div><b>WebXR VR Explorer</b> — Occupational Asthma AI + Human-in-the-Loop</div>
+      <div>Use controllers to point & click on <b>−</b>/<b>+</b> buttons. Press grip/trigger to select in most headsets.</div>
+      <div>Non‑VR: orbit with mouse (drag), zoom (wheel).</div>
+    </div>
+    <div class="box">
+      <div><b>Tip:</b> Lower prevalence → PPV drops even when AI looks “accurate”.</div>
+      <div class="small">This is an educational toy model, not a medical device.</div>
+    </div>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
+    import { VRButton } from 'https://unpkg.com/three@0.160.0/examples/jsm/webxr/VRButton.js';
+    import { OrbitControls } from 'https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js';
+    import { XRControllerModelFactory } from 'https://unpkg.com/three@0.160.0/examples/jsm/webxr/XRControllerModelFactory.js';
+
+    // ============================================================
+    // Math + uncertainty helpers (same model as the 2D app)
+    // ============================================================
+    const clamp = (x,a,b)=>Math.max(a,Math.min(b,x));
+    const fmtPct = (x, d=1) => (100*x).toFixed(d) + '%';
+
+    function betaParamsFromMeanUnc(m, u){
+      const k = 220 - (u/25)*212; // u=0 => 220 (tight), u=25 => 8 (wide)
+      const a = clamp(m*k, 0.5, 1e6);
+      const b = clamp((1-m)*k, 0.5, 1e6);
+      return [a,b];
+    }
+
+    function lgamma(z){
+      const g = 7;
+      const p = [0.99999999999980993, 676.5203681218851, -1259.1392167224028,
+        771.32342877765313, -176.61502916214059, 12.507343278686905,
+        -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
+      if (z < 0.5) return Math.log(Math.PI) - Math.log(Math.sin(Math.PI*z)) - lgamma(1-z);
+      z -= 1;
+      let x = p[0];
+      for (let i=1;i<p.length;i++) x += p[i]/(z+i);
+      const t = z + g + 0.5;
+      return 0.5*Math.log(2*Math.PI) + (z+0.5)*Math.log(t) - t + Math.log(x);
+    }
+    function betaPDF(x,a,b){
+      if (x<=0 || x>=1) return 0;
+      const logB = lgamma(a)+lgamma(b)-lgamma(a+b);
+      return Math.exp((a-1)*Math.log(x) + (b-1)*Math.log(1-x) - logB);
+    }
+
+    function ppv(p,se,sp){
+      const tp = se*p;
+      const fp = (1-sp)*(1-p);
+      return tp/(tp+fp);
+    }
+    function npv(p,se,sp){
+      const tn = sp*(1-p);
+      const fn = (1-se)*p;
+      return tn/(tn+fn);
+    }
+
+    // Simple illustrative coupling between threshold and se/sp (ROC-ish)
+    function applyThreshold(se0, sp0, thr){
+      const s = (0.5 - thr) * 2; // [-1,1]
+      const se = clamp(se0 + 0.18*s, 0.01, 0.999);
+      const sp = clamp(sp0 - 0.18*s, 0.01, 0.999);
+      return [se, sp];
+    }
+
+    function confusionPer1000(p,se,sp){
+      const N=1000;
+      const D = N*p;
+      const H = N*(1-p);
+      const TP = D*se;
+      const FN = D*(1-se);
+      const TN = H*sp;
+      const FP = H*(1-sp);
+      return {TP,FN,TN,FP};
+    }
+
+    function applyHuman(conf, catchFN, dismissFP, borderlineShare, enabled){
+      if (!enabled) return conf;
+      const b = borderlineShare;
+      const reach = 0.35 + 0.65*b; // more borderline => more opportunity for humans to help
+      const FN_fixed = conf.FN * catchFN * reach;
+      const FP_fixed = conf.FP * dismissFP * reach;
+      return {
+        TP: conf.TP + FN_fixed,
+        FN: conf.FN - FN_fixed,
+        FP: conf.FP - FP_fixed,
+        TN: conf.TN + FP_fixed
+      };
+    }
+
+    function sampleBeta(a,b){
+      // Rejection sampling (adequate for interactive toy)
+      let x, y;
+      const mode = (a>1 && b>1) ? (a-1)/(a+b-2) : 0.5;
+      const fmax = betaPDF(clamp(mode,1e-6,1-1e-6), a, b);
+      for (let k=0;k<2400;k++){
+        x = Math.random();
+        y = Math.random()*fmax;
+        if (y <= betaPDF(clamp(x,1e-6,1-1e-6), a, b)) return x;
+      }
+      return clamp(mode,1e-6,1-1e-6);
+    }
+
+    function kde(samples, xs, bw){
+      const inv = 1/(bw*Math.sqrt(2*Math.PI));
+      const out = xs.map(() => 0);
+      for (let i=0;i<xs.length;i++){
+        let s=0;
+        const x = xs[i];
+        for (let j=0;j<samples.length;j++){
+          const u = (x - samples[j]) / bw;
+          s += Math.exp(-0.5*u*u);
+        }
+        out[i] = inv * (s/samples.length);
+      }
+      return out;
+    }
+
+    // ============================================================
+    // WebXR + three.js scene
+    // ============================================================
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x050712);
+
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.05, 100);
+    camera.position.set(0, 1.55, 2.0);
+
+    const renderer = new THREE.WebGLRenderer({ antialias:true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.max(1, window.devicePixelRatio || 1));
+    renderer.xr.enabled = true;
+    document.body.appendChild(renderer.domElement);
+    document.body.appendChild(VRButton.createButton(renderer));
+
+    // Lighting
+    const hemi = new THREE.HemisphereLight(0xaec8ff, 0x1a1f34, 0.9);
+    scene.add(hemi);
+    const dir = new THREE.DirectionalLight(0xffffff, 0.8);
+    dir.position.set(2,4,2);
+    scene.add(dir);
+
+    // Floor reference
+    const floor = new THREE.Mesh(
+      new THREE.CircleGeometry(8, 48),
+      new THREE.MeshStandardMaterial({ color:0x070a14, metalness:0.0, roughness:1.0 })
+    );
+    floor.rotation.x = -Math.PI/2;
+    floor.position.y = 0;
+    scene.add(floor);
+
+    // Orbit controls (non-VR)
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.target.set(0,1.4,0);
+    controls.update();
+
+    // Dashboard group (all UI floats here)
+    const ui = new THREE.Group();
+    ui.position.set(0, 1.45, -1.2);
+    scene.add(ui);
+
+    // ============================================================
+    // 2D canvas textures for charts + text blocks
+    // ============================================================
+    function makeCanvasTexture(w,h){
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.needsUpdate = true;
+      return { canvas, ctx, tex };
+    }
+
+    const chart1 = makeCanvasTexture(1024, 520); // distributions
+    const chart2 = makeCanvasTexture(1024, 520); // confusion
+    const summary = makeCanvasTexture(1024, 360); // KPI text
+
+    function panelFromTexture(tex, wMeters, hMeters){
+      const mat = new THREE.MeshBasicMaterial({ map: tex, transparent:true });
+      const geo = new THREE.PlaneGeometry(wMeters, hMeters);
+      const mesh = new THREE.Mesh(geo, mat);
+      return mesh;
+    }
+
+    const panelDist = panelFromTexture(chart1.tex, 1.25, 0.64);
+    const panelConf = panelFromTexture(chart2.tex, 1.25, 0.64);
+    const panelKPI  = panelFromTexture(summary.tex, 1.25, 0.42);
+
+    panelDist.position.set(-0.68, 0.10, 0);
+    panelConf.position.set( 0.68, 0.10, 0);
+    panelKPI.position.set( 0.00, -0.44, 0);
+
+    ui.add(panelDist, panelConf, panelKPI);
+
+    // Subtle backing plate
+    const backing = new THREE.Mesh(
+      new THREE.PlaneGeometry(2.05, 1.18),
+      new THREE.MeshStandardMaterial({ color:0x10183a, roughness:0.95, metalness:0.0, transparent:true, opacity:0.55 })
+    );
+    backing.position.set(0, -0.08, -0.01);
+    ui.add(backing);
+
+    // ============================================================
+    // VR UI controls: +/- buttons per parameter + toggle
+    // ============================================================
+    const interactables = [];
+
+    function makeTextCanvas(text, w=512, h=128, opts={}){
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      const ctx = c.getContext('2d');
+      ctx.clearRect(0,0,w,h);
+      ctx.fillStyle = opts.bg ?? 'rgba(0,0,0,0)';
+      if (opts.bg) ctx.fillRect(0,0,w,h);
+      ctx.font = opts.font ?? '46px system-ui';
+      ctx.fillStyle = opts.color ?? '#e9eeff';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, 18, h/2);
+      const tex = new THREE.CanvasTexture(c);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      return {c, ctx, tex};
+    }
+
+    function makeLabelMesh(text, width=0.62, height=0.11){
+      const t = makeTextCanvas(text, 768, 128, {font:'44px system-ui', color:'#dbe6ff'});
+      const m = panelFromTexture(t.tex, width, height);
+      m.userData._label = t;
+      return m;
+    }
+
+    function setLabel(mesh, text){
+      const {c, ctx} = mesh.userData._label;
+      ctx.clearRect(0,0,c.width,c.height);
+      ctx.font = '44px system-ui';
+      ctx.fillStyle = '#dbe6ff';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, 18, c.height/2);
+      mesh.material.map.needsUpdate = true;
+    }
+
+    function makeButton(label, onClick, color=0x7aa2ff){
+      const geo = new THREE.BoxGeometry(0.09, 0.055, 0.03);
+      const mat = new THREE.MeshStandardMaterial({ color, roughness:0.55, metalness:0.15 });
+      const btn = new THREE.Mesh(geo, mat);
+      btn.userData.onClick = onClick;
+      btn.userData.isButton = true;
+
+      const labelMesh = makeLabelMesh(label, 0.12, 0.05);
+      labelMesh.position.set(0,0,0.018);
+      btn.add(labelMesh);
+
+      interactables.push(btn);
+      return btn;
+    }
+
+    const state = {
+      // base values
+      prev: 0.05,          // prevalence
+      sens0: 0.85,
+      spec0: 0.90,
+      thr: 0.50,
+      unc: 10,
+      hil: true,
+      catchFN: 0.35,
+      dismissFP: 0.30,
+      borderline: 0.20,
+    };
+
+    function stepParam(key, delta){
+      const s = state;
+      if (key === 'prev') s.prev = clamp(s.prev + delta, 0.001, 0.30);
+      if (key === 'sens0') s.sens0 = clamp(s.sens0 + delta, 0.50, 0.99);
+      if (key === 'spec0') s.spec0 = clamp(s.spec0 + delta, 0.50, 0.995);
+      if (key === 'thr') s.thr = clamp(s.thr + delta, 0.0, 1.0);
+      if (key === 'unc') s.unc = clamp(s.unc + delta, 0, 25);
+      if (key === 'catchFN') s.catchFN = clamp(s.catchFN + delta, 0, 0.90);
+      if (key === 'dismissFP') s.dismissFP = clamp(s.dismissFP + delta, 0, 0.90);
+      if (key === 'borderline') s.borderline = clamp(s.borderline + delta, 0, 0.60);
+      renderAll();
+    }
+
+    // Control rows
+    const controlsGroup = new THREE.Group();
+    controlsGroup.position.set(0, 0.55, 0.02);
+    ui.add(controlsGroup);
+
+    function addControlRow(y, title, key, step, fmt){
+      const row = new THREE.Group();
+      row.position.set(0, y, 0);
+
+      const label = makeLabelMesh('', 0.92, 0.10);
+      label.position.set(-0.12, 0, 0);
+
+      const minus = makeButton('−', () => stepParam(key, -step), 0x22305a);
+      const plus  = makeButton('+', () => stepParam(key, +step), 0x22305a);
+      minus.position.set(0.55, 0, 0);
+      plus.position.set(0.67, 0, 0);
+
+      row.add(label, minus, plus);
+      controlsGroup.add(row);
+
+      return {
+        labelMesh: label,
+        update: () => {
+          const v = state[key];
+          setLabel(label, `${title}: ${fmt(v)}`);
+        }
+      };
+    }
+
+    const rows = [
+      addControlRow( 0.18, 'Prevalence', 'prev', 0.005, v => (v*100).toFixed(1)+'%'),
+      addControlRow( 0.06, 'AI sensitivity', 'sens0', 0.01, v => (v*100).toFixed(1)+'%'),
+      addControlRow(-0.06, 'AI specificity', 'spec0', 0.01, v => (v*100).toFixed(1)+'%'),
+      addControlRow(-0.18, 'Referral threshold', 'thr', 0.02, v => v.toFixed(2)),
+      addControlRow(-0.30, 'Perf. uncertainty', 'unc', 1, v => v.toFixed(0)),
+      addControlRow(-0.42, 'Expert catch FN', 'catchFN', 0.03, v => (v*100).toFixed(0)+'%'),
+      addControlRow(-0.54, 'Expert dismiss FP', 'dismissFP', 0.03, v => (v*100).toFixed(0)+'%'),
+      addControlRow(-0.66, 'Borderline share', 'borderline', 0.03, v => (v*100).toFixed(0)+'%'),
+    ];
+
+    // Toggle HIL
+    const toggleLabel = makeLabelMesh('', 0.92, 0.10);
+    toggleLabel.position.set(-0.12, -0.78, 0);
+    controlsGroup.add(toggleLabel);
+
+    const toggleBtn = makeButton('Toggle', () => { state.hil = !state.hil; renderAll(); }, 0x7aa2ff);
+    toggleBtn.position.set(0.61, -0.78, 0);
+    toggleBtn.scale.set(1.2, 1.0, 1.0);
+    controlsGroup.add(toggleBtn);
+
+    // ============================================================
+    // Drawing charts onto canvases
+    // ============================================================
+    function clearCanvas(ctx, w, h){
+      ctx.clearRect(0,0,w,h);
+      ctx.fillStyle = 'rgba(11,16,32,0.92)';
+      ctx.fillRect(0,0,w,h);
+      // subtle grid
+      ctx.strokeStyle = 'rgba(147,164,199,0.12)';
+      ctx.lineWidth = 1;
+      for(let x=0;x<w;x+=64){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke(); }
+      for(let y=0;y<h;y+=64){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke(); }
+    }
+
+    function drawTitle(ctx, title){
+      ctx.fillStyle = 'rgba(233,238,255,0.95)';
+      ctx.font = '28px system-ui';
+      ctx.fillText(title, 20, 42);
+    }
+
+    function drawAxes(ctx, w, h){
+      const pad = 64;
+      ctx.strokeStyle = 'rgba(147,164,199,0.40)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(pad, h-pad);
+      ctx.lineTo(w-pad, h-pad);
+      ctx.lineTo(w-pad, pad);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(147,164,199,0.9)';
+      ctx.font = '22px system-ui';
+      ctx.fillText('Probability', pad, pad-14);
+      return pad;
+    }
+
+    function plotLine(ctx, xs, ys, w, h, pad, stroke){
+      const xMin = 0, xMax = 1;
+      const yMax = (Math.max(...ys) || 1) * 1.10;
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      for (let i=0;i<xs.length;i++){
+        const x = pad + (xs[i]-xMin)/(xMax-xMin)*(w-2*pad);
+        const y = (h-pad) - (ys[i]/yMax)*(h-2*pad);
+        if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+      return yMax;
+    }
+
+    function drawBarStack(ctx, conf, w, h){
+      const pad = 40;
+      const barW = w - 2*pad;
+      const barH = 80;
+      const y0 = 220;
+      const parts = [conf.TP, conf.FN, conf.FP, conf.TN];
+      const sum = parts.reduce((a,b)=>a+b,0) || 1;
+      const colors = ['rgba(94,230,168,0.92)','rgba(255,107,122,0.92)','rgba(255,211,106,0.92)','rgba(122,162,255,0.92)'];
+
+      ctx.fillStyle = 'rgba(9,13,28,0.35)';
+      ctx.fillRect(pad, y0, barW, barH);
+      ctx.strokeStyle = 'rgba(34,48,90,0.7)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(pad, y0, barW, barH);
+
+      let x = pad;
+      for (let i=0;i<parts.length;i++){
+        const ww = barW*(parts[i]/sum);
+        ctx.fillStyle = colors[i];
+        ctx.fillRect(x, y0, ww, barH);
+        x += ww;
+      }
+
+      ctx.fillStyle = 'rgba(233,238,255,0.95)';
+      ctx.font = '26px system-ui';
+      ctx.fillText(`TP ${conf.TP.toFixed(1)}`, pad, y0+barH+46);
+      ctx.fillText(`FN ${conf.FN.toFixed(1)}`, pad+260, y0+barH+46);
+      ctx.fillText(`FP ${conf.FP.toFixed(1)}`, pad+520, y0+barH+46);
+      ctx.fillText(`TN ${conf.TN.toFixed(1)}`, pad+780, y0+barH+46);
+
+      ctx.fillStyle = 'rgba(147,164,199,0.95)';
+      ctx.font = '22px system-ui';
+      ctx.fillText('Expected outcomes per 1,000 screened', pad, 120);
+    }
+
+    function renderDistCanvas(PPV, NPV, PPV_H){
+      const {ctx, canvas} = chart1;
+      const w = canvas.width, h = canvas.height;
+      clearCanvas(ctx,w,h);
+      drawTitle(ctx, 'Uncertainty: posterior probability distributions');
+      const pad = drawAxes(ctx,w,h);
+
+      // Uncertainty distributions
+      const [sens, spec] = applyThreshold(state.sens0, state.spec0, state.thr);
+      const [aSe,bSe] = betaParamsFromMeanUnc(sens, state.unc);
+      const [aSp,bSp] = betaParamsFromMeanUnc(spec, state.unc);
+
+      const n = 550;
+      const postPos = new Array(n);
+      const postNeg = new Array(n);
+      const postPosH = new Array(n);
+
+      for (let i=0;i<n;i++){
+        const se = sampleBeta(aSe,bSe);
+        const sp = sampleBeta(aSp,bSp);
+        const ppv_i = ppv(state.prev, se, sp);
+        const npv_i = npv(state.prev, se, sp);
+        postPos[i] = ppv_i;
+        postNeg[i] = 1 - npv_i;
+
+        const conf_i = confusionPer1000(state.prev, se, sp);
+        const conf_hi = applyHuman(conf_i, state.catchFN, state.dismissFP, state.borderline, state.hil);
+        postPosH[i] = conf_hi.TP / (conf_hi.TP + conf_hi.FP);
+      }
+
+      const xs = Array.from({length:140}, (_,i)=> i/139);
+      const bw = 0.04;
+      const yPos = kde(postPos, xs, bw);
+      const yNeg = kde(postNeg, xs, bw);
+      const yPosH = kde(postPosH, xs, bw);
+
+      plotLine(ctx, xs, yPos, w, h, pad, 'rgba(122,162,255,0.95)');
+      plotLine(ctx, xs, yNeg, w, h, pad, 'rgba(94,230,168,0.92)');
+      if (state.hil) plotLine(ctx, xs, yPosH, w, h, pad, 'rgba(255,211,106,0.95)');
+
+      // point marker
+      const point = state.hil ? PPV_H : PPV;
+      ctx.fillStyle = 'rgba(233,238,255,0.92)';
+      const px = pad + point*(w-2*pad);
+      ctx.beginPath();
+      ctx.arc(px, h-pad, 8, 0, Math.PI*2);
+      ctx.fill();
+
+      // legend text
+      ctx.fillStyle = 'rgba(147,164,199,0.95)';
+      ctx.font = '22px system-ui';
+      ctx.fillText('Blue: P(disease | AI flag)', pad, h-18);
+      ctx.fillText('Green: P(disease | AI not flag)', pad+420, h-18);
+      if (state.hil) ctx.fillText('Yellow: with human-in-loop', pad+770, h-18);
+    }
+
+    function renderConfCanvas(conf){
+      const {ctx, canvas} = chart2;
+      const w = canvas.width, h = canvas.height;
+      clearCanvas(ctx,w,h);
+      drawTitle(ctx, state.hil ? 'Outcomes per 1,000 (with human-in-loop)' : 'Outcomes per 1,000 (AI-only)');
+      drawBarStack(ctx, conf, w, h);
+    }
+
+    function renderKPI(PPV, NPV, PPV_H, NPV_H, conf0, confH){
+      const {ctx, canvas} = summary;
+      const w = canvas.width, h = canvas.height;
+      clearCanvas(ctx,w,h);
+      drawTitle(ctx, 'Key implications');
+
+      const conf = state.hil ? confH : conf0;
+      const ppvShow = state.hil ? PPV_H : PPV;
+      const npvShow = state.hil ? NPV_H : NPV;
+
+      ctx.fillStyle = 'rgba(233,238,255,0.95)';
+      ctx.font = '30px system-ui';
+      ctx.fillText(`PPV: ${fmtPct(ppvShow,1)}`, 24, 110);
+      ctx.fillText(`NPV: ${fmtPct(npvShow,1)}`, 24, 160);
+
+      ctx.fillStyle = 'rgba(233,238,255,0.95)';
+      ctx.font = '30px system-ui';
+      ctx.fillText(`Referrals / 1,000: ${(conf.TP + conf.FP).toFixed(0)}`, 520, 110);
+      ctx.fillText(`Missed cases / 1,000: ${conf.FN.toFixed(1)}`, 520, 160);
+
+      ctx.fillStyle = 'rgba(147,164,199,0.95)';
+      ctx.font = '24px system-ui';
+      const msg1 = 'AI output is a noisy estimate; prevalence + threshold drive real-world usefulness.';
+      const msg2 = state.hil
+        ? 'Experts reduce harm by catching missed cases and dismissing false alarms, especially for borderline cases.'
+        : 'Without expert review, misses and false alarms can translate into harm (missed prevention / unnecessary escalation).';
+      ctx.fillText(msg1, 24, 240);
+      ctx.fillText(msg2, 24, 282);
+    }
+
+    // ============================================================
+    // Render pipeline
+    // ============================================================
+    function renderAll(){
+      // update labels
+      rows.forEach(r => r.update());
+      setLabel(toggleLabel, `Human-in-the-loop: ${state.hil ? 'ON' : 'OFF'}`);
+
+      // compute
+      const [sens, spec] = applyThreshold(state.sens0, state.spec0, state.thr);
+      const PPV = ppv(state.prev, sens, spec);
+      const NPV = npv(state.prev, sens, spec);
+      const conf0 = confusionPer1000(state.prev, sens, spec);
+      const confH = applyHuman(conf0, state.catchFN, state.dismissFP, state.borderline, state.hil);
+      const PPV_H = confH.TP / (confH.TP + confH.FP);
+      const NPV_H = confH.TN / (confH.TN + confH.FN);
+
+      // draw
+      renderDistCanvas(PPV, NPV, PPV_H);
+      renderConfCanvas(state.hil ? confH : conf0);
+      renderKPI(PPV, NPV, PPV_H, NPV_H, conf0, confH);
+
+      // notify textures
+      chart1.tex.needsUpdate = true;
+      chart2.tex.needsUpdate = true;
+      summary.tex.needsUpdate = true;
+    }
+
+    renderAll();
+
+    // ============================================================
+    // WebXR controller interaction (ray + click)
+    // ============================================================
+    const raycaster = new THREE.Raycaster();
+    const tempMatrix = new THREE.Matrix4();
+
+    function buildController(index){
+      const controller = renderer.xr.getController(index);
+      controller.userData.index = index;
+
+      // Ray line
+      const geom = new THREE.BufferGeometry().setFromPoints([ new THREE.Vector3(0,0,0), new THREE.Vector3(0,0,-1) ]);
+      const line = new THREE.Line(geom, new THREE.LineBasicMaterial({ color: 0x9bb7ff }));
+      line.name = 'ray';
+      line.scale.z = 2.0;
+      controller.add(line);
+
+      controller.addEventListener('selectstart', () => {
+        const hit = getIntersections(controller);
+        if (hit.length){
+          const obj = hit[0].object;
+          if (obj.userData && typeof obj.userData.onClick === 'function') obj.userData.onClick();
+        }
+      });
+
+      scene.add(controller);
+
+      // Controller model
+      const controllerGrip = renderer.xr.getControllerGrip(index);
+      const factory = new XRControllerModelFactory();
+      controllerGrip.add(factory.createControllerModel(controllerGrip));
+      scene.add(controllerGrip);
+
+      return controller;
+    }
+
+    const controller1 = buildController(0);
+    const controller2 = buildController(1);
+
+    function getIntersections(controller){
+      tempMatrix.identity().extractRotation(controller.matrixWorld);
+      raycaster.ray.origin.setFromMatrixPosition(controller.matrixWorld);
+      raycaster.ray.direction.set(0,0,-1).applyMatrix4(tempMatrix);
+      return raycaster.intersectObjects(interactables, true);
+    }
+
+    // Hover feedback
+    function hoverFeedback(controller){
+      const hits = getIntersections(controller);
+      interactables.forEach(m => {
+        if (m.material && m.userData.isButton){
+          m.material.emissive = m.material.emissive || new THREE.Color(0x000000);
+          m.material.emissiveIntensity = 0.0;
+        }
+      });
+      if (hits.length){
+        const obj = hits[0].object;
+        // walk up to the button mesh (it may hit the label plane)
+        let p = obj;
+        while (p && !p.userData.isButton) p = p.parent;
+        if (p && p.material){
+          p.material.emissive = new THREE.Color(0x7aa2ff);
+          p.material.emissiveIntensity = 0.35;
+        }
+      }
+    }
+
+    // Animate
+    renderer.setAnimationLoop(() => {
+      if (!renderer.xr.isPresenting) controls.update();
+      hoverFeedback(controller1);
+      hoverFeedback(controller2);
+      renderer.render(scene, camera);
+    });
+
+    // Keep UI in front of viewer when entering VR
+    renderer.xr.addEventListener('sessionstart', () => {
+      // place dashboard about 1.2m in front of headset
+      const xrCam = renderer.xr.getCamera(camera);
+      const dir = new THREE.Vector3(0,0,-1).applyQuaternion(xrCam.quaternion);
+      const pos = new THREE.Vector3().setFromMatrixPosition(xrCam.matrixWorld);
+      ui.position.copy(pos.clone().add(dir.multiplyScalar(1.2)));
+      ui.position.y = pos.y - 0.1;
+      ui.quaternion.copy(xrCam.quaternion);
+    });
+
+    // Resize
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth/window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+  </script>
+</body>
+</html>
