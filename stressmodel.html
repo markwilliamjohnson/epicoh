@@ -1,0 +1,620 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Community Nursing Stress Mechanism — Parameter Sandbox</title>
+  <style>
+    :root { --bg:#0b1020; --panel:#121a33; --ink:#e9ecff; --muted:#aab2e6; --accent:#6ee7ff; --bad:#ff6b6b; --ok:#7CFF9B; }
+    *{ box-sizing:border-box; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; }
+    body{ margin:0; background:linear-gradient(180deg,#070a14 0%, #0b1020 45%, #0b1020 100%); color:var(--ink); }
+    header{ padding:18px 18px 8px; }
+    h1{ margin:0; font-size:18px; letter-spacing:.2px; }
+    p.sub{ margin:6px 0 0; color:var(--muted); font-size:13px; max-width:980px; line-height:1.4; }
+    main{ display:grid; grid-template-columns: 420px 1fr; gap:14px; padding:14px 18px 20px; }
+    @media (max-width: 980px){ main{ grid-template-columns:1fr; } }
+
+    .card{ background:rgba(18,26,51,.86); border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:14px; box-shadow:0 10px 35px rgba(0,0,0,.35); }
+    .card h2{ margin:0 0 10px; font-size:14px; color:#dfe4ff; letter-spacing:.3px; text-transform:uppercase; }
+    .row{ display:grid; grid-template-columns: 1fr 130px; gap:10px; align-items:center; margin:10px 0; }
+    .row label{ font-size:13px; color:var(--ink); }
+    .row small{ display:block; color:var(--muted); font-size:11px; margin-top:2px; }
+    input[type="range"]{ width:100%; }
+    input[type="number"], select{
+      width:100%;
+      padding:8px 10px;
+      border-radius:10px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.20);
+      color:var(--ink);
+      outline:none;
+    }
+    .pill{
+      display:inline-flex; gap:8px; align-items:center;
+      padding:6px 10px; border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.18);
+      font-size:12px; color:var(--muted);
+    }
+    .pill b{ color:var(--ink); font-weight:600; }
+    .grid2{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+    .btns{ display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+    button{
+      padding:9px 12px; border-radius:12px;
+      border:1px solid rgba(255,255,255,.16);
+      background:rgba(0,0,0,.22);
+      color:var(--ink);
+      cursor:pointer;
+    }
+    button:hover{ border-color:rgba(110,231,255,.5); box-shadow:0 0 0 3px rgba(110,231,255,.12); }
+    .muted{ color:var(--muted); font-size:12px; }
+
+    /* Right side */
+    .kpis{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
+    .kpi{
+      flex:1 1 160px;
+      padding:12px;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.08);
+      background:rgba(0,0,0,.18);
+    }
+    .kpi .name{ color:var(--muted); font-size:12px; }
+    .kpi .val{ font-size:22px; margin-top:6px; font-weight:700; letter-spacing:.3px; }
+    .kpi .hint{ font-size:11px; color:var(--muted); margin-top:6px; line-height:1.35; }
+
+    .barWrap{ margin:10px 0 14px; }
+    .barLabel{ display:flex; justify-content:space-between; font-size:12px; color:var(--muted); margin:0 0 6px; }
+    .bar{
+      height:12px; border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.06);
+      overflow:hidden;
+    }
+    .fill{ height:100%; width:0%; background:linear-gradient(90deg, rgba(110,231,255,.85), rgba(124,255,155,.85)); border-radius:999px; }
+    .fill.bad{ background:linear-gradient(90deg, rgba(255,107,107,.9), rgba(255,180,107,.9)); }
+    .panelTitle{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .panelTitle .right{ display:flex; gap:8px; flex-wrap:wrap; }
+    .log{
+      margin-top:10px;
+      padding:10px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.08);
+      background:rgba(0,0,0,.20);
+      max-height:260px;
+      overflow:auto;
+      font-size:12px;
+      line-height:1.4;
+      color:var(--muted);
+      white-space:pre-wrap;
+    }
+    .warn{ color: #ffd36e; }
+    .bad{ color: var(--bad); }
+    .ok{ color: var(--ok); }
+    code.inline{
+      padding:2px 6px; border-radius:8px;
+      background:rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.10);
+      color:#e9ecff;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size:11px;
+    }
+  </style>
+</head>
+
+<body>
+<header>
+  <h1>Stress Mechanism Sandbox (Goguen Institution Inspired)</h1>
+  <p class="sub">
+    Manipulate parameters for the mechanism:
+    <span class="pill"><b>Understaffing</b> → <b>Workload</b> → <b>Chronic Stress</b> → <b>HPA</b> → <b>Cortisol</b> → <b>Sleep Disruption</b> → <b>↓Coping/Resilience</b> → <b>ICD-10 Z56.6 risk</b></span>
+    <br />
+    This is a qualitative toy model (not a medical device). Use it to reason about how structural, personal, and support factors interact.
+  </p>
+</header>
+
+<main>
+  <!-- Controls -->
+  <section class="card" id="controls">
+    <div class="panelTitle">
+      <h2>Parameters</h2>
+      <div class="right">
+        <span class="pill">Region: <b>TR3</b> (rural Cornwall)</span>
+        <span class="pill">Profile: <b>Male</b> <span class="muted">(born 1947)</span></span>
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="understaffing">Understaffing severity</label>
+        <small>0 = fully staffed, 100 = chronic understaffing</small>
+      </div>
+      <input type="range" id="understaffing" min="0" max="100" value="75" />
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="patients">Patients per shift (effective load)</label>
+        <small>Includes case complexity; used to compute "excessive load"</small>
+      </div>
+      <input type="number" id="patients" min="0" max="60" value="22" />
+    </div>
+
+    <div class="grid2">
+      <div class="row" style="grid-template-columns:1fr;">
+        <div>
+          <label for="shiftHours">Shift length (hours)</label>
+          <small>Extended shifts increase strain and reduce recovery</small>
+        </div>
+        <input type="range" id="shiftHours" min="6" max="16" value="12" />
+      </div>
+      <div class="row" style="grid-template-columns:1fr;">
+        <div>
+          <label for="restHours">Rest between shifts (hours)</label>
+          <small>Insufficient rest worsens sleep/coping</small>
+        </div>
+        <input type="range" id="restHours" min="6" max="16" value="9" />
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="travel">Travel burden (rural distances)</label>
+        <small>0 = compact area, 100 = long drives + on-call friction</small>
+      </div>
+      <input type="range" id="travel" min="0" max="100" value="70" />
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="services">Local relief & mental-health services availability</label>
+        <small>0 = scarce, 100 = abundant; higher reduces chronic stress</small>
+      </div>
+      <input type="range" id="services" min="0" max="100" value="25" />
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="pay">Pay incentives / funding support</label>
+        <small>Proxy for resource shortfalls when deprivation index is overlooked</small>
+      </div>
+      <input type="range" id="pay" min="0" max="100" value="30" />
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="peerSupport">Peer support (team support, buddying, debrief)</label>
+        <small>0 = isolated, 100 = strong peer scaffolding</small>
+      </div>
+      <input type="range" id="peerSupport" min="0" max="100" value="20" />
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="managerSupport">Manager responsiveness</label>
+        <small>Higher = easier to renegotiate load / rota / resources</small>
+      </div>
+      <input type="range" id="managerSupport" min="0" max="100" value="35" />
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="stigma">Help-seeking stigma (generational/cultural)</label>
+        <small>0 = no stigma, 100 = strong barrier to seeking help</small>
+      </div>
+      <input type="range" id="stigma" min="0" max="100" value="65" />
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="caregiving">Family caregiving obligations</label>
+        <small>0 = none, 100 = high additional load outside work</small>
+      </div>
+      <input type="range" id="caregiving" min="0" max="100" value="55" />
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="personalTime">Protected personal time (self-care scheduling)</label>
+        <small>0 = none, 100 = strong boundary/regular recovery time</small>
+      </div>
+      <input type="range" id="personalTime" min="0" max="100" value="20" />
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="copingSkill">Coping skill baseline</label>
+        <small>Trait-like coping strategies; can be improved slowly</small>
+      </div>
+      <input type="range" id="copingSkill" min="0" max="100" value="45" />
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="weeks">Simulate over (weeks)</label>
+        <small>Applies the mechanism repeatedly (accumulation/feedback)</small>
+      </div>
+      <input type="range" id="weeks" min="1" max="26" value="8" />
+    </div>
+
+    <div class="btns">
+      <button id="reset">Reset (narrative baseline)</button>
+      <button id="scenarioManager">Scenario: Speak to manager (↑manager support)</button>
+      <button id="scenarioPeer">Scenario: Peer support group (↑peer support)</button>
+      <button id="scenarioBoundaries">Scenario: Protect personal time (↑personal time)</button>
+    </div>
+
+    <p class="muted" style="margin-top:12px;">
+      Mapping note: This app operationalizes the institution’s relations such as
+      <code class="inline">Understaffed</code>, <code class="inline">ExcessiveLoad</code>, and the causal chain
+      <code class="inline">Stress → HPA → Cortisol → Sleep → Coping/Resilience</code>.
+    </p>
+  </section>
+
+  <!-- Outputs -->
+  <section class="card" id="outputs">
+    <div class="panelTitle">
+      <h2>Mechanism State</h2>
+      <div class="right">
+        <span class="pill">Diagnosis threshold proxy: <b>Z56.6 risk ≥ 70</b></span>
+      </div>
+    </div>
+
+    <div class="kpis">
+      <div class="kpi">
+        <div class="name">Workload pressure</div>
+        <div class="val" id="kWorkload">—</div>
+        <div class="hint">Composite of understaffing, patients, shift length, travel burden, funding.</div>
+      </div>
+      <div class="kpi">
+        <div class="name">Chronic stress</div>
+        <div class="val" id="kStress">—</div>
+        <div class="hint">Accumulated weekly stress minus recovery from support/rest/personal time.</div>
+      </div>
+      <div class="kpi">
+        <div class="name">HPA activation</div>
+        <div class="val" id="kHPA">—</div>
+        <div class="hint">Nonlinear response to chronic stress (saturates at high levels).</div>
+      </div>
+      <div class="kpi">
+        <div class="name">Cortisol</div>
+        <div class="val" id="kCort">—</div>
+        <div class="hint">Tracks HPA; drives sleep disruption in the model.</div>
+      </div>
+      <div class="kpi">
+        <div class="name">Sleep disruption</div>
+        <div class="val" id="kSleep">—</div>
+        <div class="hint">Worsens when cortisol high and rest between shifts low.</div>
+      </div>
+      <div class="kpi">
+        <div class="name">Coping / resilience</div>
+        <div class="val" id="kCoping">—</div>
+        <div class="hint">Baseline coping skill reduced by poor sleep and sustained stress; buffered by support.</div>
+      </div>
+      <div class="kpi">
+        <div class="name">Help-seeking friction</div>
+        <div class="val" id="kFriction">—</div>
+        <div class="hint">Stigma + workload + isolation makes it harder to get relief.</div>
+      </div>
+      <div class="kpi">
+        <div class="name">ICD-10 Z56.6 risk proxy</div>
+        <div class="val" id="kDx">—</div>
+        <div class="hint">A toy indicator: sustained psychological stress driven by the mechanism.</div>
+      </div>
+    </div>
+
+    <div class="barWrap">
+      <div class="barLabel"><span>Understaffing → Workload</span><span id="b1t">0%</span></div>
+      <div class="bar"><div class="fill" id="b1"></div></div>
+    </div>
+    <div class="barWrap">
+      <div class="barLabel"><span>Workload → Chronic Stress</span><span id="b2t">0%</span></div>
+      <div class="bar"><div class="fill" id="b2"></div></div>
+    </div>
+    <div class="barWrap">
+      <div class="barLabel"><span>Stress → HPA/Cortisol</span><span id="b3t">0%</span></div>
+      <div class="bar"><div class="fill" id="b3"></div></div>
+    </div>
+    <div class="barWrap">
+      <div class="barLabel"><span>Cortisol/Rest → Sleep Disruption</span><span id="b4t">0%</span></div>
+      <div class="bar"><div class="fill" id="b4"></div></div>
+    </div>
+    <div class="barWrap">
+      <div class="barLabel"><span>Sleep/Support → Coping/Resilience Loss</span><span id="b5t">0%</span></div>
+      <div class="bar"><div class="fill" id="b5"></div></div>
+    </div>
+    <div class="barWrap">
+      <div class="barLabel"><span>Z56.6 Risk Proxy</span><span id="b6t">0%</span></div>
+      <div class="bar"><div class="fill" id="b6"></div></div>
+    </div>
+
+    <div class="log" id="log"></div>
+  </section>
+</main>
+
+<script>
+/**
+ * Qualitative system dynamics model inspired by the institution:
+ * Understaffing + load + long shifts + travel + low funding + limited services
+ *   -> chronic stress -> HPA -> cortisol -> sleep disruption -> reduced coping/resilience
+ * Plus: stigma/caregiving reduce help-seeking and recovery.
+ *
+ * All values are normalized to 0..100 for presentation.
+ */
+
+const el = (id) => document.getElementById(id);
+
+const baseline = {
+  understaffing: 75,
+  patients: 22,
+  shiftHours: 12,
+  restHours: 9,
+  travel: 70,
+  services: 25,
+  pay: 30,
+  peerSupport: 20,
+  managerSupport: 35,
+  stigma: 65,
+  caregiving: 55,
+  personalTime: 20,
+  copingSkill: 45,
+  weeks: 8
+};
+
+const inputs = [
+  "understaffing","patients","shiftHours","restHours","travel","services","pay",
+  "peerSupport","managerSupport","stigma","caregiving","personalTime","copingSkill","weeks"
+];
+
+function clamp(x, a=0, b=100){ return Math.max(a, Math.min(b, x)); }
+function lerp(a,b,t){ return a + (b-a)*t; }
+function sigmoid01(x){
+  // x around 0..1 -> 0..1 nonlinear
+  return 1/(1+Math.exp(-12*(x-0.5)));
+}
+function fmt(v){ return Math.round(v); }
+function badge(v){
+  if (v >= 75) return `<span class="bad">${fmt(v)}</span>`;
+  if (v >= 50) return `<span class="warn">${fmt(v)}</span>`;
+  return `<span class="ok">${fmt(v)}</span>`;
+}
+
+function readParams(){
+  const p = {};
+  for (const k of inputs){
+    const node = el(k);
+    if (!node) continue;
+    p[k] = (node.type === "number") ? Number(node.value) : Number(node.value);
+  }
+  return p;
+}
+
+function writeParams(p){
+  for (const k of inputs){
+    if (el(k)) el(k).value = p[k];
+  }
+  update();
+}
+
+/**
+ * Core model:
+ *  - Compute immediate workload pressure from structural parameters
+ *  - Iterate weekly: stress accumulates, recovery subtracts, coping/resilience degrade with sleep disruption
+ *  - Provide outputs and an explanation log
+ */
+function simulate(p){
+  // Normalize some raw inputs to 0..100
+  const shiftNorm = clamp((p.shiftHours - 6) / (16-6) * 100);
+  const restBad = clamp((12 - p.restHours) / (12-6) * 100); // 0 good (>=12), 100 very bad (6)
+  const patientNorm = clamp(p.patients / 40 * 100);
+
+  // Funding shortfall proxy: low pay + limited services amplify workload/on-call burden
+  const resourceShortfall = clamp( (100 - p.pay) * 0.45 + (100 - p.services) * 0.55 );
+
+  // Workload pressure: institutional "ExcessiveLoad" emerges from combined structure
+  const workloadPressure = clamp(
+      0.28*p.understaffing +
+      0.24*patientNorm +
+      0.18*shiftNorm +
+      0.16*p.travel +
+      0.14*resourceShortfall
+  );
+
+  // Help-seeking friction: stigma + isolation + workload
+  const isolation = clamp(100 - p.peerSupport);
+  const friction = clamp(0.45*p.stigma + 0.25*workloadPressure + 0.30*isolation);
+
+  // Recovery capacity: rest + personal time + support + services/manager
+  // Friction reduces the effective use of available supports.
+  const rawRecovery = clamp(
+    0.26*clamp(100-restBad) +        // better rest -> higher recovery
+    0.22*p.personalTime +
+    0.20*p.peerSupport +
+    0.16*p.managerSupport +
+    0.16*p.services
+  );
+  const effectiveRecovery = clamp(rawRecovery * (1 - friction/160)); // friction partially blocks recovery pathways
+
+  // Weekly dynamics
+  let stress = 35;         // start moderate
+  let coping = p.copingSkill; // baseline trait-like
+  let sleepDisruption = 35;
+
+  const logLines = [];
+  logLines.push(`Assumptions: TR3 is rural with long travel and limited relief services. The mechanism accumulates over ${p.weeks} week(s).`);
+  logLines.push(`Institutional mapping: Understaffing+Load+Shift+Travel+Resources -> ChronicStress -> HPA -> Cortisol -> Sleep -> Coping/Resilience -> Z56.6 risk proxy.`);
+  logLines.push(`Computed composite workload pressure = ${fmt(workloadPressure)}/100.`);
+  logLines.push(`Help-seeking friction (stigma + workload + isolation) = ${fmt(friction)}/100; this reduces how much support translates into recovery.`);
+  logLines.push(`Effective recovery capacity = ${fmt(effectiveRecovery)}/100.\n`);
+
+  // Helpers
+  const hpaFromStress = (s) => {
+    // nonlinear saturating response: 0..100 -> 0..100
+    const x = clamp(s)/100;
+    return clamp(sigmoid01(x) * 100);
+  };
+
+  for (let w=1; w<=p.weeks; w++){
+    // Stress inflow from workload + caregiving + sleep issues
+    const caregivingLoad = p.caregiving;
+    const stressIn = clamp(0.62*workloadPressure + 0.24*caregivingLoad + 0.14*sleepDisruption);
+
+    // Stress outflow from effective recovery + coping buffers
+    const copingBuffer = clamp(0.55*coping + 0.45*p.peerSupport);
+    const stressOut = clamp(0.55*effectiveRecovery + 0.45*copingBuffer);
+
+    // Update stress (accumulation with inertia)
+    const nextStress = clamp(0.70*stress + 0.30*(stress + (stressIn - stressOut)*0.18));
+
+    // HPA & cortisol track stress
+    const hpa = hpaFromStress(nextStress);
+    const cortisol = clamp(0.75*hpa + 0.25*nextStress);
+
+    // Sleep disruption depends on cortisol and insufficient rest and shift length
+    const sleepIn = clamp(0.58*cortisol + 0.27*restBad + 0.15*shiftNorm);
+    const sleepOut = clamp(0.55*effectiveRecovery + 0.45*p.personalTime);
+    const nextSleep = clamp(0.72*sleepDisruption + 0.28*(sleepDisruption + (sleepIn - sleepOut)*0.22));
+
+    // Coping/resilience degrade with sustained stress and sleep disruption, buffered by support & personal time
+    const copingLoss = clamp(0.50*nextStress + 0.35*nextSleep + 0.15*friction);
+    const copingGain = clamp(0.40*p.copingSkill + 0.30*p.peerSupport + 0.30*p.personalTime);
+    const nextCoping = clamp(0.75*coping + 0.25*(coping + (copingGain - copingLoss)*0.15));
+
+    stress = nextStress;
+    sleepDisruption = nextSleep;
+    coping = nextCoping;
+
+    if (w === 1 || w === p.weeks || w % 4 === 0){
+      logLines.push(
+        `Week ${w}: stress=${fmt(stress)}, HPA≈${fmt(hpaFromStress(stress))}, cortisol≈${fmt(clamp(0.75*hpaFromStress(stress)+0.25*stress))}, sleepDisruption=${fmt(sleepDisruption)}, coping/resilience=${fmt(coping)}`
+      );
+    }
+  }
+
+  const hpa = hpaFromStress(stress);
+  const cortisol = clamp(0.75*hpa + 0.25*stress);
+
+  // Z56.6 "risk proxy": sustained stress + impaired coping + sleep issues, tempered by support
+  // Note: This is not diagnostic; it's a toy mapping.
+  const risk = clamp(
+    0.48*stress +
+    0.28*sleepDisruption +
+    0.22*(100 - coping) -
+    0.18*(0.6*p.peerSupport + 0.4*p.managerSupport)
+  );
+
+  // A couple of "institutional sentence" truth checks (toy):
+  const excessiveLoad = workloadPressure >= 60;
+  const insufficientRest = p.restHours <= 10;
+  const chronicStress = stress >= 70;
+  const z566 = risk >= 70;
+
+  logLines.push("\nInstitution-style condition checks (toy):");
+  logLines.push(`- ExcessiveLoad(patientLoad) holds? ${excessiveLoad ? "YES" : "no"} (workloadPressure ≥ 60)`);
+  logLines.push(`- InsufficientRest(n,s) holds? ${insufficientRest ? "YES" : "no"} (restHours ≤ 10)`);
+  logLines.push(`- Sustained psychological stress holds? ${chronicStress ? "YES" : "no"} (stress ≥ 70)`);
+  logLines.push(`- ICD-10 Z56.6 risk proxy threshold met? ${z566 ? "YES" : "no"} (risk ≥ 70)`);
+
+  const advice = [];
+  if (risk >= 70) advice.push("High sustained-stress regime. Reduce workload pressure and/or increase effective recovery.");
+  if (friction >= 60) advice.push("Help-seeking friction is high: lowering stigma or increasing trusted support raises recovery effectiveness.");
+  if (restBad >= 50) advice.push("Rest between shifts is a key lever: modest improvements can reduce sleep disruption markedly.");
+  if (p.peerSupport < 40) advice.push("Peer support is low: buddying/debrief/support groups buffer coping and reduce isolation.");
+  if (p.managerSupport < 40) advice.push("Manager support is low: workload negotiation becomes hard—consider structured escalation with evidence (rota, caseload metrics).");
+  if (resourceShortfall > 60) advice.push("Resource shortfall dominates: improvements require system-level action (funding, relief staff, mental-health access).");
+
+  if (advice.length){
+    logLines.push("\nLevers suggested by the model:");
+    for (const a of advice) logLines.push(`• ${a}`);
+  }
+
+  return {
+    workloadPressure,
+    stress,
+    hpa,
+    cortisol,
+    sleepDisruption,
+    coping,
+    friction,
+    risk,
+    bars: {
+      b1: workloadPressure,
+      b2: stress,
+      b3: clamp(0.6*hpa + 0.4*cortisol),
+      b4: sleepDisruption,
+      b5: clamp(100 - coping),
+      b6: risk
+    },
+    log: logLines.join("\n")
+  };
+}
+
+function setBar(id, value){
+  const v = clamp(value);
+  const fill = el(id);
+  fill.style.width = v + "%";
+  fill.classList.toggle("bad", v >= 70);
+  el(id+"t").textContent = `${fmt(v)}%`;
+}
+
+function update(){
+  const p = readParams();
+  const out = simulate(p);
+
+  el("kWorkload").innerHTML = badge(out.workloadPressure);
+  el("kStress").innerHTML = badge(out.stress);
+  el("kHPA").innerHTML = badge(out.hpa);
+  el("kCort").innerHTML = badge(out.cortisol);
+  el("kSleep").innerHTML = badge(out.sleepDisruption);
+  el("kCoping").innerHTML = badge(out.coping);
+  el("kFriction").innerHTML = badge(out.friction);
+  el("kDx").innerHTML = badge(out.risk);
+
+  setBar("b1", out.bars.b1);
+  setBar("b2", out.bars.b2);
+  setBar("b3", out.bars.b3);
+  setBar("b4", out.bars.b4);
+  setBar("b5", out.bars.b5);
+  setBar("b6", out.bars.b6);
+
+  el("log").textContent = out.log;
+}
+
+// Wire inputs
+for (const k of inputs){
+  const node = el(k);
+  if (!node) continue;
+  node.addEventListener("input", update);
+  node.addEventListener("change", update);
+}
+
+// Buttons
+el("reset").addEventListener("click", () => writeParams(baseline));
+
+el("scenarioManager").addEventListener("click", () => {
+  const p = readParams();
+  p.managerSupport = clamp(p.managerSupport + 25);
+  p.understaffing = clamp(p.understaffing - 5);
+  writeParams(p);
+});
+
+el("scenarioPeer").addEventListener("click", () => {
+  const p = readParams();
+  p.peerSupport = clamp(p.peerSupport + 35);
+  p.stigma = clamp(p.stigma - 10);
+  writeParams(p);
+});
+
+el("scenarioBoundaries").addEventListener("click", () => {
+  const p = readParams();
+  p.personalTime = clamp(p.personalTime + 40);
+  p.restHours = clamp(p.restHours + 2, 6, 16);
+  p.shiftHours = clamp(p.shiftHours - 1, 6, 16);
+  writeParams(p);
+});
+
+// init
+writeParams(baseline);
+</script>
+</body>
+</html>
