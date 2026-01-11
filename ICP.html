@@ -1,0 +1,1254 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ICP-OES Explorer (Institution-inspired workflow)</title>
+  <style>
+    :root { --bg:#0b1220; --card:#111a2e; --ink:#e8eefc; --muted:#a8b3d8; --line:#263253; --good:#3ddc97; --bad:#ff6b6b; --warn:#ffd166; }
+    html, body { height:100%; }
+    body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; background: linear-gradient(180deg,#070b14,#0b1220 35%,#0a1020); color:var(--ink); }
+    header { padding:18px 18px 8px; border-bottom: 1px solid var(--line); position: sticky; top:0; background: rgba(11,18,32,0.9); backdrop-filter: blur(10px); z-index:2;}
+    h1 { margin:0; font-size:18px; font-weight:700; letter-spacing:0.2px;}
+    .sub { color:var(--muted); font-size:13px; margin-top:4px; line-height:1.3; }
+    main { padding:14px 18px 26px; max-width: 1180px; margin: 0 auto; }
+    .grid { display:grid; grid-template-columns: 360px 1fr; gap:14px; }
+    .card { background: rgba(17,26,46,0.75); border:1px solid var(--line); border-radius:14px; padding:12px; box-shadow: 0 10px 30px rgba(0,0,0,0.22); }
+    .card h2 { margin:0 0 10px; font-size:14px; color:#dbe5ff; letter-spacing:0.2px;}
+    .row { display:flex; gap:10px; align-items:center; margin:8px 0; }
+    label { font-size:12px; color:var(--muted); display:block; margin-bottom:4px;}
+    select, input[type="number"], input[type="text"] { width:100%; box-sizing:border-box; background:#0b142a; border:1px solid var(--line); color:var(--ink); padding:8px 10px; border-radius:10px; outline:none; }
+    input[type="range"] { width:100%; }
+    .btnrow { display:flex; flex-wrap:wrap; gap:8px; }
+    button {
+      background: #132349; color: var(--ink); border:1px solid #2a3b63;
+      padding:9px 10px; border-radius:12px; cursor:pointer; font-weight:700; font-size:12px;
+    }
+    button:hover { filter: brightness(1.08); }
+    button.primary { background: #2547ff; border-color:#2d4cff; }
+    button.good { background: #0f3d2d; border-color:#165842; }
+    button.warn { background: #3a2f0e; border-color:#5a4714; }
+    button.bad { background: #3e1820; border-color:#5f2431; }
+    .pill { display:inline-flex; gap:8px; align-items:center; padding:6px 10px; border-radius:999px; border:1px solid var(--line); background: rgba(8,12,24,0.4); font-size:12px; color: var(--muted); }
+    .pill b { color: var(--ink); }
+    .kpi { display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin-top:10px; }
+    .kpi .box { border:1px solid var(--line); background: rgba(8,12,24,0.35); border-radius:12px; padding:10px; }
+    .kpi .box .t { font-size:12px; color:var(--muted); }
+    .kpi .box .v { font-size:16px; font-weight:800; margin-top:4px; }
+    .kpi .box .s { font-size:12px; color:var(--muted); margin-top:2px; }
+    .split { display:grid; grid-template-columns: 1fr 340px; gap:14px; }
+    table { width:100%; border-collapse: collapse; font-size:12px; }
+    th, td { border-bottom:1px solid rgba(38,50,83,0.75); padding:8px 8px; text-align:left; vertical-align:top; }
+    th { color:var(--muted); font-weight:700; position: sticky; top:0; background: rgba(17,26,46,0.95); }
+    .tag { display:inline-block; padding:2px 8px; border-radius:999px; border:1px solid var(--line); background: rgba(8,12,24,0.35); color: var(--muted); }
+    .tag.good { border-color: rgba(61,220,151,0.4); color: #b8f5de; }
+    .tag.bad { border-color: rgba(255,107,107,0.45); color: #ffd2d2; }
+    .tag.warn { border-color: rgba(255,209,102,0.45); color: #ffe8b3; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono"; }
+    canvas { width:100%; height:260px; background: rgba(8,12,24,0.35); border:1px solid var(--line); border-radius:14px; }
+    .small { font-size:12px; color:var(--muted); line-height:1.35; }
+    details { border:1px solid var(--line); background: rgba(8,12,24,0.35); border-radius:12px; padding:10px; }
+    details summary { cursor:pointer; font-weight:800; color:#dbe5ff; font-size:12px; }
+    .foot { margin-top:12px; color:var(--muted); font-size:12px; }
+    @media (max-width: 980px) {
+      .grid { grid-template-columns: 1fr; }
+      .split { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+
+<body>
+<header>
+  <h1>ICP-OES Explorer (Institution-inspired workflow)</h1>
+  <div class="sub">
+    Explore how ICP “state” + “actions” (prepare → tune → calibrate → measure → QC → report) determine concentrations, flags, and method limits.
+    Includes case studies (wastewater, river water, industrial discharge, drinking water, digested sludge).
+  </div>
+</header>
+
+<main>
+  <div class="grid">
+    <!-- LEFT: Controls -->
+    <section class="card">
+      <h2>Case study & workflow controls</h2>
+
+      <div class="row">
+        <div style="flex:1">
+          <label>Case study</label>
+          <select id="caseSelect"></select>
+        </div>
+      </div>
+
+      <div class="row">
+        <div style="flex:1">
+          <label>Sample ID</label>
+          <select id="sampleSelect"></select>
+        </div>
+      </div>
+
+      <div class="row">
+        <div style="flex:1">
+          <label>Analyte</label>
+          <select id="analyteSelect"></select>
+        </div>
+        <div style="width:140px">
+          <label>Wavelength</label>
+          <select id="wlSelect"></select>
+        </div>
+      </div>
+
+      <div class="btnrow" style="margin-top:10px">
+        <button class="primary" id="btnPrepare">Prepare</button>
+        <button class="primary" id="btnTune">Tune</button>
+        <button class="primary" id="btnCalibrate">Calibrate</button>
+        <button class="primary" id="btnMeasure">Measure</button>
+        <button class="warn" id="btnQC">Run QC</button>
+        <button class="good" id="btnReport">Report</button>
+        <button class="bad" id="btnReset">Reset</button>
+      </div>
+
+      <div class="row" style="margin-top:10px">
+        <span class="pill">State: <b id="stateName">fresh</b></span>
+        <span class="pill">QC: <b id="qcStatus">not run</b></span>
+      </div>
+
+      <hr style="border:none; border-top:1px solid var(--line); margin:12px 0" />
+
+      <h2>Instrument & method parameters (tweak the “state”)</h2>
+
+      <div class="row">
+        <div style="flex:1">
+          <label>RF power (W)</label>
+          <input id="rfPower" type="range" min="900" max="1500" step="10" />
+          <div class="small">Higher RF power tends to increase excitation/emission but can change matrix behavior.</div>
+        </div>
+        <div style="width:92px">
+          <label class="mono">value</label>
+          <input id="rfPowerN" type="number" min="900" max="1500" step="10"/>
+        </div>
+      </div>
+
+      <div class="row">
+        <div style="flex:1">
+          <label>Nebulizer flow (L/min)</label>
+          <input id="nebFlow" type="range" min="0.4" max="1.2" step="0.01" />
+          <div class="small">Affects aerosol delivery → sensitivity; too high can destabilize plasma.</div>
+        </div>
+        <div style="width:92px">
+          <label class="mono">value</label>
+          <input id="nebFlowN" type="number" min="0.4" max="1.2" step="0.01"/>
+        </div>
+      </div>
+
+      <div class="row">
+        <div style="flex:1">
+          <label>Plasma gas flow (L/min)</label>
+          <input id="plasmaFlow" type="range" min="10" max="20" step="0.1" />
+          <div class="small">Too low can destabilize; too high may reduce residence time.</div>
+        </div>
+        <div style="width:92px">
+          <label class="mono">value</label>
+          <input id="plasmaFlowN" type="number" min="10" max="20" step="0.1"/>
+        </div>
+      </div>
+
+      <div class="row">
+        <div style="flex:1">
+          <label>Integration time (s)</label>
+          <input id="intTime" type="range" min="0.5" max="10" step="0.1" />
+          <div class="small">Longer integration usually improves S/N (lower apparent noise) but slows throughput.</div>
+        </div>
+        <div style="width:92px">
+          <label class="mono">value</label>
+          <input id="intTimeN" type="number" min="0.5" max="10" step="0.1"/>
+        </div>
+      </div>
+
+      <div class="row">
+        <div style="flex:1">
+          <label>Dilution factor (sample prep)</label>
+          <input id="dilFactor" type="range" min="1" max="50" step="1" />
+          <div class="small">Dilution lowers matrix load and mitigates interferences but raises LOQ in original sample units.</div>
+        </div>
+        <div style="width:92px">
+          <label class="mono">value</label>
+          <input id="dilFactorN" type="number" min="1" max="50" step="1"/>
+        </div>
+      </div>
+
+      <details style="margin-top:12px">
+        <summary>Institution mapping (what this sim is doing)</summary>
+        <div class="small" style="margin-top:8px">
+          <div><span class="mono">State</span> holds instrument settings, calibration, drift, and QC validity.</div>
+          <div><span class="mono">Actions</span> mutate state: Prepare/Tune/Calibrate/Measure/QC/Report.</div>
+          <div><span class="mono">Sentences</span> are enforced as rules: e.g., “Report implies QC + stable plasma + in-range calibration”.</div>
+          <div class="foot">This is a teaching simulator, not a real instrument model.</div>
+        </div>
+      </details>
+    </section>
+
+    <!-- RIGHT: Output -->
+    <section class="card">
+      <div class="split">
+        <div>
+          <h2>Calibration curve & signal</h2>
+          <canvas id="chart" width="900" height="520"></canvas>
+          <div class="row" style="justify-content:space-between; margin-top:10px">
+            <span class="pill">Selected analyte: <b id="selInfo">—</b></span>
+            <span class="pill">Matrix: <b id="matrixInfo">—</b></span>
+          </div>
+
+          <div class="kpi">
+            <div class="box">
+              <div class="t">Net intensity (a.u.)</div>
+              <div class="v mono" id="kpiNet">—</div>
+              <div class="s">raw − background, after drift & interference effects</div>
+            </div>
+            <div class="box">
+              <div class="t">Reported concentration (µg/L)</div>
+              <div class="v mono" id="kpiConc">—</div>
+              <div class="s">after dilution correction</div>
+            </div>
+            <div class="box">
+              <div class="t">LOQ (µg/L)</div>
+              <div class="v mono" id="kpiLOQ">—</div>
+              <div class="s">in original sample units</div>
+            </div>
+          </div>
+
+          <h2 style="margin-top:14px">Results table (all analytes)</h2>
+          <div style="max-height: 340px; overflow:auto; border-radius:14px;">
+            <table id="resultsTable">
+              <thead>
+                <tr>
+                  <th>Analyte</th>
+                  <th>Wavelength</th>
+                  <th>Net Intensity</th>
+                  <th>Conc (µg/L)</th>
+                  <th>LOQ</th>
+                  <th>Flags</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div>
+          <h2>Run log & QC</h2>
+          <div class="small" id="qcExplain" style="margin-bottom:8px">
+            QC uses: method blank, continuing calibration verification (CCV), spike recovery, and duplicate RPD (simplified).
+          </div>
+
+          <div class="card" style="padding:10px; background: rgba(8,12,24,0.35);">
+            <div class="row" style="justify-content:space-between;">
+              <span class="tag" id="tagStable">Plasma: —</span>
+              <span class="tag" id="tagCal">Cal: —</span>
+              <span class="tag" id="tagDrift">Drift: —</span>
+            </div>
+            <div class="row" style="justify-content:space-between;">
+              <span class="tag" id="tagBlank">Blank: —</span>
+              <span class="tag" id="tagSpike">Spike: —</span>
+              <span class="tag" id="tagDup">Dup: —</span>
+            </div>
+            <div class="small" style="margin-top:8px">
+              <div><b>Rule enforced:</b> <span class="mono">[Report] (Reported → (StablePlasma ∧ InRangeCal ∧ ValidQC))</span></div>
+            </div>
+          </div>
+
+          <h2 style="margin-top:12px">Action trace</h2>
+          <div id="log" style="max-height: 420px; overflow:auto; border:1px solid var(--line); border-radius:14px; padding:10px; background: rgba(8,12,24,0.35);" class="small mono"></div>
+
+          <div class="foot">
+            Tip: try the wastewater case, crank up dilution to reduce matrix effects, then compare LOQ vs reported values.
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script>
+/* =========================================================
+   ICP-OES Explorer — vanilla JS teaching simulator
+   ========================================================= */
+
+/* ---------- Utilities ---------- */
+function clamp(x, a, b){ return Math.max(a, Math.min(b, x)); }
+function fmt(x, d=3){
+  if (x === null || x === undefined || Number.isNaN(x)) return "—";
+  const ax = Math.abs(x);
+  if (ax !== 0 && (ax < 0.001 || ax >= 100000)) return x.toExponential(2);
+  return x.toFixed(d);
+}
+function deepCopy(obj){ return JSON.parse(JSON.stringify(obj)); }
+function randn(){
+  // Box-Muller
+  let u=0, v=0;
+  while(u===0) u=Math.random();
+  while(v===0) v=Math.random();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+
+/* ---------- Domain setup (symbols you'd recognize from the institution) ---------- */
+const Analytes = [
+  { elem:"As", wls:["188.979","193.696"], baseSensitivity:  950 },
+  { elem:"Cd", wls:["214.439","228.802"], baseSensitivity:  780 },
+  { elem:"Pb", wls:["220.353","217.000"], baseSensitivity:  650 },
+  { elem:"Cr", wls:["205.552","267.716"], baseSensitivity:  720 },
+  { elem:"Ni", wls:["231.604","221.647"], baseSensitivity:  680 },
+  { elem:"Cu", wls:["324.754","327.396"], baseSensitivity:  820 },
+  { elem:"Zn", wls:["213.857","206.200"], baseSensitivity:  910 }
+];
+
+// Simple spectral interference map: interferer contributes a fraction of its signal into the analyte's primary line.
+const Interferences = [
+  { interferer:"Fe", target:"As", wl:"188.979", frac:0.08 },
+  { interferer:"Al", target:"Pb", wl:"220.353", frac:0.05 },
+  { interferer:"Na", target:"Cr", wl:"205.552", frac:0.06 },
+  { interferer:"Ca", target:"Zn", wl:"213.857", frac:0.04 }
+];
+
+// Case studies with sample truth (µg/L) + matrix & interferents (mg/L) for teaching.
+// (Numbers are illustrative; not intended as real compliance values.)
+const CaseStudies = [
+  {
+    id:"wastewater",
+    name:"Wastewater effluent (WWTP) — PTE screening",
+    matrix:{ name:"High dissolved solids / organics", severity:0.65, salinity:0.4, organics:0.7, tss:0.3 },
+    interferents_mgL:{ Fe:2.2, Al:0.9, Na:120, Ca:45 },
+    samples:[
+      { id:"WW-A", label:"Final effluent — dry weather",
+        truth_ugL:{ As:6.2, Cd:0.25, Pb:2.9, Cr:7.5, Ni:11.0, Cu:24.0, Zn:95.0 } },
+      { id:"WW-B", label:"Final effluent — storm event",
+        truth_ugL:{ As:10.5, Cd:0.35, Pb:7.8, Cr:18.0, Ni:22.0, Cu:55.0, Zn:210.0 } },
+      { id:"WW-C", label:"Treated effluent — industrial influence",
+        truth_ugL:{ As:4.0, Cd:0.65, Pb:14.0, Cr:25.0, Ni:40.0, Cu:120.0, Zn:340.0 } }
+    ]
+  },
+  {
+    id:"river",
+    name:"River water — upstream/downstream comparison",
+    matrix:{ name:"Low dissolved solids", severity:0.18, salinity:0.05, organics:0.2, tss:0.2 },
+    interferents_mgL:{ Fe:0.35, Al:0.12, Na:12, Ca:18 },
+    samples:[
+      { id:"RV-U", label:"Upstream reference",
+        truth_ugL:{ As:1.1, Cd:0.05, Pb:0.6, Cr:1.0, Ni:1.5, Cu:2.4, Zn:8.0 } },
+      { id:"RV-D", label:"Downstream of WWTP",
+        truth_ugL:{ As:2.4, Cd:0.07, Pb:1.1, Cr:2.6, Ni:3.9, Cu:6.8, Zn:18.0 } }
+    ]
+  },
+  {
+    id:"industrial",
+    name:"Industrial discharge — metal finishing rinse water",
+    matrix:{ name:"Moderate salts, strong metals", severity:0.45, salinity:0.35, organics:0.25, tss:0.15 },
+    interferents_mgL:{ Fe:5.5, Al:0.6, Na:180, Ca:60 },
+    samples:[
+      { id:"IND-1", label:"Rinse water (after treatment)",
+        truth_ugL:{ As:3.0, Cd:1.8, Pb:9.0, Cr:80.0, Ni:120.0, Cu:250.0, Zn:600.0 } },
+      { id:"IND-2", label:"Equalization tank (raw)",
+        truth_ugL:{ As:5.0, Cd:4.5, Pb:25.0, Cr:250.0, Ni:380.0, Cu:900.0, Zn:1500.0 } }
+    ]
+  },
+  {
+    id:"drinking",
+    name:"Drinking water — trace metals verification",
+    matrix:{ name:"Very low matrix", severity:0.08, salinity:0.03, organics:0.05, tss:0.02 },
+    interferents_mgL:{ Fe:0.05, Al:0.03, Na:8, Ca:25 },
+    samples:[
+      { id:"DW-1", label:"Distribution (random tap)",
+        truth_ugL:{ As:0.7, Cd:0.02, Pb:1.8, Cr:0.6, Ni:0.9, Cu:120.0, Zn:35.0 } }
+    ]
+  },
+  {
+    id:"sludge",
+    name:"Digested sludge (post-digestion solution) — diluted",
+    matrix:{ name:"Very high matrix (digestion acids + solids)", severity:0.82, salinity:0.55, organics:0.4, tss:0.8 },
+    interferents_mgL:{ Fe:35, Al:18, Na:900, Ca:420 },
+    samples:[
+      { id:"SL-1", label:"Sludge digest (post-digestion)",
+        truth_ugL:{ As:50.0, Cd:8.0, Pb:120.0, Cr:220.0, Ni:300.0, Cu:900.0, Zn:2500.0 } }
+    ]
+  }
+];
+
+/* ---------- "Institution-like" State ---------- */
+function freshState(){
+  return {
+    name: "fresh",
+    prepared: false,
+    tuned: false,
+    calibrated: false,
+    measured: false,
+    qcRan: false,
+    qcValid: false,
+    stablePlasma: false,
+    inRangeCal: {},      // per element
+    driftRel: {},        // per element
+    cal: {},             // per element: slope, intercept, r2-ish
+    lastMeasurement: {}, // per element
+    flags: {},           // per element -> array
+    // settings (part of the state signature)
+    settings: {
+      rfPower: 1200,          // W
+      nebFlow: 0.8,           // L/min
+      plasmaFlow: 15.0,       // L/min
+      intTime: 3.0,           // s
+      dilutionFactor: 10      // unitless
+    }
+  };
+}
+
+/* ---------- Model parameters & simplified physics-ish relations ---------- */
+function plasmaStabilityScore(settings){
+  // Peak stability around: RF=1200, neb=0.8, plasma=15
+  const rf = (settings.rfPower - 1200)/250;       // normalized
+  const nb = (settings.nebFlow - 0.8)/0.25;
+  const pf = (settings.plasmaFlow - 15)/3;
+  const score = Math.exp(-(rf*rf + nb*nb + pf*pf));
+  return score; // 0..1
+}
+
+function sensitivityMultiplier(settings){
+  // sensitivity increases with RF and integration time up to a point,
+  // and has a sweet spot for nebulizer flow.
+  const rfMul = 0.75 + (settings.rfPower - 900) / 600 * 0.6; // ~0.75..1.35
+  const tMul  = 0.70 + Math.log10(1 + settings.intTime) * 0.9; // ~0.7..1.5-ish
+  const nebOpt = 0.8;
+  const nebMul = 0.85 + Math.exp(-Math.pow((settings.nebFlow-nebOpt)/0.18,2))*0.35; // 0.85..1.2
+  return rfMul * tMul * nebMul;
+}
+
+function noiseSigma(settings, matrixSeverity){
+  // base noise reduced by integration time; increased by matrix severity and instability
+  const t = settings.intTime;
+  const base = 25; // a.u.
+  const timeFactor = 1 / Math.sqrt(t);
+  const matrixFactor = 1 + 2.2*matrixSeverity;
+  const stab = plasmaStabilityScore(settings);
+  const instabFactor = 1 + (1 - stab) * 3.0;
+  return base * timeFactor * matrixFactor * instabFactor;
+}
+
+function matrixSuppressionFactor(matrixSeverity){
+  // matrix can suppress signal (0.6..1.0)
+  return 1.0 - 0.45*matrixSeverity;
+}
+
+function driftUpdate(prevDrift){
+  // drift random walk with mild growth; expressed as relative factor around 0
+  const step = 0.006 * randn();
+  return clamp(prevDrift + step, -0.05, 0.05); // ±5%
+}
+
+/* LOQ model (teaching): scales with noise & dilution */
+function computeLOQ(settings, matrixSeverity, baseLOQ){
+  // baseLOQ is analyte-specific "best case" (µg/L)
+  const stab = plasmaStabilityScore(settings);
+  const sens = sensitivityMultiplier(settings);
+  const m = 1 + 2.3*matrixSeverity;
+  const s = 1 + (1 - stab)*2.5;
+  const df = settings.dilutionFactor;
+  // lower LOQ with higher sensitivity and stability, worse with matrix and dilution
+  return baseLOQ * m * s * (1.25 / sens) * df;
+}
+
+/* ---------- Calibration simulation ---------- */
+function simulateCalibrationForElement(elem, settings, matrixSeverity){
+  // Build a simple linear calibration y = a*x + b (net intensity vs concentration)
+  // x in µg/L (instrument units, pre-dilution for standards assumed = 1x)
+  const analyte = Analytes.find(a=>a.elem===elem);
+  const baseSens = analyte.baseSensitivity;
+
+  const sensMul = sensitivityMultiplier(settings) * matrixSuppressionFactor(matrixSeverity);
+  const slopeTrue = baseSens * sensMul; // a.u. per (µg/L)
+  const interceptTrue = 40 + 20*matrixSeverity; // background-ish offset
+
+  const calPoints = [0, 2, 5, 10, 25, 50];
+  const sigma = noiseSigma(settings, matrixSeverity) * 0.35;
+
+  const pts = calPoints.map(x => {
+    const y = interceptTrue + slopeTrue*x + sigma*randn();
+    return {x, y};
+  });
+
+  // Fit slope/intercept (least squares)
+  let sx=0, sy=0, sxx=0, sxy=0;
+  for(const p of pts){ sx+=p.x; sy+=p.y; sxx+=p.x*p.x; sxy+=p.x*p.y; }
+  const n = pts.length;
+  const denom = n*sxx - sx*sx;
+  const slope = denom !== 0 ? (n*sxy - sx*sy)/denom : slopeTrue;
+  const intercept = (sy - slope*sx)/n;
+
+  // r2-ish
+  const ybar = sy/n;
+  let ssTot=0, ssRes=0;
+  for(const p of pts){
+    const yhat = intercept + slope*p.x;
+    ssTot += (p.y - ybar)**2;
+    ssRes += (p.y - yhat)**2;
+  }
+  const r2 = ssTot>0 ? 1 - ssRes/ssTot : 1;
+
+  const inRange = r2 >= 0.995; // teaching criterion
+
+  return { pts, slope, intercept, r2, inRange };
+}
+
+/* ---------- Measurement simulation ---------- */
+function simulateMeasurement(elem, wl, sample, settings, matrix, interferents_mgL, cal, driftRel, applyCorrection){
+  const analyte = Analytes.find(a=>a.elem===elem);
+  const truth = sample.truth_ugL[elem]; // in original sample units
+  const df = settings.dilutionFactor;
+  const instConc = truth / df; // instrument sees diluted concentration
+
+  const sensMul = sensitivityMultiplier(settings) * matrixSuppressionFactor(matrix.severity);
+  let signal = analyte.baseSensitivity * sensMul * instConc;
+
+  // Add spectral interference contributions (teaching)
+  let interference = 0;
+  for (const inf of Interferences){
+    if (inf.target === elem && inf.wl === wl){
+      const mgL = interferents_mgL[inf.interferer] ?? 0;
+      // Convert mg/L to "equivalent µg/L" intensity contribution scale (toy)
+      // mg/L is huge vs µg/L → map to interference intensity proportionally but damped.
+      const equiv = mgL * 1000; // µg/L equivalent magnitude
+      const interfererSens = 120; // (a.u. per µg/L) damped
+      interference += inf.frac * interfererSens * sensMul * equiv / 200; // downscale
+    }
+  }
+
+  // Apply interference correction (simplified: removes a fraction of modeled interference)
+  const correctedInterference = applyCorrection ? interference * 0.25 : interference;
+
+  // Add background; include matrix-driven background
+  const bg = 60 + 90*matrix.severity;
+
+  // Drift factor (relative)
+  const drift = driftRel ?? 0;
+  const driftFactor = 1 + drift;
+
+  // Noise
+  const sigma = noiseSigma(settings, matrix.severity);
+
+  const raw = (bg + (signal + correctedInterference)) * driftFactor + sigma*randn();
+  const bgMeas = bg + sigma*0.25*randn();
+  const net = raw - bgMeas;
+
+  // Convert net intensity back to concentration using calibration
+  const concInst = (net - cal.intercept) / cal.slope; // instrument conc (µg/L)
+  const concOrig = Math.max(0, concInst * df);
+
+  return {
+    truth,
+    instConc,
+    raw,
+    bg: bgMeas,
+    net,
+    conc: concOrig,
+    interference: interference,
+    interferenceResidual: correctedInterference
+  };
+}
+
+/* ---------- QC simulation ---------- */
+function runQC(model){
+  // QC checks (simplified, per state)
+  // - Blank: should be below 0.3*LOQ for all analytes
+  // - CCV: slope/intercept quality via r2 >= 0.995 already stored
+  // - Spike recovery: 80–120% (per analyte, choose one spike level)
+  // - Duplicate: RPD <= 20% for concentrations above 5*LOQ
+
+  const settings = model.state.settings;
+  const matrix = model.case.matrix;
+  const sample = model.sample;
+  const df = settings.dilutionFactor;
+
+  let blankOK = true;
+  let spikeOK = true;
+  let dupOK = true;
+
+  for(const a of Analytes){
+    const e = a.elem;
+    const cal = model.state.cal[e];
+    if(!cal) continue;
+
+    const baseLOQ = baseLOQMap[e];
+    const loq = computeLOQ(settings, matrix.severity, baseLOQ);
+
+    // Method blank simulated near 0 with noise; could be biased by matrix carryover
+    const blankBias = model.state.measured ? 0.05 * model.lastHighSignalFactor : 0.0;
+    const blankConc = Math.max(0, (loq*0.15 + loq*0.10*randn()) + blankBias*loq);
+    if(blankConc > 0.30*loq) blankOK = false;
+
+    // Spike recovery: add spike level at 20 µg/L (orig units), evaluate recovery
+    const spikeAdded = 20;
+    const truth = sample.truth_ugL[e] ?? 0;
+    const spikedTruth = truth + spikeAdded;
+
+    const applyCorrection = model.applyCorrection;
+    const m1 = simulateMeasurement(e, model.wavelengths[e], sample, settings, matrix, model.case.interferents_mgL, cal, model.state.driftRel[e] ?? 0, applyCorrection);
+    // simulate spiked replicate by using "truth" adjusted
+    const spikedSample = { id: sample.id+"-spk", label: sample.label+" (spike)", truth_ugL: {...sample.truth_ugL, [e]: spikedTruth } };
+    const m2 = simulateMeasurement(e, model.wavelengths[e], spikedSample, settings, matrix, model.case.interferents_mgL, cal, model.state.driftRel[e] ?? 0, applyCorrection);
+
+    const found = m2.conc - m1.conc;
+    const rec = spikeAdded > 0 ? (found / spikeAdded) : 1;
+    if(!(rec >= 0.80 && rec <= 1.20)) spikeOK = false;
+
+    // Duplicate RPD: two independent measurements
+    const d1 = simulateMeasurement(e, model.wavelengths[e], sample, settings, matrix, model.case.interferents_mgL, cal, model.state.driftRel[e] ?? 0, applyCorrection).conc;
+    const d2 = simulateMeasurement(e, model.wavelengths[e], sample, settings, matrix, model.case.interferents_mgL, cal, model.state.driftRel[e] ?? 0, applyCorrection).conc;
+    const mean = (d1+d2)/2;
+    const rpd = mean>0 ? Math.abs(d1-d2)/mean : 0;
+    if(mean > 5*loq && rpd > 0.20) dupOK = false;
+  }
+
+  const allOK = blankOK && spikeOK && dupOK && allCalInRange(model.state);
+
+  return { blankOK, spikeOK, dupOK, allOK };
+}
+
+/* ---------- Base LOQ per analyte (best-case) in µg/L, teaching values ---------- */
+const baseLOQMap = { As:0.8, Cd:0.05, Pb:0.4, Cr:0.3, Ni:0.5, Cu:0.6, Zn:0.7 };
+
+/* ---------- "Model" holding current case + state + trace ---------- */
+const model = {
+  case: CaseStudies[0],
+  sample: null,
+  state: freshState(),
+  log: [],
+  // per analyte chosen wavelength (state-ish for simplicity)
+  wavelengths: {},
+  // per analyte latest results
+  results: {},
+  // whether interference correction action has effectively happened
+  applyCorrection: false,
+  lastHighSignalFactor: 0
+};
+
+/* ---------- Institution-like rule checks ---------- */
+function allCalInRange(state){
+  for(const a of Analytes){
+    const e = a.elem;
+    if(state.calibrated){
+      if(state.inRangeCal[e] !== true) return false;
+    }
+  }
+  return true;
+}
+
+function canMeasure(state){
+  // Enforce ordering: prepare & tune & calibrate required
+  return state.prepared && state.tuned && state.calibrated;
+}
+
+function canReport(state){
+  // Enforce [Report] (Reported -> StablePlasma ∧ InRangeCal ∧ ValidQC)
+  return state.stablePlasma && allCalInRange(state) && state.qcValid;
+}
+
+/* ---------- UI wiring ---------- */
+const caseSelect = document.getElementById("caseSelect");
+const sampleSelect = document.getElementById("sampleSelect");
+const analyteSelect = document.getElementById("analyteSelect");
+const wlSelect = document.getElementById("wlSelect");
+const logEl = document.getElementById("log");
+
+const rfPower = document.getElementById("rfPower");
+const rfPowerN = document.getElementById("rfPowerN");
+const nebFlow = document.getElementById("nebFlow");
+const nebFlowN = document.getElementById("nebFlowN");
+const plasmaFlow = document.getElementById("plasmaFlow");
+const plasmaFlowN = document.getElementById("plasmaFlowN");
+const intTime = document.getElementById("intTime");
+const intTimeN = document.getElementById("intTimeN");
+const dilFactor = document.getElementById("dilFactor");
+const dilFactorN = document.getElementById("dilFactorN");
+
+const stateName = document.getElementById("stateName");
+const qcStatus = document.getElementById("qcStatus");
+
+const tagStable = document.getElementById("tagStable");
+const tagCal = document.getElementById("tagCal");
+const tagDrift = document.getElementById("tagDrift");
+const tagBlank = document.getElementById("tagBlank");
+const tagSpike = document.getElementById("tagSpike");
+const tagDup = document.getElementById("tagDup");
+
+const selInfo = document.getElementById("selInfo");
+const matrixInfo = document.getElementById("matrixInfo");
+
+const kpiNet = document.getElementById("kpiNet");
+const kpiConc = document.getElementById("kpiConc");
+const kpiLOQ = document.getElementById("kpiLOQ");
+
+const resultsTableBody = document.querySelector("#resultsTable tbody");
+
+const chart = document.getElementById("chart");
+const ctx = chart.getContext("2d");
+
+/* ---------- Populate selectors ---------- */
+function initSelectors(){
+  caseSelect.innerHTML = "";
+  for(const cs of CaseStudies){
+    const opt = document.createElement("option");
+    opt.value = cs.id;
+    opt.textContent = cs.name;
+    caseSelect.appendChild(opt);
+  }
+
+  analyteSelect.innerHTML = "";
+  for(const a of Analytes){
+    const opt = document.createElement("option");
+    opt.value = a.elem;
+    opt.textContent = a.elem;
+    analyteSelect.appendChild(opt);
+  }
+}
+
+function populateSamples(){
+  sampleSelect.innerHTML = "";
+  model.case.samples.forEach((s, idx)=>{
+    const opt = document.createElement("option");
+    opt.value = s.id;
+    opt.textContent = `${s.id} — ${s.label}`;
+    sampleSelect.appendChild(opt);
+  });
+  model.sample = model.case.samples[0];
+}
+
+function populateWavelengthsForAnalyte(elem){
+  wlSelect.innerHTML = "";
+  const a = Analytes.find(x=>x.elem===elem);
+  a.wls.forEach(w=>{
+    const opt = document.createElement("option");
+    opt.value = w;
+    opt.textContent = w + " nm";
+    wlSelect.appendChild(opt);
+  });
+  const current = model.wavelengths[elem] || a.wls[0];
+  wlSelect.value = current;
+}
+
+/* ---------- Settings sync ---------- */
+function setSlidersFromState(){
+  const s = model.state.settings;
+  rfPower.value = s.rfPower; rfPowerN.value = s.rfPower;
+  nebFlow.value = s.nebFlow; nebFlowN.value = s.nebFlow;
+  plasmaFlow.value = s.plasmaFlow; plasmaFlowN.value = s.plasmaFlow;
+  intTime.value = s.intTime; intTimeN.value = s.intTime;
+  dilFactor.value = s.dilutionFactor; dilFactorN.value = s.dilutionFactor;
+}
+
+function attachSliderSync(rangeEl, numEl, key, parseFn){
+  function apply(v){
+    const val = parseFn(v);
+    model.state.settings[key] = val;
+    // Changing settings should invalidate some downstream steps (teaching)
+    model.state.tuned = false;
+    model.state.calibrated = false;
+    model.state.measured = false;
+    model.state.qcRan = false;
+    model.state.qcValid = false;
+    model.applyCorrection = false;
+    logAction(`Settings changed: ${key}=${val} (Tune/Cal/QC invalidated)`);
+    updateAll();
+  }
+  rangeEl.addEventListener("input", e=>{ numEl.value = e.target.value; apply(e.target.value); });
+  numEl.addEventListener("change", e=>{ rangeEl.value = e.target.value; apply(e.target.value); });
+}
+
+/* ---------- Logging ---------- */
+function logAction(msg){
+  const stamp = new Date().toLocaleTimeString();
+  model.log.unshift(`[${stamp}] ${msg}`);
+  if(model.log.length > 200) model.log.pop();
+}
+
+/* ---------- Actions (Prepare/Tune/Calibrate/Measure/QC/Report/Reset) ---------- */
+function actionPrepare(){
+  model.state.prepared = true;
+  model.state.name = "prepared";
+  logAction(`Prepare(${model.sample.id}) — dilution factor set to ${model.state.settings.dilutionFactor}x`);
+}
+
+function actionTune(){
+  const stab = plasmaStabilityScore(model.state.settings);
+  model.state.stablePlasma = stab >= 0.55;
+  model.state.tuned = true;
+  model.state.name = "tuned";
+  logAction(`Tune() — plasma stability score=${fmt(stab,3)} → ${model.state.stablePlasma ? "StablePlasma ✓" : "UNSTABLE ✗"}`);
+}
+
+function actionCalibrate(){
+  if(!model.state.prepared){
+    logAction("Calibrate() blocked: sample not prepared (run Prepare first).");
+    return;
+  }
+  if(!model.state.tuned){
+    logAction("Calibrate() blocked: instrument not tuned (run Tune first).");
+    return;
+  }
+  model.state.cal = {};
+  model.state.inRangeCal = {};
+  for(const a of Analytes){
+    const e = a.elem;
+    const cal = simulateCalibrationForElement(e, model.state.settings, model.case.matrix.severity);
+    model.state.cal[e] = cal;
+    model.state.inRangeCal[e] = cal.inRange;
+    model.state.driftRel[e] = 0; // reset drift at calibration
+  }
+  model.state.calibrated = true;
+  model.state.name = "calibrated";
+  model.state.measured = false;
+  model.state.qcRan = false;
+  model.state.qcValid = false;
+  model.applyCorrection = false;
+  logAction("Calibrate(Elems) — calibration updated; drift reset.");
+  // Auto-apply interference correction if student selects alternate wavelength
+  // (still allow explicit correction action via QC/Report rules; see below)
+}
+
+function actionMeasure(){
+  if(!canMeasure(model.state)){
+    logAction("Measure() blocked: must Prepare → Tune → Calibrate first.");
+    return;
+  }
+  // drift evolves with measurement events
+  for(const a of Analytes){
+    const e = a.elem;
+    model.state.driftRel[e] = driftUpdate(model.state.driftRel[e] ?? 0);
+  }
+
+  model.results = {};
+  model.state.flags = {};
+  model.lastHighSignalFactor = 0;
+
+  for(const a of Analytes){
+    const e = a.elem;
+    const wl = model.wavelengths[e] || a.wls[0];
+    const cal = model.state.cal[e];
+    const m = simulateMeasurement(e, wl, model.sample, model.state.settings, model.case.matrix, model.case.interferents_mgL, cal, model.state.driftRel[e], model.applyCorrection);
+
+    // base LOQ and flags
+    const loq = computeLOQ(model.state.settings, model.case.matrix.severity, baseLOQMap[e]);
+    const flags = [];
+
+    // Interference flag if relevant on selected wavelength
+    const hasInterf = Interferences.some(inf => inf.target===e && inf.wl===wl);
+    if(hasInterf && !model.applyCorrection){
+      flags.push("spectral-interference (uncorrected)");
+    } else if(hasInterf && model.applyCorrection){
+      flags.push("spectral-interference (corrected)");
+    }
+
+    // Plasma stability flag
+    if(!model.state.stablePlasma) flags.push("unstable-plasma");
+
+    // Calibration quality flag
+    if(model.state.inRangeCal[e] !== true) flags.push("cal-out-of-range");
+
+    // Drift flag
+    if(Math.abs(model.state.driftRel[e]) > 0.03) flags.push("drift-high");
+
+    // LOQ flag
+    if(m.conc < loq) flags.push("<LOQ");
+
+    model.results[e] = { ...m, loq, wl, flags };
+    model.state.flags[e] = flags;
+
+    // track high signal for carryover/QC blank bias
+    model.lastHighSignalFactor = Math.max(model.lastHighSignalFactor, clamp(m.conc / (10*loq), 0, 4));
+  }
+
+  model.state.measured = true;
+  model.state.name = "measured";
+  model.state.qcRan = false;
+  model.state.qcValid = false;
+  logAction(`Measure(${model.sample.id}) — results computed for ${Analytes.length} analytes; drift updated.`);
+}
+
+function actionQC(){
+  if(!model.state.measured){
+    logAction("Run QC blocked: measure a sample first.");
+    return;
+  }
+  // A "correction action" can be toggled as part of QC if interferences exist.
+  // Here: if student uses primary wavelength with known interferences and matrix is harsh, encourage correction.
+  // We'll allow a button-like behavior: QC run applies interference correction heuristically.
+  const elem = analyteSelect.value;
+  const wl = model.wavelengths[elem] || wlSelect.value;
+  const hasInterf = Interferences.some(inf => inf.target===elem && inf.wl===wl);
+
+  if(hasInterf && !model.applyCorrection){
+    model.applyCorrection = true;
+    logAction("ApplyInterferenceCorrection() — enabled (simplified) as part of QC.");
+    // re-measure to see effect
+    actionMeasure();
+  }
+
+  const qc = runQC(model);
+  model.state.qcRan = true;
+  model.state.qcValid = qc.allOK;
+  model.state.name = "qc";
+  logAction(`QC — blank=${qc.blankOK?"OK":"FAIL"}, spike=${qc.spikeOK?"OK":"FAIL"}, dup=${qc.dupOK?"OK":"FAIL"} ⇒ ValidQC=${qc.allOK?"✓":"✗"}`);
+
+  // store on state for UI
+  model.state._qcLast = qc;
+}
+
+function actionReport(){
+  if(!model.state.measured){
+    logAction("Report blocked: no measurements.");
+    return;
+  }
+  if(!model.state.qcRan){
+    logAction("Report blocked: QC not run (run QC).");
+    return;
+  }
+  if(!canReport(model.state)){
+    logAction("Report blocked by institution rule: need StablePlasma ∧ InRangeCal ∧ ValidQC.");
+    return;
+  }
+  model.state.name = "reported";
+  logAction("Report() — report issued (institution rule satisfied).");
+}
+
+function actionReset(){
+  model.state = freshState();
+  model.results = {};
+  model.applyCorrection = false;
+  model.log = [];
+  for(const a of Analytes){
+    model.wavelengths[a.elem] = a.wls[0];
+  }
+  logAction("Reset() — new run started.");
+}
+
+/* ---------- Draw: calibration curve and point ---------- */
+function drawChart(){
+  // HiDPI support
+  const rect = chart.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  chart.width = Math.floor(rect.width * dpr);
+  chart.height = Math.floor(260 * dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+
+  const W = rect.width, H = 260;
+  ctx.clearRect(0,0,W,H);
+
+  // frame
+  ctx.fillStyle = "rgba(8,12,24,0.35)";
+  ctx.fillRect(0,0,W,H);
+
+  const pad = {l:52, r:14, t:16, b:42};
+  const plotW = W - pad.l - pad.r;
+  const plotH = H - pad.t - pad.b;
+
+  const elem = analyteSelect.value;
+  const cal = model.state.cal[elem];
+  const res = model.results[elem];
+
+  // axes
+  ctx.strokeStyle = "rgba(38,50,83,0.9)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad.l, pad.t);
+  ctx.lineTo(pad.l, pad.t+plotH);
+  ctx.lineTo(pad.l+plotW, pad.t+plotH);
+  ctx.stroke();
+
+  // labels
+  ctx.fillStyle = "rgba(168,179,216,0.9)";
+  ctx.font = "12px ui-monospace, Menlo, Consolas";
+  ctx.fillText("net intensity (a.u.)", pad.l+8, pad.t+12);
+  ctx.fillText("conc (µg/L, standard)", pad.l + plotW/2 - 70, pad.t+plotH+32);
+
+  if(!cal){
+    ctx.fillStyle = "rgba(232,238,252,0.85)";
+    ctx.font = "13px system-ui";
+    ctx.fillText("Calibrate to see a curve.", pad.l+10, pad.t+plotH/2);
+    return;
+  }
+
+  // Determine x range from points
+  const pts = cal.pts;
+  const xs = pts.map(p=>p.x);
+  const ys = pts.map(p=>p.y);
+  const xmin = 0;
+  const xmax = Math.max(...xs, 50);
+  const ymin = Math.min(...ys, cal.intercept) - 40;
+  const ymax = Math.max(...ys, cal.intercept + cal.slope*xmax) + 60;
+
+  function x2p(x){ return pad.l + (x - xmin) / (xmax - xmin) * plotW; }
+  function y2p(y){ return pad.t + plotH - (y - ymin) / (ymax - ymin) * plotH; }
+
+  // grid
+  ctx.strokeStyle = "rgba(38,50,83,0.45)";
+  ctx.lineWidth = 1;
+  for(let i=0;i<=5;i++){
+    const gx = pad.l + i/5*plotW;
+    ctx.beginPath(); ctx.moveTo(gx,pad.t); ctx.lineTo(gx,pad.t+plotH); ctx.stroke();
+  }
+  for(let i=0;i<=4;i++){
+    const gy = pad.t + i/4*plotH;
+    ctx.beginPath(); ctx.moveTo(pad.l,gy); ctx.lineTo(pad.l+plotW,gy); ctx.stroke();
+  }
+
+  // calibration line
+  ctx.strokeStyle = "rgba(61,220,151,0.9)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x2p(xmin), y2p(cal.intercept + cal.slope*xmin));
+  ctx.lineTo(x2p(xmax), y2p(cal.intercept + cal.slope*xmax));
+  ctx.stroke();
+
+  // calibration points
+  for(const p of pts){
+    ctx.fillStyle = "rgba(232,238,252,0.9)";
+    ctx.beginPath();
+    ctx.arc(x2p(p.x), y2p(p.y), 4.2, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  // measurement point (map to instrument conc by inverting calibration)
+  if(res){
+    const instConc = res.instConc; // this is diluted conc in instrument view
+    const yhat = cal.intercept + cal.slope*instConc;
+    ctx.fillStyle = "rgba(255,209,102,0.95)";
+    ctx.beginPath();
+    ctx.arc(x2p(clamp(instConc, xmin, xmax)), y2p(yhat), 5.4, 0, Math.PI*2);
+    ctx.fill();
+
+    ctx.fillStyle = "rgba(255,209,102,0.95)";
+    ctx.font = "12px ui-monospace, Menlo, Consolas";
+    ctx.fillText("sample", x2p(clamp(instConc, xmin, xmax))+8, y2p(yhat)-8);
+  }
+
+  // axis tick labels
+  ctx.fillStyle = "rgba(168,179,216,0.9)";
+  ctx.font = "11px ui-monospace, Menlo, Consolas";
+
+  for(let i=0;i<=5;i++){
+    const x = xmin + i/5*(xmax-xmin);
+    ctx.fillText(fmt(x,0), x2p(x)-6, pad.t+plotH+18);
+  }
+  for(let i=0;i<=4;i++){
+    const y = ymin + (4-i)/4*(ymax-ymin);
+    ctx.fillText(fmt(y,0), 8, y2p(y)+4);
+  }
+
+  // annotation
+  ctx.fillStyle = "rgba(232,238,252,0.85)";
+  ctx.font = "12px system-ui";
+  ctx.fillText(`Fit: y = ${fmt(cal.slope,2)}x + ${fmt(cal.intercept,1)}  |  r²≈${fmt(cal.r2,4)}  |  ${cal.inRange?"in-range":"out-of-range"}`, pad.l, 14);
+}
+
+/* ---------- Results table ---------- */
+function renderResultsTable(){
+  resultsTableBody.innerHTML = "";
+  for(const a of Analytes){
+    const e = a.elem;
+    const r = model.results[e];
+    const tr = document.createElement("tr");
+
+    const wl = model.wavelengths[e] || a.wls[0];
+    const net = r ? r.net : null;
+    const conc = r ? r.conc : null;
+    const loq = r ? r.loq : computeLOQ(model.state.settings, model.case.matrix.severity, baseLOQMap[e]);
+    const flags = r ? r.flags : [];
+
+    tr.innerHTML = `
+      <td><b>${e}</b></td>
+      <td class="mono">${wl}</td>
+      <td class="mono">${fmt(net,1)}</td>
+      <td class="mono">${fmt(conc,3)}</td>
+      <td class="mono">${fmt(loq,3)}</td>
+      <td>${flags.length ? flags.map(f=>`<span class="tag ${f.includes("FAIL")||f.includes("out-of-range")||f.includes("unstable")?"bad":(f.includes("<LOQ")||f.includes("drift")||f.includes("interference")?"warn":"") }">${f}</span>`).join(" ") : `<span class="tag">—</span>`}</td>
+    `;
+    resultsTableBody.appendChild(tr);
+  }
+}
+
+/* ---------- Status chips ---------- */
+function setTag(el, ok, text){
+  el.classList.remove("good","bad","warn");
+  if(ok === true) el.classList.add("good");
+  if(ok === false) el.classList.add("bad");
+  if(ok === "warn") el.classList.add("warn");
+  el.textContent = text;
+}
+
+function updateStatus(){
+  stateName.textContent = model.state.name;
+  qcStatus.textContent = model.state.qcRan ? (model.state.qcValid ? "pass" : "fail") : "not run";
+
+  // Plasma
+  setTag(tagStable, model.state.tuned ? model.state.stablePlasma : "warn",
+         model.state.tuned ? (model.state.stablePlasma ? "Plasma: stable" : "Plasma: unstable") : "Plasma: not tuned");
+
+  // Cal
+  const calOK = model.state.calibrated ? allCalInRange(model.state) : null;
+  setTag(tagCal, model.state.calibrated ? calOK : "warn",
+         model.state.calibrated ? (calOK ? "Cal: in-range" : "Cal: out-of-range") : "Cal: not run");
+
+  // Drift
+  let worst = 0;
+  for(const a of Analytes){
+    worst = Math.max(worst, Math.abs(model.state.driftRel[a.elem] ?? 0));
+  }
+  const driftText = model.state.calibrated ? `Drift: ${fmt(100*worst,1)}%` : "Drift: —";
+  setTag(tagDrift, model.state.calibrated ? (worst<=0.03 ? true : "warn") : "warn", driftText);
+
+  const qc = model.state._qcLast;
+  if(model.state.qcRan && qc){
+    setTag(tagBlank, qc.blankOK, `Blank: ${qc.blankOK?"OK":"FAIL"}`);
+    setTag(tagSpike, qc.spikeOK, `Spike: ${qc.spikeOK?"OK":"FAIL"}`);
+    setTag(tagDup, qc.dupOK, `Dup: ${qc.dupOK?"OK":"FAIL"}`);
+  } else {
+    setTag(tagBlank, "warn", "Blank: —");
+    setTag(tagSpike, "warn", "Spike: —");
+    setTag(tagDup, "warn", "Dup: —");
+  }
+}
+
+/* ---------- KPIs ---------- */
+function updateKPIs(){
+  const elem = analyteSelect.value;
+  const r = model.results[elem];
+  const loq = computeLOQ(model.state.settings, model.case.matrix.severity, baseLOQMap[elem]);
+  kpiLOQ.textContent = fmt(loq, 3);
+
+  if(!r){
+    kpiNet.textContent = "—";
+    kpiConc.textContent = "—";
+    return;
+  }
+  kpiNet.textContent = fmt(r.net,1);
+  kpiConc.textContent = fmt(r.conc,3);
+}
+
+/* ---------- Log render ---------- */
+function renderLog(){
+  logEl.textContent = model.log.join("\n");
+}
+
+/* ---------- High-level update ---------- */
+function updateAll(){
+  // Update selections text
+  const elem = analyteSelect.value;
+  const wl = model.wavelengths[elem] || wlSelect.value;
+  selInfo.textContent = `${elem} @ ${wl} nm`;
+  matrixInfo.textContent = `${model.case.matrix.name}`;
+
+  // ensure wl select matches
+  populateWavelengthsForAnalyte(elem);
+  wlSelect.value = model.wavelengths[elem] || wlSelect.value;
+
+  renderResultsTable();
+  updateStatus();
+  updateKPIs();
+  drawChart();
+  renderLog();
+}
+
+/* ---------- Event handlers ---------- */
+caseSelect.addEventListener("change", ()=>{
+  const id = caseSelect.value;
+  model.case = CaseStudies.find(cs=>cs.id===id);
+  populateSamples();
+  actionReset();
+  model.case = CaseStudies.find(cs=>cs.id===id); // preserve case after reset
+  populateSamples();
+  logAction(`Case study set: ${model.case.name}`);
+  updateAll();
+});
+
+sampleSelect.addEventListener("change", ()=>{
+  const id = sampleSelect.value;
+  model.sample = model.case.samples.find(s=>s.id===id);
+  model.state.measured = false;
+  model.state.qcRan = false;
+  model.state.qcValid = false;
+  logAction(`Sample selected: ${model.sample.id}`);
+  updateAll();
+});
+
+analyteSelect.addEventListener("change", ()=>{
+  const elem = analyteSelect.value;
+  populateWavelengthsForAnalyte(elem);
+  updateAll();
+});
+
+wlSelect.addEventListener("change", ()=>{
+  const elem = analyteSelect.value;
+  model.wavelengths[elem] = wlSelect.value;
+  // Changing wavelength should invalidate measurement/QC but not tuning
+  model.state.measured = false;
+  model.state.qcRan = false;
+  model.state.qcValid = false;
+  model.applyCorrection = false;
+  logAction(`Wavelength set: ${elem} @ ${wlSelect.value} nm (measurement/QC invalidated)`);
+  updateAll();
+});
+
+// Buttons
+document.getElementById("btnPrepare").addEventListener("click", ()=>{ actionPrepare(); updateAll(); });
+document.getElementById("btnTune").addEventListener("click", ()=>{ actionTune(); updateAll(); });
+document.getElementById("btnCalibrate").addEventListener("click", ()=>{ actionCalibrate(); updateAll(); });
+document.getElementById("btnMeasure").addEventListener("click", ()=>{ actionMeasure(); updateAll(); });
+document.getElementById("btnQC").addEventListener("click", ()=>{ actionQC(); updateAll(); });
+document.getElementById("btnReport").addEventListener("click", ()=>{ actionReport(); updateAll(); });
+document.getElementById("btnReset").addEventListener("click", ()=>{
+  const currentCase = model.case;
+  const currentSampleId = model.sample?.id;
+  actionReset();
+  model.case = currentCase;
+  populateSamples();
+  if(currentSampleId){
+    const s = model.case.samples.find(x=>x.id===currentSampleId);
+    model.sample = s || model.case.samples[0];
+    sampleSelect.value = model.sample.id;
+  }
+  logAction("Reset done.");
+  updateAll();
+});
+
+/* ---------- Init ---------- */
+function init(){
+  initSelectors();
+
+  // default: wastewater
+  caseSelect.value = "wastewater";
+  model.case = CaseStudies.find(cs=>cs.id==="wastewater");
+  populateSamples();
+  sampleSelect.value = model.case.samples[0].id;
+
+  // initialize wavelengths
+  for(const a of Analytes){
+    model.wavelengths[a.elem] = a.wls[0];
+  }
+
+  // init sliders
+  setSlidersFromState();
+  attachSliderSync(rfPower, rfPowerN, "rfPower", v=>parseFloat(v));
+  attachSliderSync(nebFlow, nebFlowN, "nebFlow", v=>parseFloat(v));
+  attachSliderSync(plasmaFlow, plasmaFlowN, "plasmaFlow", v=>parseFloat(v));
+  attachSliderSync(intTime, intTimeN, "intTime", v=>parseFloat(v));
+  attachSliderSync(dilFactor, dilFactorN, "dilutionFactor", v=>parseInt(v,10));
+
+  // initial selections
+  analyteSelect.value = "As";
+  populateWavelengthsForAnalyte("As");
+  wlSelect.value = model.wavelengths["As"];
+
+  logAction("Ready. Start with Prepare → Tune → Calibrate → Measure → Run QC → Report.");
+  updateAll();
+}
+
+window.addEventListener("resize", ()=>drawChart());
+init();
+</script>
+</body>
+</html>
