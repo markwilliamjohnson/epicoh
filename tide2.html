@@ -1,0 +1,787 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Kelvin Tidal Machine (Conceptual) — Animated Harmonic Summation</title>
+  <style>
+    :root{
+      --bg:#0b0f14; --panel:#101826; --ink:#e7eefc; --muted:#9bb0d0;
+      --line:#2a3a57; --good:#7ee787; --warn:#f5d90a; --bad:#ff7b72;
+    }
+    html,body{height:100%; margin:0; background:var(--bg); color:var(--ink); font:14px/1.35 system-ui,Segoe UI,Roboto,Helvetica,Arial;}
+    .wrap{display:grid; grid-template-columns: 420px 1fr; gap:14px; padding:14px; height:100%; box-sizing:border-box;}
+    .card{background:var(--panel); border:1px solid rgba(255,255,255,.06); border-radius:14px; padding:12px; box-shadow:0 10px 40px rgba(0,0,0,.25);}
+    h1{font-size:16px; margin:0 0 8px;}
+    h2{font-size:13px; margin:14px 0 8px; color:var(--muted); font-weight:600; letter-spacing:.2px;}
+    label{display:block; margin:8px 0 4px; color:var(--muted);}
+    input[type="range"]{width:100%;}
+    input,select,button{font:inherit;}
+    .row{display:flex; gap:8px; align-items:center;}
+    .row > *{flex:1;}
+    .btn{background:#1a2a44; color:var(--ink); border:1px solid rgba(255,255,255,.08); border-radius:10px; padding:8px 10px; cursor:pointer;}
+    .btn:hover{filter:brightness(1.06);}
+    .btn:active{transform:translateY(1px);}
+    .pill{display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; background:#0f1726; border:1px solid rgba(255,255,255,.06); color:var(--muted);}
+    .small{font-size:12px; color:var(--muted);}
+    .grid2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+    .checklist{display:grid; grid-template-columns:1fr 1fr; gap:6px;}
+    .check{display:flex; align-items:center; gap:8px; padding:6px 8px; border:1px solid rgba(255,255,255,.06); border-radius:10px; background:#0f1726;}
+    .check input{margin:0;}
+    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
+    .main{display:grid; grid-template-rows:auto 1fr auto; gap:14px;}
+    .stage{display:grid; grid-template-columns: 1fr 360px; gap:14px; height:100%;}
+    .svgWrap{position:relative; overflow:hidden; border-radius:14px; border:1px solid rgba(255,255,255,.06); background: radial-gradient(1200px 600px at 20% 10%, rgba(70,120,255,.12), transparent 55%),
+                                                                  radial-gradient(1000px 600px at 80% 20%, rgba(126,231,135,.10), transparent 55%),
+                                                                  linear-gradient(180deg, rgba(255,255,255,.03), transparent);}
+    #machine{width:100%; height:100%; display:block;}
+    .legend{display:flex; gap:10px; flex-wrap:wrap;}
+    .dot{width:10px; height:10px; border-radius:999px; display:inline-block; margin-right:6px; vertical-align:-1px;}
+    .chart{border-radius:14px; border:1px solid rgba(255,255,255,.06); background:linear-gradient(180deg, rgba(255,255,255,.02), transparent);}
+    canvas{width:100%; height:100%; display:block;}
+    .footer{display:flex; gap:10px; align-items:center; justify-content:space-between; color:var(--muted);}
+    a{color:#9cc1ff; text-decoration:none;}
+    a:hover{text-decoration:underline;}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <!-- LEFT: Controls -->
+  <div class="card">
+    <h1>Kelvin Tidal Machine (Conceptual) — Animated Harmonic Summation</h1>
+    <div class="small">
+      This is a <b>teaching model</b> of Lord Kelvin’s tide-predicting machine idea:
+      <span class="mono">tide(t) = Σ Aᵢ·sin(ωᵢ t + φᵢ)</span>.
+      We visualize each harmonic as a rotating “disk + crank pin” whose vertical motion is summed by a linkage chain.
+    </div>
+
+    <h2>Time & playback</h2>
+    <div class="row">
+      <button class="btn" id="btnPlay">▶ Play</button>
+      <button class="btn" id="btnReset">⟲ Reset</button>
+    </div>
+
+    <label>Speed (simulated hours per real second): <span class="mono" id="speedLabel"></span></label>
+    <input type="range" id="speed" min="0" max="400" value="60" />
+
+    <label>Manual time (hours from start): <span class="mono" id="tLabel"></span></label>
+    <input type="range" id="scrub" min="0" max="240" value="0" />
+
+    <div class="grid2" style="margin-top:10px;">
+      <div class="pill">Now: <span class="mono" id="clock"></span></div>
+      <div class="pill">Tide: <span class="mono" id="tideNow"></span></div>
+    </div>
+
+    <h2>“Input data”: Moon & Sun drivers (simplified)</h2>
+    <div class="small">
+      We compute two base angles that advance with realistic mean periods:
+      lunar day (~24.84 h) and solar day (24 h). These drive constituent phase speeds.
+      (A real Kelvin machine would use many precise astronomical arguments.)
+    </div>
+    <div class="grid2" style="margin-top:8px;">
+      <div class="pill">Moon angle: <span class="mono" id="moonAngle"></span></div>
+      <div class="pill">Sun angle: <span class="mono" id="sunAngle"></span></div>
+    </div>
+
+    <h2>Constituents (toggle + amplitude scale)</h2>
+    <label>Latitude (affects “diurnal vs semidiurnal” balance): <span class="mono" id="latLabel"></span></label>
+    <input type="range" id="lat" min="-70" max="70" value="51" />
+
+    <label>Overall amplitude scale: <span class="mono" id="ampLabel"></span></label>
+    <input type="range" id="amp" min="0" max="200" value="100" />
+
+    <div class="checklist" id="checks"></div>
+
+    <h2>What you’re seeing</h2>
+    <div class="small">
+      • Each disk rotates at its constituent speed <span class="mono">ωᵢ</span>.<br/>
+      • A crank pin turns that rotation into a vertical displacement (like a pulley/chain in Kelvin’s machine).<br/>
+      • The linkage chain accumulates displacements → the final pointer is the predicted tide.<br/>
+      • The chart shows the last ~3 simulated days.
+    </div>
+  </div>
+
+  <!-- RIGHT: Visualization -->
+  <div class="main">
+    <div class="card">
+      <div class="legend" id="legend"></div>
+    </div>
+
+    <div class="stage">
+      <div class="svgWrap card" style="padding:0;">
+        <svg id="machine" viewBox="0 0 1200 700" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Kelvin machine visualization">
+          <!-- backdrop grid -->
+          <defs>
+            <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+            </pattern>
+            <filter id="softShadow" x="-50%" y="-50%" width="200%" height="200%">
+              <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="rgba(0,0,0,0.35)"/>
+            </filter>
+          </defs>
+          <rect x="0" y="0" width="1200" height="700" fill="url(#grid)"/>
+
+          <!-- “Inputs”: Moon & Sun pointers -->
+          <g id="inputs" transform="translate(60,70)">
+            <text x="0" y="-18" fill="rgba(255,255,255,0.75)" font-size="14" font-weight="600">Astronomical drivers (simplified)</text>
+
+            <g id="sun" transform="translate(0,0)">
+              <circle cx="70" cy="60" r="50" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.18)"/>
+              <line id="sunHand" x1="70" y1="60" x2="70" y2="18" stroke="rgba(245,217,10,0.9)" stroke-width="4" stroke-linecap="round"/>
+              <circle cx="70" cy="60" r="6" fill="rgba(245,217,10,0.95)"/>
+              <text x="140" y="54" fill="rgba(255,255,255,0.85)" font-size="13" font-weight="600">Sun (solar day)</text>
+              <text id="sunText" x="140" y="76" fill="rgba(155,176,208,0.95)" font-size="12" class="mono">θ☉ = …</text>
+            </g>
+
+            <g id="moon" transform="translate(0,130)">
+              <circle cx="70" cy="60" r="50" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.18)"/>
+              <line id="moonHand" x1="70" y1="60" x2="70" y2="18" stroke="rgba(156,193,255,0.95)" stroke-width="4" stroke-linecap="round"/>
+              <circle cx="70" cy="60" r="6" fill="rgba(156,193,255,0.95)"/>
+              <text x="140" y="54" fill="rgba(255,255,255,0.85)" font-size="13" font-weight="600">Moon (lunar day)</text>
+              <text id="moonText" x="140" y="76" fill="rgba(155,176,208,0.95)" font-size="12" class="mono">θ☾ = …</text>
+            </g>
+          </g>
+
+          <!-- Machine disks (dynamic) -->
+          <g id="disks" transform="translate(380,60)"></g>
+
+          <!-- Summation linkage -->
+          <g id="sum" transform="translate(880,70)">
+            <text x="0" y="-18" fill="rgba(255,255,255,0.75)" font-size="14" font-weight="600">Summation linkage</text>
+
+            <!-- chain rails -->
+            <rect x="18" y="0" width="30" height="560" rx="12" fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.10)"/>
+            <rect x="82" y="0" width="30" height="560" rx="12" fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.10)"/>
+
+            <path id="chainPath" d="" fill="none" stroke="rgba(156,193,255,0.55)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle id="sumHead" cx="65" cy="280" r="10" fill="rgba(156,193,255,0.95)" filter="url(#softShadow)"/>
+            <text x="0" y="595" fill="rgba(155,176,208,0.95)" font-size="12">Pointer height ≈ predicted tide</text>
+
+            <!-- Scale ticks -->
+            <g id="ticks"></g>
+          </g>
+
+          <!-- Output gauge -->
+          <g id="gauge" transform="translate(60,420)">
+            <text x="0" y="-18" fill="rgba(255,255,255,0.75)" font-size="14" font-weight="600">Output</text>
+            <rect x="0" y="0" width="300" height="220" rx="16" fill="rgba(0,0,0,0.12)" stroke="rgba(255,255,255,0.10)"/>
+            <line x1="30" y1="180" x2="270" y2="180" stroke="rgba(255,255,255,0.12)"/>
+            <line x1="30" y1="40" x2="270" y2="40" stroke="rgba(255,255,255,0.12)"/>
+            <line x1="30" y1="110" x2="270" y2="110" stroke="rgba(255,255,255,0.12)"/>
+
+            <text x="18" y="44" fill="rgba(155,176,208,0.95)" font-size="12" class="mono">+1.0</text>
+            <text x="18" y="114" fill="rgba(155,176,208,0.95)" font-size="12" class="mono">0.0</text>
+            <text x="18" y="184" fill="rgba(155,176,208,0.95)" font-size="12" class="mono">-1.0</text>
+
+            <line id="outNeedle" x1="80" y1="110" x2="260" y2="110" stroke="rgba(126,231,135,0.95)" stroke-width="5" stroke-linecap="round"/>
+            <circle cx="80" cy="110" r="7" fill="rgba(126,231,135,0.95)"/>
+            <text id="outText" x="30" y="205" fill="rgba(231,238,252,0.95)" font-size="13" font-weight="600" class="mono">tide = …</text>
+          </g>
+        </svg>
+      </div>
+
+      <div class="card chart" style="padding:0; overflow:hidden;">
+        <canvas id="plot" width="360" height="700"></canvas>
+      </div>
+    </div>
+
+    <div class="card footer">
+      <div>
+        Tip: turn constituents on/off to see how each rotating “disk” contributes to the final tide.
+      </div>
+      <div class="small">
+        Kelvin machine concept • harmonic summation • educational visualization
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  // ----------------------------
+  // Constituents (educational set)
+  // Speeds in degrees per hour (approx, standard tidal constituent speeds)
+  // ----------------------------
+  const CONSTITUENTS = [
+    { key:"M2", name:"M2 (principal lunar semidiurnal)", speedDegHr: 28.9841042, baseAmp: 1.00, phaseDeg:  20, color:"rgba(156,193,255,0.95)" },
+    { key:"S2", name:"S2 (principal solar semidiurnal)", speedDegHr: 30.0000000, baseAmp: 0.46, phaseDeg: -10, color:"rgba(245,217,10,0.95)" },
+    { key:"N2", name:"N2 (larger lunar elliptic)",      speedDegHr: 28.4397295, baseAmp: 0.22, phaseDeg:  70, color:"rgba(120,220,255,0.85)" },
+    { key:"K1", name:"K1 (luni-solar diurnal)",         speedDegHr: 15.0410686, baseAmp: 0.35, phaseDeg:  35, color:"rgba(255,160,122,0.92)" },
+    { key:"O1", name:"O1 (principal lunar diurnal)",    speedDegHr: 13.9430356, baseAmp: 0.25, phaseDeg: -40, color:"rgba(255,123,114,0.92)" },
+    { key:"P1", name:"P1 (principal solar diurnal)",    speedDegHr: 14.9589314, baseAmp: 0.14, phaseDeg: 110, color:"rgba(255,200,120,0.85)" },
+  ];
+
+  // Rough latitude weighting:
+  // - Semidiurnal tends to dominate mid-latitudes and many coasts;
+  // - Diurnal can increase at low latitudes / amphidromic patterns.
+  // This is not a real tide model; it's just to show "inputs affect components".
+  function latWeight(latDeg) {
+    const lat = Math.abs(latDeg);
+    // semidiurnal strong at mid-latitudes; diurnal relatively stronger near equator
+    const semi = clamp(mapRange(lat, 0, 60, 0.65, 1.05), 0.5, 1.15);
+    const diur = clamp(mapRange(lat, 0, 60, 1.15, 0.75), 0.6, 1.25);
+    return { semi, diur };
+  }
+
+  // "Astronomical drivers": just two angles with realistic mean periods.
+  // Solar day: 24h. Lunar day ~ 24.8412h (time between moon meridian passages).
+  const SOLAR_DAY_HR = 24.0;
+  const LUNAR_DAY_HR = 24.8412;
+
+  // ----------------------------
+  // DOM
+  // ----------------------------
+  const el = {
+    btnPlay: document.getElementById("btnPlay"),
+    btnReset: document.getElementById("btnReset"),
+    speed: document.getElementById("speed"),
+    speedLabel: document.getElementById("speedLabel"),
+    scrub: document.getElementById("scrub"),
+    tLabel: document.getElementById("tLabel"),
+    clock: document.getElementById("clock"),
+    tideNow: document.getElementById("tideNow"),
+    lat: document.getElementById("lat"),
+    latLabel: document.getElementById("latLabel"),
+    amp: document.getElementById("amp"),
+    ampLabel: document.getElementById("ampLabel"),
+    checks: document.getElementById("checks"),
+    legend: document.getElementById("legend"),
+    machine: document.getElementById("machine"),
+    disks: document.getElementById("disks"),
+    chainPath: document.getElementById("chainPath"),
+    sumHead: document.getElementById("sumHead"),
+    ticks: document.getElementById("ticks"),
+    outNeedle: document.getElementById("outNeedle"),
+    outText: document.getElementById("outText"),
+    sunHand: document.getElementById("sunHand"),
+    moonHand: document.getElementById("moonHand"),
+    sunText: document.getElementById("sunText"),
+    moonText: document.getElementById("moonText"),
+    moonAngle: document.getElementById("moonAngle"),
+    sunAngle: document.getElementById("sunAngle"),
+    plot: document.getElementById("plot"),
+  };
+
+  // ----------------------------
+  // State
+  // ----------------------------
+  const state = {
+    running: false,
+    // simulation time in hours from start
+    tHours: 0,
+    // playback rate: simulated hours per real second
+    rateHrsPerSec: 60,
+    latDeg: +el.lat.value,
+    ampScale: +el.amp.value / 100,
+    enabled: Object.fromEntries(CONSTITUENTS.map(c => [c.key, true])),
+    // history for plot: [tHours, tide]
+    history: [],
+  };
+
+  // ----------------------------
+  // UI Build (checkboxes + legend)
+  // ----------------------------
+  function buildChecks() {
+    el.checks.innerHTML = "";
+    for (const c of CONSTITUENTS) {
+      const w = document.createElement("div");
+      w.className = "check";
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.checked = state.enabled[c.key];
+      cb.addEventListener("change", () => state.enabled[c.key] = cb.checked);
+      const span = document.createElement("div");
+      span.innerHTML = `<span class="dot" style="background:${c.color}"></span><span class="mono">${c.key}</span>`;
+      const small = document.createElement("div");
+      small.className = "small";
+      small.textContent = c.name.split(")")[0] + ")";
+      w.appendChild(cb);
+      w.appendChild(span);
+      w.appendChild(small);
+      el.checks.appendChild(w);
+    }
+  }
+
+  function buildLegend() {
+    el.legend.innerHTML = "";
+    for (const c of CONSTITUENTS) {
+      const item = document.createElement("span");
+      item.className = "pill";
+      item.innerHTML = `<span class="dot" style="background:${c.color}"></span><span class="mono">${c.key}</span>`;
+      el.legend.appendChild(item);
+    }
+    const out = document.createElement("span");
+    out.className = "pill";
+    out.innerHTML = `<span class="dot" style="background:rgba(126,231,135,0.95)"></span>Output`;
+    el.legend.appendChild(out);
+  }
+
+  buildChecks();
+  buildLegend();
+
+  // ----------------------------
+  // Machine SVG construction
+  // ----------------------------
+  const diskLayout = {
+    cols: 3,
+    diskR: 58,
+    pinR: 6,
+    // top-left inside disks group
+    x0: 0,
+    y0: 0,
+    dx: 190,
+    dy: 190,
+  };
+
+  const diskNodes = new Map(); // key -> {g, pin, rod, label, phaseText}
+  function buildDisks() {
+    el.disks.innerHTML = "";
+
+    // Title
+    const title = svgText(0, -18, "Rotating harmonic disks", { fill:"rgba(255,255,255,0.75)", "font-size":"14", "font-weight":"600" });
+    el.disks.appendChild(title);
+
+    CONSTITUENTS.forEach((c, i) => {
+      const col = i % diskLayout.cols;
+      const row = Math.floor(i / diskLayout.cols);
+      const cx = diskLayout.x0 + 80 + col * diskLayout.dx;
+      const cy = diskLayout.y0 + 80 + row * diskLayout.dy;
+
+      const g = svgEl("g", { transform:`translate(${cx},${cy})`, filter:"url(#softShadow)" });
+
+      // Disk body
+      g.appendChild(svgEl("circle", {
+        cx:0, cy:0, r: diskLayout.diskR,
+        fill:"rgba(255,255,255,0.03)",
+        stroke:"rgba(255,255,255,0.16)",
+        "stroke-width":2
+      }));
+
+      // Crosshair
+      g.appendChild(svgEl("line", { x1:-diskLayout.diskR, y1:0, x2:diskLayout.diskR, y2:0, stroke:"rgba(255,255,255,0.06)" }));
+      g.appendChild(svgEl("line", { x1:0, y1:-diskLayout.diskR, x2:0, y2:diskLayout.diskR, stroke:"rgba(255,255,255,0.06)" }));
+
+      // Hand from center to pin
+      const rod = svgEl("line", {
+        x1:0, y1:0, x2:0, y2:-diskLayout.diskR*0.72,
+        stroke:c.color, "stroke-width":4, "stroke-linecap":"round"
+      });
+
+      // Pin
+      const pin = svgEl("circle", { cx:0, cy:-diskLayout.diskR*0.72, r: diskLayout.pinR, fill:c.color });
+
+      // Label
+      const label = svgText(-diskLayout.diskR, diskLayout.diskR+22, c.key, {
+        fill:"rgba(231,238,252,0.95)", "font-size":"13", "font-weight":"700", class:"mono"
+      });
+      const phaseText = svgText(-diskLayout.diskR, diskLayout.diskR+40, "", {
+        fill:"rgba(155,176,208,0.95)", "font-size":"11", class:"mono"
+      });
+
+      // Contribution tap point marker (right side)
+      const tap = svgEl("circle", {
+        cx: diskLayout.diskR + 16, cy:0, r:5,
+        fill:"rgba(255,255,255,0.12)", stroke:"rgba(255,255,255,0.20)"
+      });
+
+      g.appendChild(rod);
+      g.appendChild(pin);
+      g.appendChild(tap);
+      g.appendChild(label);
+      g.appendChild(phaseText);
+      el.disks.appendChild(g);
+
+      diskNodes.set(c.key, { g, pin, rod, label, phaseText, cx, cy, tapX: cx + (diskLayout.diskR + 16), tapY: cy });
+    });
+
+    // Summation scale ticks (in sum group)
+    buildTicks();
+  }
+
+  function buildTicks() {
+    // vertical scale centered at y=280
+    const yMid = 280;
+    const x = 140; // in sum group's coords
+    el.ticks.innerHTML = "";
+    for (let i=-4; i<=4; i++) {
+      const y = yMid + i*60;
+      const major = (i===0);
+      el.ticks.appendChild(svgEl("line", {
+        x1:x-18, y1:y, x2:x, y2:y,
+        stroke: major ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.12)",
+        "stroke-width": major ? 2 : 1
+      }));
+      if (major) {
+        el.ticks.appendChild(svgText(x+6, y+4, "0", { fill:"rgba(155,176,208,0.95)", "font-size":"11", class:"mono" }));
+      }
+    }
+    el.ticks.appendChild(svgText(148, 38, "+", { fill:"rgba(155,176,208,0.95)", "font-size":"12", class:"mono" }));
+    el.ticks.appendChild(svgText(148, 552, "−", { fill:"rgba(155,176,208,0.95)", "font-size":"12", class:"mono" }));
+  }
+
+  buildDisks();
+
+  // ----------------------------
+  // Math helpers
+  // ----------------------------
+  function clamp(x, a, b){ return Math.min(b, Math.max(a, x)); }
+  function mapRange(x, a, b, c, d){
+    const t = (x - a) / (b - a);
+    return c + (d - c) * t;
+  }
+  function deg2rad(d){ return d * Math.PI / 180; }
+  function rad2deg(r){ return r * 180 / Math.PI; }
+  function normDeg(d){
+    let x = d % 360;
+    if (x < 0) x += 360;
+    return x;
+  }
+
+  // ----------------------------
+  // Model: compute constituent displacement + “input angles”
+  // ----------------------------
+  function drivers(tHours) {
+    // angles increase with time; 0 at start
+    const sun = normDeg(360 * (tHours / SOLAR_DAY_HR));
+    const moon = normDeg(360 * (tHours / LUNAR_DAY_HR));
+    return { sun, moon };
+  }
+
+  function constituentAmplitude(c, latDeg, ampScale) {
+    const w = latWeight(latDeg);
+    const isSemi = c.key.endsWith("2");
+    const isDiur = c.key.endsWith("1");
+    let latFactor = 1.0;
+    if (isSemi) latFactor = w.semi;
+    if (isDiur) latFactor = w.diur;
+    return c.baseAmp * latFactor * ampScale;
+  }
+
+  function tideAt(tHours) {
+    // returns { tide, parts: [{key, y, angleDeg, amp}] }
+    const { sun, moon } = drivers(tHours);
+
+    // Simple (illustrative) phase mapping:
+    // - lunar-dominant constituents get a phase bias from moon angle
+    // - solar-dominant from sun angle
+    // - mixed (K1) from average
+    const parts = [];
+    let tide = 0;
+
+    for (const c of CONSTITUENTS) {
+      if (!state.enabled[c.key]) continue;
+
+      const amp = constituentAmplitude(c, state.latDeg, state.ampScale);
+
+      // base rotating angle from standard speed:
+      const theta = normDeg(c.speedDegHr * tHours + c.phaseDeg);
+
+      // “input data” influence (small) so you can *see* the connection:
+      let inputBias = 0;
+      if (c.key === "M2" || c.key === "N2" || c.key === "O1") inputBias = 0.25 * moon;
+      else if (c.key === "S2" || c.key === "P1") inputBias = 0.25 * sun;
+      else if (c.key === "K1") inputBias = 0.125 * (sun + moon);
+
+      const angleDeg = normDeg(theta + inputBias);
+
+      const y = amp * Math.sin(deg2rad(angleDeg)); // vertical crank displacement (unitless)
+      tide += y;
+      parts.push({ key:c.key, y, angleDeg, amp });
+    }
+    return { tide, parts, sun, moon };
+  }
+
+  // ----------------------------
+  // Rendering: update SVG disk pins + linkage + output gauge
+  // ----------------------------
+  function renderMachine(tHours) {
+    const res = tideAt(tHours);
+
+    // update driver hands
+    const sunAng = deg2rad(res.sun);
+    const moonAng = deg2rad(res.moon);
+    // hands are drawn pointing up; rotate around center (70,60) => rotate line endpoints around center in-place via SVG transform
+    el.sunHand.setAttribute("transform", `rotate(${res.sun}, 70, 60)`);
+    el.moonHand.setAttribute("transform", `rotate(${res.moon}, 70, 60)`);
+    el.sunText.textContent = `θ☉ = ${res.sun.toFixed(1)}°`;
+    el.moonText.textContent = `θ☾ = ${res.moon.toFixed(1)}°`;
+    el.sunAngle.textContent = `${res.sun.toFixed(1)}°`;
+    el.moonAngle.textContent = `${res.moon.toFixed(1)}°`;
+
+    // disks
+    for (const c of CONSTITUENTS) {
+      const node = diskNodes.get(c.key);
+      if (!node) continue;
+
+      const on = !!state.enabled[c.key];
+      node.g.setAttribute("opacity", on ? "1" : "0.18");
+
+      // compute pin position
+      const p = res.parts.find(p => p.key === c.key);
+      const angleDeg = p ? p.angleDeg : 0;
+      const r = diskLayout.diskR * 0.72;
+      const x = r * Math.sin(deg2rad(angleDeg));
+      const y = -r * Math.cos(deg2rad(angleDeg));
+
+      node.rod.setAttribute("x2", x);
+      node.rod.setAttribute("y2", y);
+      node.pin.setAttribute("cx", x);
+      node.pin.setAttribute("cy", y);
+
+      if (on) {
+        node.phaseText.textContent = `ω=${c.speedDegHr.toFixed(3)}°/h  A=${(p?.amp ?? 0).toFixed(2)}`;
+      } else {
+        node.phaseText.textContent = `disabled`;
+      }
+    }
+
+    // Summation linkage path:
+    // Each part contributes a vertical offset. We draw a polyline-like path down the “rails”
+    // accumulating the displacement. Map y (unitless) to pixels.
+    const pxPerUnit = 140; // scale of visual output
+    const yMid = 280;
+
+    // order parts in the same order as constituents list
+    const ordered = CONSTITUENTS
+      .filter(c => state.enabled[c.key])
+      .map(c => res.parts.find(p => p.key === c.key))
+      .filter(Boolean);
+
+    // Build a stepped chain path inside sum group coords: x=65 center, y accumulative.
+    let acc = 0;
+    const pts = [];
+    pts.push([65, yMid]); // start
+    for (const p of ordered) {
+      // step right, then up/down, then left (visually suggests pulleys/linkages)
+      const y0 = yMid - acc * pxPerUnit;
+      pts.push([96, y0]);
+
+      acc += p.y;
+      const y1 = yMid - acc * pxPerUnit;
+      pts.push([96, y1]);
+      pts.push([34, y1]);
+    }
+    // final
+    const yFinal = yMid - acc * pxPerUnit;
+    pts.push([65, yFinal]);
+
+    el.chainPath.setAttribute("d", pathFromPoints(pts));
+    el.sumHead.setAttribute("cy", yFinal);
+
+    // Output gauge needle: map tide to vertical (clamp)
+    const tide = res.tide;
+    const tideClamped = clamp(tide, -1.2, 1.2);
+    const yNeedle = 110 - (tideClamped / 1.2) * 70; // gauge coords
+    el.outNeedle.setAttribute("y1", yNeedle);
+    el.outNeedle.setAttribute("y2", yNeedle);
+    el.outText.textContent = `tide = ${tide.toFixed(3)} (arb.)`;
+
+    el.tideNow.textContent = tide.toFixed(3);
+
+    return { tide, sun: res.sun, moon: res.moon };
+  }
+
+  function pathFromPoints(pts) {
+    if (!pts.length) return "";
+    let d = `M ${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}`;
+    for (let i=1;i<pts.length;i++){
+      d += ` L ${pts[i][0].toFixed(1)} ${pts[i][1].toFixed(1)}`;
+    }
+    return d;
+  }
+
+  // ----------------------------
+  // Plot (canvas): last ~3 days
+  // ----------------------------
+  const ctx = el.plot.getContext("2d");
+  function resizeCanvasToCSSPixels(canvas) {
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const w = Math.max(1, Math.floor(rect.width * dpr));
+    const h = Math.max(1, Math.floor(rect.height * dpr));
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
+    }
+    return { w, h, dpr };
+  }
+
+  function renderPlot() {
+    const { w, h } = resizeCanvasToCSSPixels(el.plot);
+    ctx.clearRect(0,0,w,h);
+
+    // background
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = "rgba(0,0,0,0)";
+    ctx.fillRect(0,0,w,h);
+
+    // axes frame
+    const pad = 18 * (window.devicePixelRatio || 1);
+    const left = pad, top = pad, right = w - pad, bottom = h - pad;
+
+    // grid lines
+    ctx.strokeStyle = "rgba(255,255,255,0.08)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let i=0;i<=6;i++){
+      const y = top + (bottom-top)*(i/6);
+      ctx.moveTo(left, y);
+      ctx.lineTo(right, y);
+    }
+    for (let i=0;i<=4;i++){
+      const x = left + (right-left)*(i/4);
+      ctx.moveTo(x, top);
+      ctx.lineTo(x, bottom);
+    }
+    ctx.stroke();
+
+    // window: last 72 hours
+    const windowHr = 72;
+    const tMax = state.tHours;
+    const tMin = Math.max(0, tMax - windowHr);
+
+    // find max abs for scaling (keep stable-ish)
+    const slice = state.history.filter(p => p[0] >= tMin && p[0] <= tMax);
+    let maxAbs = 1e-6;
+    for (const [,y] of slice) maxAbs = Math.max(maxAbs, Math.abs(y));
+    maxAbs = Math.max(0.8, Math.min(2.5, maxAbs * 1.1));
+
+    // draw path
+    ctx.strokeStyle = "rgba(126,231,135,0.95)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    let started = false;
+    for (const [t,y] of slice) {
+      const x = mapRange(t, tMin, tMax, left, right);
+      const yy = mapRange(y, +maxAbs, -maxAbs, top, bottom);
+      if (!started) { ctx.moveTo(x,yy); started = true; }
+      else ctx.lineTo(x,yy);
+    }
+    ctx.stroke();
+
+    // draw "now" vertical
+    ctx.strokeStyle = "rgba(156,193,255,0.35)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(right, top);
+    ctx.lineTo(right, bottom);
+    ctx.stroke();
+
+    // labels
+    ctx.fillStyle = "rgba(231,238,252,0.9)";
+    ctx.font = `${12 * (window.devicePixelRatio||1)}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace`;
+    ctx.fillText(`last ${windowHr}h`, left, top - 4);
+    ctx.fillStyle = "rgba(155,176,208,0.95)";
+    ctx.fillText(`±${maxAbs.toFixed(2)}`, left, bottom + 14);
+  }
+
+  // ----------------------------
+  // Time, history, loop
+  // ----------------------------
+  function fmtClock(tHours) {
+    const days = Math.floor(tHours / 24);
+    const hr = Math.floor(tHours % 24);
+    const min = Math.floor((tHours*60) % 60);
+    return `D${days} ${String(hr).padStart(2,"0")}:${String(min).padStart(2,"0")}`;
+  }
+
+  function step(dtSec) {
+    if (state.running) {
+      state.tHours += state.rateHrsPerSec * dtSec;
+      const maxScrub = +el.scrub.max;
+      // keep scrub in sync but allow manual dragging when paused
+      if (state.tHours <= maxScrub) el.scrub.value = state.tHours.toFixed(2);
+      else {
+        // extend range if needed
+        el.scrub.max = Math.ceil(state.tHours + 24);
+        el.scrub.value = state.tHours.toFixed(2);
+      }
+    }
+
+    // update labels
+    el.speedLabel.textContent = state.rateHrsPerSec.toFixed(0);
+    el.tLabel.textContent = state.tHours.toFixed(2);
+    el.clock.textContent = fmtClock(state.tHours);
+    el.latLabel.textContent = `${state.latDeg.toFixed(0)}°`;
+    el.ampLabel.textContent = `${Math.round(state.ampScale*100)}%`;
+
+    // render machine
+    const { tide } = renderMachine(state.tHours);
+
+    // history sampling (~every 10 simulated minutes)
+    const last = state.history[state.history.length-1];
+    const sampleEveryHr = 1/6; // 10 minutes
+    if (!last || (state.tHours - last[0]) >= sampleEveryHr) {
+      state.history.push([state.tHours, tide]);
+      // cap memory
+      if (state.history.length > 5000) state.history.splice(0, 1000);
+    }
+
+    renderPlot();
+  }
+
+  let lastTs = null;
+  function loop(ts) {
+    if (lastTs === null) lastTs = ts;
+    const dt = (ts - lastTs) / 1000;
+    lastTs = ts;
+    step(dt);
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  // ----------------------------
+  // Controls wiring
+  // ----------------------------
+  el.btnPlay.addEventListener("click", () => {
+    state.running = !state.running;
+    el.btnPlay.textContent = state.running ? "⏸ Pause" : "▶ Play";
+  });
+
+  el.btnReset.addEventListener("click", () => {
+    state.running = false;
+    el.btnPlay.textContent = "▶ Play";
+    state.tHours = 0;
+    el.scrub.value = 0;
+    state.history = [];
+  });
+
+  el.speed.addEventListener("input", () => {
+    // make 0 mean paused-ish but not exactly: allow tiny movement
+    const v = +el.speed.value;
+    state.rateHrsPerSec = v === 0 ? 0 : v;
+  });
+
+  el.scrub.addEventListener("input", () => {
+    // manual scrubbing overrides time if not running (or even if running—like a DJ)
+    state.tHours = +el.scrub.value;
+  });
+
+  el.lat.addEventListener("input", () => {
+    state.latDeg = +el.lat.value;
+  });
+
+  el.amp.addEventListener("input", () => {
+    state.ampScale = (+el.amp.value) / 100;
+  });
+
+  // keep a sensible speed label initially
+  state.rateHrsPerSec = +el.speed.value;
+
+  // ----------------------------
+  // SVG helpers
+  // ----------------------------
+  function svgEl(tag, attrs={}) {
+    const e = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    for (const [k,v] of Object.entries(attrs)) e.setAttribute(k, v);
+    return e;
+  }
+  function svgText(x,y,txt, attrs={}) {
+    const t = svgEl("text", { x, y, ...attrs });
+    t.textContent = txt;
+    return t;
+  }
+})();
+</script>
+</body>
+</html>
