@@ -1,0 +1,670 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Institution Parameter Sandbox (Goguen-style)</title>
+  <style>
+    :root { --bg:#0b0f14; --panel:#111826; --muted:#95a3b3; --text:#e8eef6; --accent:#6aa6ff; --ok:#63d39a; --warn:#ffcc66; --bad:#ff6a6a; }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background: radial-gradient(1000px 700px at 20% 10%, rgba(106,166,255,.14), transparent 55%),
+                  radial-gradient(900px 650px at 90% 30%, rgba(99,211,154,.10), transparent 60%),
+                  var(--bg);
+      color:var(--text);
+    }
+    header{ padding:20px 18px 8px; }
+    header h1{ margin:0 0 6px; font-size:18px; font-weight:700; letter-spacing:.2px; }
+    header p{ margin:0; color:var(--muted); font-size:13px; line-height:1.35; max-width: 1100px; }
+    .wrap{ display:grid; grid-template-columns: 420px 1fr; gap:14px; padding:14px 18px 18px; }
+    @media (max-width: 980px){ .wrap{ grid-template-columns:1fr; } }
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius:16px;
+      box-shadow: 0 18px 45px rgba(0,0,0,.35);
+      overflow:hidden;
+    }
+    .card h2{
+      font-size:13px; margin:0; padding:12px 14px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      color: rgba(232,238,246,.92);
+      letter-spacing:.3px;
+    }
+    .card .body{ padding:12px 14px; }
+    .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .row{ margin-bottom:10px; }
+    .label{
+      display:flex; align-items:baseline; justify-content:space-between;
+      font-size:12px; color: rgba(232,238,246,.90);
+      margin-bottom:6px;
+    }
+    .label span.v{ color: var(--muted); font-variant-numeric: tabular-nums; }
+    input[type="range"]{ width:100%; }
+    .hint{ font-size:11px; color: var(--muted); margin-top:4px; line-height:1.25; }
+    .pill{
+      display:inline-block; padding:3px 9px; border-radius:999px;
+      font-size:11px; border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.05);
+      color: rgba(232,238,246,.92);
+    }
+    .pill.ok{ border-color: rgba(99,211,154,.35); background: rgba(99,211,154,.10); }
+    .pill.warn{ border-color: rgba(255,204,102,.35); background: rgba(255,204,102,.10); }
+    .pill.bad{ border-color: rgba(255,106,106,.35); background: rgba(255,106,106,.10); }
+    .outTop{
+      display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between;
+      margin-bottom:10px;
+    }
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+
+    .bars{ display:grid; gap:8px; }
+    .barRow{ display:grid; grid-template-columns: 160px 1fr 56px; gap:10px; align-items:center; }
+    .barName{ font-size:12px; color: rgba(232,238,246,.92); }
+    .track{
+      height:10px; border-radius:999px; background: rgba(255,255,255,.08);
+      overflow:hidden; border:1px solid rgba(255,255,255,.08);
+    }
+    .fill{ height:100%; width:0%; border-radius:999px; background: var(--accent); }
+    .pct{ font-size:12px; color: var(--muted); text-align:right; font-variant-numeric: tabular-nums; }
+
+    .utter{
+      background: rgba(0,0,0,.25);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius:14px;
+      padding:12px;
+      line-height:1.4;
+      font-size:13px;
+    }
+    .btns{ display:flex; gap:10px; margin-top:10px; flex-wrap:wrap; }
+    button{
+      cursor:pointer; border-radius:12px; padding:9px 12px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      color: rgba(232,238,246,.92);
+      font-weight:600; font-size:12px;
+    }
+    button:hover{ background: rgba(255,255,255,.10); }
+    footer{
+      padding:0 18px 18px;
+      color: var(--muted);
+      font-size:12px;
+      line-height:1.35;
+    }
+    a{ color: var(--accent); text-decoration:none; }
+    a:hover{ text-decoration:underline; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>Goguen Institution Parameter Sandbox</h1>
+  <p>
+    This is a lightweight, non-React HTML/JS app that lets you manipulate explicit <span class="mono">Π</span>-parameters
+    (lexicon weights, style coefficients, thresholds, and state dynamics) and observe modelled outcomes as probability distributions:
+    (1) utterance class/features, (2) speech-act mix, and (3) patient outcomes.
+    <br/>
+    <span class="pill warn">Note</span> This is a toy simulator for reasoning/education. It does not diagnose or predict real people.
+  </p>
+</header>
+
+<div class="wrap">
+  <!-- Controls -->
+  <section class="card">
+    <h2>Parameters (Π) as sliders</h2>
+    <div class="body">
+
+      <div class="outTop">
+        <div>
+          <div class="pill">Latent state</div>
+          <span id="statePill" class="pill warn" style="margin-left:8px;">Crisis p=0.50</span>
+        </div>
+        <div>
+          <div class="pill">Noise</div>
+          <span class="pill" style="margin-left:8px;"><span class="mono">temp</span>=<span id="tempVal">1.00</span></span>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div>
+          <div class="row">
+            <div class="label"><span>Stress level</span><span class="v mono" id="stressVal">0.50</span></div>
+            <input id="stress" type="range" min="0" max="1" step="0.01" value="0.50" />
+            <div class="hint">Context pressure / burden. Higher pushes Crisis state.</div>
+          </div>
+          <div class="row">
+            <div class="label"><span>Support level</span><span class="v mono" id="supportVal">0.50</span></div>
+            <input id="support" type="range" min="0" max="1" step="0.01" value="0.50" />
+            <div class="hint">Perceived support / resources. Higher reduces Crisis state.</div>
+          </div>
+          <div class="row">
+            <div class="label"><span>Prior crisis propensity</span><span class="v mono" id="piVal">0.00</span></div>
+            <input id="pi_crisis" type="range" min="-3" max="3" step="0.01" value="0.00" />
+            <div class="hint">Baseline tendency toward Crisis (logit scale).</div>
+          </div>
+          <div class="row">
+            <div class="label"><span>β<sub>stress</sub></span><span class="v mono" id="bStressVal">2.00</span></div>
+            <input id="beta_stress" type="range" min="0" max="5" step="0.01" value="2.00" />
+            <div class="hint">How strongly stress increases Crisis probability.</div>
+          </div>
+          <div class="row">
+            <div class="label"><span>β<sub>support</sub></span><span class="v mono" id="bSupportVal">2.00</span></div>
+            <input id="beta_support" type="range" min="0" max="5" step="0.01" value="2.00" />
+            <div class="hint">How strongly support decreases Crisis probability.</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="row">
+            <div class="label"><span>Lex weight: ideation</span><span class="v mono" id="wIdeationVal">2.20</span></div>
+            <input id="w_ideation" type="range" min="0" max="5" step="0.01" value="2.20" />
+            <div class="hint">Weight for crisis/ideation lexical cues.</div>
+          </div>
+          <div class="row">
+            <div class="label"><span>Lex weight: help-seeking</span><span class="v mono" id="wHelpVal">1.60</span></div>
+            <input id="w_help" type="range" min="0" max="5" step="0.01" value="1.60" />
+            <div class="hint">Weight for explicit support-seeking cues.</div>
+          </div>
+          <div class="row">
+            <div class="label"><span>Lex weight: casual/social</span><span class="v mono" id="wCasualVal">1.80</span></div>
+            <input id="w_casual" type="range" min="0" max="5" step="0.01" value="1.80" />
+            <div class="hint">Weight for casual slang/social cues (pushes Non-crisis).</div>
+          </div>
+          <div class="row">
+            <div class="label"><span>Style α: length</span><span class="v mono" id="aLenVal">1.00</span></div>
+            <input id="alpha_len" type="range" min="0" max="3" step="0.01" value="1.00" />
+            <div class="hint">Influence of longer narrative style on crisis score.</div>
+          </div>
+          <div class="row">
+            <div class="label"><span>Style α: first-person</span><span class="v mono" id="aFpVal">1.20</span></div>
+            <input id="alpha_fp" type="range" min="0" max="3" step="0.01" value="1.20" />
+            <div class="hint">Influence of “I/me/my” style on crisis score.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div>
+          <div class="row">
+            <div class="label"><span>Style α: help markers</span><span class="v mono" id="aHelpVal">1.10</span></div>
+            <input id="alpha_help" type="range" min="0" max="3" step="0.01" value="1.10" />
+            <div class="hint">How much “please/help/anyone” amplifies crisis score.</div>
+          </div>
+          <div class="row">
+            <div class="label"><span>Style α: slang penalty</span><span class="v mono" id="aSlangVal">1.00</span></div>
+            <input id="alpha_slang" type="range" min="0" max="3" step="0.01" value="1.00" />
+            <div class="hint">How much slang reduces crisis score (pushes Non-crisis).</div>
+          </div>
+        </div>
+        <div>
+          <div class="row">
+            <div class="label"><span>τ<sub>class</sub> (class threshold)</span><span class="v mono" id="tauClassVal">0.30</span></div>
+            <input id="tau_class" type="range" min="-2" max="2" step="0.01" value="0.30" />
+            <div class="hint">Higher makes “Suicide-class” harder to trigger.</div>
+          </div>
+          <div class="row">
+            <div class="label"><span>τ<sub>risk</sub> (risk threshold)</span><span class="v mono" id="tauRiskVal">0.65</span></div>
+            <input id="tau_risk" type="range" min="0" max="1.5" step="0.01" value="0.65" />
+            <div class="hint">Higher makes severe outcomes less likely.</div>
+          </div>
+          <div class="row">
+            <div class="label"><span>Temperature</span><span class="v mono" id="tempVal2">1.00</span></div>
+            <input id="temp" type="range" min="0.5" max="2.5" step="0.01" value="1.00" />
+            <div class="hint">Higher spreads probabilities (more uncertainty).</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="btns">
+        <button id="regen">Generate new example utterance</button>
+        <button id="reset">Reset to defaults</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Outputs -->
+  <section class="card">
+    <h2>Likely outcomes (probability distributions)</h2>
+    <div class="body">
+
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+        <div class="card" style="border-radius:14px;">
+          <h2>Utterance class + features</h2>
+          <div class="body">
+            <div class="bars" id="barsClass"></div>
+            <hr style="border:none;border-top:1px solid rgba(255,255,255,.08); margin:12px 0;">
+            <div class="bars" id="barsFeat"></div>
+          </div>
+        </div>
+        <div class="card" style="border-radius:14px;">
+          <h2>Patient outcomes</h2>
+          <div class="body">
+            <div class="bars" id="barsOutcome"></div>
+            <div class="hint" style="margin-top:10px;">
+              Outcomes are modelled as a softmax over policy options derived from latent risk and help-seeking propensity.
+              This is a simplified mapping of the “state → goals → behaviors” idea.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:12px; border-radius:14px;">
+        <h2>Example utterance consistent with current parameters</h2>
+        <div class="body">
+          <div id="utterance" class="utter"></div>
+          <div class="hint" style="margin-top:8px;">
+            The generator avoids any instructions or methods. It only produces high-level, non-graphic distress and/or casual-social content.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+</div>
+
+<footer>
+  <span class="pill">Institution mapping</span>
+  <span style="margin-left:8px;">
+    Sliders correspond to explicit Π parameters (lexicon weights, style coefficients, thresholds, dynamics). We compute a latent
+    <span class="mono">P(Crisis)</span>, then derive utterance feature probabilities, class probability, and an outcome policy distribution.
+  </span>
+</footer>
+
+<script>
+/** -------- Utilities -------- **/
+const clamp = (x,a,b)=>Math.min(b,Math.max(a,x));
+const sigmoid = x => 1/(1+Math.exp(-x));
+const softmax = (arr, temp=1.0) => {
+  const t = Math.max(0.0001, temp);
+  const m = Math.max(...arr);
+  const exps = arr.map(v => Math.exp((v - m)/t));
+  const s = exps.reduce((p,c)=>p+c,0);
+  return exps.map(e => e/s);
+};
+// Deterministic-ish RNG for “regen” without external libs
+let rngSeed = 1234567;
+function rand(){
+  rngSeed = (1103515245 * rngSeed + 12345) % 2147483648;
+  return rngSeed / 2147483648;
+}
+function choiceWeighted(items, probs){
+  const r = rand();
+  let acc = 0;
+  for(let i=0;i<items.length;i++){
+    acc += probs[i];
+    if(r <= acc) return items[i];
+  }
+  return items[items.length-1];
+}
+function fmt(x, d=2){ return (+x).toFixed(d); }
+function pct(x){ return (100*x).toFixed(1) + "%"; }
+
+function barRow(name, p, color){
+  const row = document.createElement("div");
+  row.className = "barRow";
+  const n = document.createElement("div");
+  n.className = "barName";
+  n.textContent = name;
+  const tr = document.createElement("div");
+  tr.className = "track";
+  const fill = document.createElement("div");
+  fill.className = "fill";
+  fill.style.width = (100*p) + "%";
+  fill.style.background = color || "var(--accent)";
+  tr.appendChild(fill);
+  const pc = document.createElement("div");
+  pc.className = "pct";
+  pc.textContent = pct(p);
+  row.appendChild(n); row.appendChild(tr); row.appendChild(pc);
+  return row;
+}
+
+/** -------- Default parameters -------- **/
+const defaults = {
+  stress: 0.50,
+  support: 0.50,
+  pi_crisis: 0.00,
+  beta_stress: 2.00,
+  beta_support: 2.00,
+
+  w_ideation: 2.20,
+  w_help: 1.60,
+  w_casual: 1.80,
+
+  alpha_len: 1.00,
+  alpha_fp: 1.20,
+  alpha_help: 1.10,
+  alpha_slang: 1.00,
+
+  tau_class: 0.30,
+  tau_risk: 0.65,
+
+  temp: 1.00
+};
+
+/** -------- Model (toy instantiation of the institution) --------
+  We compute:
+  1) latent P(Crisis) = sigmoid(pi + beta_stress*stress - beta_support*support)
+  2) utterance feature probabilities as squashed functions of P(Crisis) and weights
+  3) utterance score -> P(SuicideClass)
+  4) patient outcomes as softmax over behavior logits derived from risk + help propensity
+**/
+function compute(p){
+  // Latent crisis probability
+  const logitC = p.pi_crisis + p.beta_stress*p.stress - p.beta_support*p.support;
+  const pC = sigmoid(logitC);
+
+  // Feature probabilities (bounded; tied to weights and crisis)
+  const ideation = sigmoid((p.w_ideation*1.2)*(pC - 0.35));       // rises with crisis
+  const helpMark = sigmoid((p.w_help*1.0)*(pC - 0.30));           // rises with crisis
+  const casual = sigmoid((p.w_casual*1.1)*((1-pC) - 0.35));       // rises with non-crisis
+
+  // Style features: normalize length & first-person as probabilities, to keep in [0,1]
+  const lenLong = sigmoid(p.alpha_len*(pC - 0.30));
+  const fpHigh  = sigmoid(p.alpha_fp*(pC - 0.25));
+  const slangy  = sigmoid(p.alpha_slang*((1-pC) - 0.30));
+
+  // Score: weighted sum of expected features (a toy “institutional satisfaction” proxy)
+  const score =
+    (p.w_ideation * ideation) +
+    (p.w_help * helpMark) -
+    (p.w_casual * casual) +
+    (p.alpha_len * lenLong) +
+    (p.alpha_fp * fpHigh) +
+    (p.alpha_help * helpMark) -
+    (p.alpha_slang * slangy) -
+    p.tau_class;
+
+  // Map score to class probability; temperature widens/narrows confidence
+  const pSuicide = sigmoid(score / Math.max(0.2, p.temp));
+  const pNon = 1 - pSuicide;
+
+  // Risk proxy (0..1-ish) used for outcomes
+  const risk = clamp(sigmoid((logitC + 0.6*ideation + 0.35*lenLong) / 1.6), 0, 1);
+
+  // Help propensity proxy
+  const helpProp = clamp(sigmoid((0.9*helpMark + 0.25*fpHigh - 0.15*slangy) / 1.1), 0, 1);
+
+  // Outcome policy logits (no methods/instructions; just categories)
+  // We separate “seek support”, “withdraw”, “socialize”, “clinical escalation”, “crisis persistence”.
+  // A "severe self-harm risk" bucket is included as a generic risk state, not an instruction.
+  const severeGate = sigmoid((risk - p.tau_risk) * 7); // near 0 below threshold, near 1 above
+
+  const logits = [
+    // Seek support (online/offline): increases with helpProp, and moderate risk
+    1.2*helpProp + 0.6*risk - 0.4*severeGate,
+    // Socialize / casual interaction: increases with casual + low risk
+    1.0*casual + 0.6*(1-risk) - 0.2*helpProp,
+    // Withdraw / isolate: increases with risk and low support
+    0.9*risk + 0.4*(1-p.support) - 0.4*casual,
+    // Clinical escalation (e.g., reaching professionals/urgent supports): increases with severeGate and helpProp
+    1.2*severeGate + 0.7*helpProp,
+    // Severe self-harm risk state (generic): increases strongly with severeGate and ideation
+    1.6*severeGate + 0.6*ideation - 0.4*helpProp
+  ];
+
+  const outcomeProbs = softmax(logits, p.temp);
+
+  return {
+    pCrisis: pC,
+    features: { ideation, helpMark, casual, lenLong, fpHigh, slangy },
+    classProbs: { suicide: pSuicide, non: pNon },
+    risk,
+    helpProp,
+    outcomes: {
+      seekSupport: outcomeProbs[0],
+      socialize: outcomeProbs[1],
+      withdraw: outcomeProbs[2],
+      clinicalEscalation: outcomeProbs[3],
+      severeRiskState: outcomeProbs[4]
+    },
+    severeGate
+  };
+}
+
+/** -------- Utterance generator -------- **/
+const phrases = {
+  crisis_open: [
+    "I’ve been feeling overwhelmed lately.",
+    "I don’t know how to carry this anymore.",
+    "Everything feels heavy and I’m exhausted.",
+    "I’m struggling and I can’t seem to reset."
+  ],
+  ideation_safe: [
+    "I keep thinking about not wanting to be here.",
+    "I’m having scary thoughts that won’t go away.",
+    "I feel like I want everything to stop.",
+    "I’m afraid of where my thoughts are going."
+  ],
+  help_seek: [
+    "Can someone talk with me for a bit?",
+    "I could really use some support right now.",
+    "Is anyone else dealing with this? Any advice?",
+    "Please—what helps when it gets like this?"
+  ],
+  narrative: [
+    "It’s been building up for weeks and I’m not sleeping well.",
+    "I’ve been trying to act normal, but it’s getting harder.",
+    "I’m stuck in my head and I can’t focus on anything.",
+    "I don’t want to worry the people around me, but I need help."
+  ],
+  casual_open: [
+    "hey guys",
+    "ngl",
+    "anyone up?",
+    "yo"
+  ],
+  casual_body: [
+    "im bored 😭",
+    "what are you all doing",
+    "any good music recs?",
+    "wanna chat / dm?"
+  ],
+  casual_tail: [
+    "drop a song",
+    "dm me",
+    "discord anyone?",
+    "lol"
+  ]
+};
+
+function generateUtterance(m, p){
+  // Decide speech-act mixture from state/features
+  const pC = m.pCrisis;
+  const f = m.features;
+
+  // speech acts: Disclosure, RequestSupport, Banter, ShareContent
+  const actLogits = [
+    1.2*pC + 0.9*f.lenLong + 0.7*f.fpHigh,           // Disclosure
+    0.9*pC + 1.2*f.helpMark + 0.2*f.fpHigh,          // RequestSupport
+    1.1*(1-pC) + 1.0*f.slangy + 0.6*f.casual,        // Banter
+    0.9*(1-pC) + 0.7*f.casual                         // ShareContent
+  ];
+  const actProbs = softmax(actLogits, p.temp);
+  const act = choiceWeighted(["Disclosure","RequestSupport","Banter","ShareContent"], actProbs);
+
+  // Build utterance text
+  let parts = [];
+
+  if(act === "Disclosure" || act === "RequestSupport"){
+    parts.push(choiceWeighted(phrases.crisis_open, [0.25,0.25,0.25,0.25]));
+    // Include ideation-safe phrase with probability tied to ideation feature
+    if(rand() < f.ideation){
+      parts.push(choiceWeighted(phrases.ideation_safe, [0.25,0.25,0.25,0.25]));
+    }
+    // Narrative chunk depends on lenLong
+    if(rand() < f.lenLong){
+      parts.push(choiceWeighted(phrases.narrative, [0.25,0.25,0.25,0.25]));
+      if(rand() < 0.35 + 0.25*f.lenLong){
+        parts.push(choiceWeighted(phrases.narrative, [0.25,0.25,0.25,0.25]));
+      }
+    }
+    // Help-seeking line depends on helpMark (and act)
+    if(act === "RequestSupport" || rand() < (0.35 + 0.45*f.helpMark)){
+      parts.push(choiceWeighted(phrases.help_seek, [0.25,0.25,0.25,0.25]));
+    }
+  } else {
+    // casual/social
+    parts.push(choiceWeighted(phrases.casual_open, [0.25,0.25,0.25,0.25]) + ", " +
+               choiceWeighted(phrases.casual_body, [0.25,0.25,0.25,0.25]) + ".");
+    if(rand() < 0.7){
+      parts.push(choiceWeighted(phrases.casual_tail, [0.25,0.25,0.25,0.25]) + ".");
+    }
+  }
+
+  // Lightly enforce “first-person heavy” by sprinkling “I” phrases if fpHigh is large
+  if(rand() < f.fpHigh && (act === "Disclosure" || act === "RequestSupport")){
+    parts.unshift("I’m not sure how to explain this, but");
+  }
+
+  // Join & tidy
+  let text = parts.join(" ");
+  text = text.replace(/\s+/g, " ").trim();
+
+  // Add a gentle safety-oriented line if severe risk state probability is high
+  if(m.outcomes.severeRiskState > 0.30 && (act === "Disclosure" || act === "RequestSupport")){
+    text += " If you’re able, reaching out to someone you trust or a local crisis line can help.";
+  }
+
+  return { act, actProbs, text };
+}
+
+/** -------- UI wiring -------- **/
+const ids = Object.keys(defaults);
+const el = {};
+ids.forEach(id => el[id] = document.getElementById(id));
+
+const valEls = {
+  stressVal: document.getElementById("stressVal"),
+  supportVal: document.getElementById("supportVal"),
+  piVal: document.getElementById("piVal"),
+  bStressVal: document.getElementById("bStressVal"),
+  bSupportVal: document.getElementById("bSupportVal"),
+  wIdeationVal: document.getElementById("wIdeationVal"),
+  wHelpVal: document.getElementById("wHelpVal"),
+  wCasualVal: document.getElementById("wCasualVal"),
+  aLenVal: document.getElementById("aLenVal"),
+  aFpVal: document.getElementById("aFpVal"),
+  aHelpVal: document.getElementById("aHelpVal"),
+  aSlangVal: document.getElementById("aSlangVal"),
+  tauClassVal: document.getElementById("tauClassVal"),
+  tauRiskVal: document.getElementById("tauRiskVal"),
+  tempVal: document.getElementById("tempVal"),
+  tempVal2: document.getElementById("tempVal2"),
+  statePill: document.getElementById("statePill")
+};
+
+const barsClass = document.getElementById("barsClass");
+const barsFeat = document.getElementById("barsFeat");
+const barsOutcome = document.getElementById("barsOutcome");
+const utterDiv = document.getElementById("utterance");
+
+let cachedUtterance = null;
+
+function readParams(){
+  const p = {};
+  for(const k of ids) p[k] = parseFloat(el[k].value);
+  return p;
+}
+function setParams(p){
+  for(const k of ids) el[k].value = p[k];
+}
+
+function stateBadge(pC){
+  const pill = valEls.statePill;
+  pill.textContent = `Crisis p=${fmt(pC,2)}`;
+  pill.classList.remove("ok","warn","bad");
+  if(pC < 0.33) pill.classList.add("ok");
+  else if(pC < 0.66) pill.classList.add("warn");
+  else pill.classList.add("bad");
+}
+
+function renderBars(container, rows){
+  container.innerHTML = "";
+  rows.forEach(r => container.appendChild(barRow(r.name, r.p, r.color)));
+}
+
+function update(){
+  const p = readParams();
+  // update numbers
+  valEls.stressVal.textContent = fmt(p.stress,2);
+  valEls.supportVal.textContent = fmt(p.support,2);
+  valEls.piVal.textContent = fmt(p.pi_crisis,2);
+  valEls.bStressVal.textContent = fmt(p.beta_stress,2);
+  valEls.bSupportVal.textContent = fmt(p.beta_support,2);
+  valEls.wIdeationVal.textContent = fmt(p.w_ideation,2);
+  valEls.wHelpVal.textContent = fmt(p.w_help,2);
+  valEls.wCasualVal.textContent = fmt(p.w_casual,2);
+  valEls.aLenVal.textContent = fmt(p.alpha_len,2);
+  valEls.aFpVal.textContent = fmt(p.alpha_fp,2);
+  valEls.aHelpVal.textContent = fmt(p.alpha_help,2);
+  valEls.aSlangVal.textContent = fmt(p.alpha_slang,2);
+  valEls.tauClassVal.textContent = fmt(p.tau_class,2);
+  valEls.tauRiskVal.textContent = fmt(p.tau_risk,2);
+  valEls.tempVal.textContent = fmt(p.temp,2);
+  valEls.tempVal2.textContent = fmt(p.temp,2);
+
+  const m = compute(p);
+  stateBadge(m.pCrisis);
+
+  // Class distribution
+  renderBars(barsClass, [
+    { name: "Class: Suicide-like", p: m.classProbs.suicide, color: "var(--bad)" },
+    { name: "Class: Non-suicide",  p: m.classProbs.non,    color: "var(--ok)" }
+  ]);
+
+  // Feature distribution (these are feature presence probabilities)
+  const f = m.features;
+  renderBars(barsFeat, [
+    { name: "Feature: ideation lex", p: f.ideation, color: "var(--bad)" },
+    { name: "Feature: help markers", p: f.helpMark, color: "var(--warn)" },
+    { name: "Feature: casual/social", p: f.casual, color: "var(--ok)" },
+    { name: "Style: long/narrative", p: f.lenLong, color: "var(--accent)" },
+    { name: "Style: first-person", p: f.fpHigh, color: "var(--accent)" },
+    { name: "Style: slangy", p: f.slangy, color: "var(--ok)" }
+  ]);
+
+  // Outcome distribution
+  renderBars(barsOutcome, [
+    { name: "Seek support", p: m.outcomes.seekSupport, color: "var(--warn)" },
+    { name: "Socialize casually", p: m.outcomes.socialize, color: "var(--ok)" },
+    { name: "Withdraw/isolate", p: m.outcomes.withdraw, color: "var(--accent)" },
+    { name: "Clinical escalation", p: m.outcomes.clinicalEscalation, color: "var(--warn)" },
+    { name: "Severe risk state", p: m.outcomes.severeRiskState, color: "var(--bad)" }
+  ]);
+
+  // Utterance: keep stable while sliding unless none exists
+  if(!cachedUtterance){
+    cachedUtterance = generateUtterance(m, p);
+  }
+  utterDiv.textContent = cachedUtterance.text + `  —  [speech act: ${cachedUtterance.act}]`;
+}
+
+function regen(){
+  const p = readParams();
+  const m = compute(p);
+  cachedUtterance = generateUtterance(m, p);
+  update();
+}
+
+function resetAll(){
+  setParams(defaults);
+  cachedUtterance = null;
+  update();
+}
+
+// event listeners
+ids.forEach(k => el[k].addEventListener("input", () => {
+  // keep utterance stable while sliding; it updates only when user clicks regenerate
+  update();
+}));
+
+document.getElementById("regen").addEventListener("click", () => regen());
+document.getElementById("reset").addEventListener("click", () => resetAll());
+
+// init
+resetAll();
+</script>
+</body>
+</html>
