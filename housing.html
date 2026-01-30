@@ -1,0 +1,821 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Housing Co-op Institution — Parameter Explorer</title>
+  <style>
+    :root {
+      --bg: #0b0c10;
+      --panel: #12141b;
+      --text: #e7e7ea;
+      --muted: #a6a6b3;
+      --line: rgba(255,255,255,.10);
+      --good: #5eead4;
+      --warn: #fbbf24;
+      --bad: #fb7185;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background: radial-gradient(1000px 600px at 20% 10%, rgba(94,234,212,.12), transparent 55%),
+                  radial-gradient(900px 600px at 80% 30%, rgba(251,191,36,.10), transparent 60%),
+                  var(--bg);
+      color: var(--text);
+    }
+    header {
+      padding: 18px 18px 10px;
+      border-bottom: 1px solid var(--line);
+    }
+    header h1 {
+      margin: 0 0 6px;
+      font-size: 18px;
+      font-weight: 650;
+      letter-spacing: .2px;
+    }
+    header p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+      max-width: 1100px;
+    }
+    main {
+      padding: 16px 18px 22px;
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 14px;
+      align-items: start;
+    }
+    @media (max-width: 980px) {
+      main { grid-template-columns: 1fr; }
+    }
+    .card {
+      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+      overflow: hidden;
+    }
+    .card .hd {
+      padding: 12px 12px 10px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .card .hd h2 {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 650;
+      letter-spacing: .25px;
+      text-transform: uppercase;
+      color: rgba(231,231,234,.92);
+    }
+    .pill {
+      font-size: 12px;
+      color: rgba(231,231,234,.88);
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.10);
+      padding: 6px 9px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      white-space: nowrap;
+    }
+    .pill strong { font-weight: 650; }
+    .bd { padding: 12px; }
+
+    .control {
+      padding: 10px 10px 12px;
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(0,0,0,.18);
+      border-radius: 12px;
+      margin-bottom: 10px;
+    }
+    .control:last-child { margin-bottom: 0; }
+    .control .row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 7px;
+    }
+    .control label {
+      font-weight: 600;
+      font-size: 13px;
+    }
+    .control .hint {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.3;
+      margin-top: 6px;
+    }
+    .control .val {
+      color: rgba(231,231,234,.92);
+      font-size: 12px;
+      padding: 2px 8px;
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 999px;
+      background: rgba(255,255,255,.05);
+      min-width: 70px;
+      text-align: right;
+    }
+    input[type="range"] {
+      width: 100%;
+      accent-color: #8b5cf6;
+    }
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+    button {
+      cursor: pointer;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 12px;
+      font-weight: 650;
+      font-size: 13px;
+      transition: transform .06s ease, background .12s ease;
+    }
+    button:hover { background: rgba(255,255,255,.09); }
+    button:active { transform: translateY(1px); }
+    .ghost {
+      background: transparent;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(320px, 1fr));
+      gap: 12px;
+      align-items: stretch;
+    }
+    @media (max-width: 980px) { .grid { grid-template-columns: 1fr; } }
+
+    .chartWrap {
+      padding: 12px;
+    }
+    canvas {
+      width: 100%;
+      height: 170px;
+      display: block;
+      border-radius: 12px;
+      background: rgba(0,0,0,.18);
+      border: 1px solid rgba(255,255,255,.08);
+    }
+    .meta {
+      margin-top: 10px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .meta .k {
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 12px;
+      padding: 8px 10px;
+      line-height: 1.25;
+    }
+    .meta .k b { color: rgba(231,231,234,.94); }
+
+    .legend {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 8px;
+    }
+    .dot {
+      width: 10px; height: 10px; border-radius: 999px;
+      display: inline-block; margin-right: 6px; vertical-align: -1px;
+      background: rgba(94,234,212,.9);
+    }
+    .dot.warn { background: rgba(251,191,36,.9); }
+    .dot.bad { background: rgba(251,113,133,.9); }
+
+    .smallnote {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+      margin-top: 10px;
+    }
+    code.inline {
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.10);
+      padding: 2px 6px;
+      border-radius: 8px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12px;
+      color: rgba(231,231,234,.92);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Housing Cooperative Institution — Parameter Explorer</h1>
+    <p>
+      Sliders adjust “fundamental parameters” that correspond to the institution’s relations (participation, reserves, inclusion supports,
+      training, rule clarity, mediation capacity, etc.). The simulator runs Monte Carlo draws and shows <em>probability distributions</em> for
+      key outcomes (fee spikes, deferred maintenance, conflict escalation, diversity, mission drift, and governance legitimacy).
+    </p>
+  </header>
+
+  <main>
+    <!-- Controls -->
+    <section class="card" id="controlsCard">
+      <div class="hd">
+        <h2>Parameters</h2>
+        <div class="pill" title="Monte Carlo samples per run">
+          Samples: <strong id="samplesLabel">8000</strong>
+        </div>
+      </div>
+      <div class="bd">
+        <div class="control">
+          <div class="row">
+            <label for="participation">Member participation capacity</label>
+            <div class="val" id="participationVal"></div>
+          </div>
+          <input type="range" id="participation" min="0" max="100" step="1" value="62">
+          <div class="hint">Higher means more members can attend meetings/committees (reduces legitimacy risk & burnout).</div>
+        </div>
+
+        <div class="control">
+          <div class="row">
+            <label for="ruleClarity">Rule clarity & procedural due process</label>
+            <div class="val" id="ruleClarityVal"></div>
+          </div>
+          <input type="range" id="ruleClarity" min="0" max="100" step="1" value="68">
+          <div class="hint">Clear rules, appeals, and documentation reduce destructive conflict and improve legitimacy.</div>
+        </div>
+
+        <div class="control">
+          <div class="row">
+            <label for="training">Education & succession training intensity</label>
+            <div class="val" id="trainingVal"></div>
+          </div>
+          <input type="range" id="training" min="0" max="100" step="1" value="55">
+          <div class="hint">Captures “education/training” principle: onboarding, handovers, facilitation, finance literacy.</div>
+        </div>
+
+        <div class="control">
+          <div class="row">
+            <label for="inclusion">Inclusion infrastructure</label>
+            <div class="val" id="inclusionVal"></div>
+          </div>
+          <input type="range" id="inclusion" min="0" max="100" step="1" value="52">
+          <div class="hint">Translation, childcare supports, accessible governance formats, reasonable adjustments.</div>
+        </div>
+
+        <div class="control">
+          <div class="row">
+            <label for="reserve">Reserve adequacy (capital planning)</label>
+            <div class="val" id="reserveVal"></div>
+          </div>
+          <input type="range" id="reserve" min="0" max="100" step="1" value="58">
+          <div class="hint">Higher reserves reduce fee spikes and deferred maintenance when capital repairs hit.</div>
+        </div>
+
+        <div class="control">
+          <div class="row">
+            <label for="capitalRisk">Capital repair pressure (building aging)</label>
+            <div class="val" id="capitalRiskVal"></div>
+          </div>
+          <input type="range" id="capitalRisk" min="0" max="100" step="1" value="46">
+          <div class="hint">Higher means roofs/heating/lifts are nearer end-of-life (more stress on budgets & governance).</div>
+        </div>
+
+        <div class="control">
+          <div class="row">
+            <label for="mediation">Mediation/facilitation capacity</label>
+            <div class="val" id="mediationVal"></div>
+          </div>
+          <input type="range" id="mediation" min="0" max="100" step="1" value="60">
+          <div class="hint">Higher means conflicts can move through informal→facilitation→mediation instead of sanction escalation.</div>
+        </div>
+
+        <div class="control">
+          <div class="row">
+            <label for="burden">Governance burden (time/complexity)</label>
+            <div class="val" id="burdenVal"></div>
+          </div>
+          <input type="range" id="burden" min="0" max="100" step="1" value="44">
+          <div class="hint">Higher means more meetings/admin load. Raises burnout and participation inequality unless offset.</div>
+        </div>
+
+        <div class="control">
+          <div class="row">
+            <label for="equityLocks">Affordability locks (limited-equity strength)</label>
+            <div class="val" id="equityLocksVal"></div>
+          </div>
+          <input type="range" id="equityLocks" min="0" max="100" step="1" value="70">
+          <div class="hint">Higher means stronger resale restrictions/subsidy retention (helps long-run affordability, reduces conversion).</div>
+        </div>
+
+        <div class="control">
+          <div class="row">
+            <label for="marketPressure">Market conversion pressure</label>
+            <div class="val" id="marketPressureVal"></div>
+          </div>
+          <input type="range" id="marketPressure" min="0" max="100" step="1" value="57">
+          <div class="hint">Higher means surrounding prices/incentives to “go market” are stronger (mission drift risk rises).</div>
+        </div>
+
+        <div class="actions">
+          <button id="runBtn">Run simulation</button>
+          <button class="ghost" id="resetBtn">Reset defaults</button>
+          <button class="ghost" id="fewerBtn" title="Faster; lower resolution">Fewer samples</button>
+          <button class="ghost" id="moreBtn" title="Slower; higher resolution">More samples</button>
+        </div>
+
+        <div class="smallnote">
+          Model note: this is a <em>probabilistic proxy</em> for the institution constraints. Sliders influence latent variables that
+          approximate relations like <span class="inline code">ReserveAdequate</span>, <span class="inline code">DueProcess</span>,
+          <span class="inline code">Mediated</span>, <span class="inline code">DiverseMembership</span>, etc.
+        </div>
+      </div>
+    </section>
+
+    <!-- Results -->
+    <section class="card">
+      <div class="hd">
+        <h2>Outcome probability distributions</h2>
+        <div class="pill">
+          <span class="dot"></span> lower risk / better
+          <span class="dot warn"></span> mixed
+          <span class="dot bad"></span> higher risk / worse
+        </div>
+      </div>
+      <div class="bd">
+        <div class="grid">
+          <!-- Each outcome card -->
+          <div class="card">
+            <div class="hd"><h2>Fee spike</h2><div class="pill" id="pill_feeSpike">—</div></div>
+            <div class="chartWrap">
+              <canvas id="c_feeSpike" width="640" height="220"></canvas>
+              <div class="meta" id="m_feeSpike"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="hd"><h2>Deferred maintenance</h2><div class="pill" id="pill_deferred">—</div></div>
+            <div class="chartWrap">
+              <canvas id="c_deferred" width="640" height="220"></canvas>
+              <div class="meta" id="m_deferred"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="hd"><h2>Conflict escalation to sanctions</h2><div class="pill" id="pill_conflictEsc">—</div></div>
+            <div class="chartWrap">
+              <canvas id="c_conflictEsc" width="640" height="220"></canvas>
+              <div class="meta" id="m_conflictEsc"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="hd"><h2>High diversity outcome</h2><div class="pill" id="pill_diversity">—</div></div>
+            <div class="chartWrap">
+              <canvas id="c_diversity" width="640" height="220"></canvas>
+              <div class="meta" id="m_diversity"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="hd"><h2>Mission drift / conversion</h2><div class="pill" id="pill_drift">—</div></div>
+            <div class="chartWrap">
+              <canvas id="c_drift" width="640" height="220"></canvas>
+              <div class="meta" id="m_drift"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="hd"><h2>Governance legitimacy</h2><div class="pill" id="pill_legit">—</div></div>
+            <div class="chartWrap">
+              <canvas id="c_legit" width="640" height="220"></canvas>
+              <div class="meta" id="m_legit"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="smallnote">
+          Interpreting charts: each histogram shows the distribution of the simulated <b>probability</b> of that outcome given your parameters.
+          The “mean” is the expected probability; the interval shows uncertainty from unobserved factors (noise + interactions).
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // -----------------------------
+    // Utilities
+    // -----------------------------
+    function clamp(x, a, b) { return Math.max(a, Math.min(b, x)); }
+    function lerp(a,b,t){ return a + (b-a)*t; }
+    function sigmoid(z){ return 1/(1+Math.exp(-z)); }
+    // Gaussian noise via Box-Muller
+    function randn() {
+      let u = 0, v = 0;
+      while (u === 0) u = Math.random();
+      while (v === 0) v = Math.random();
+      return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+    }
+    function qsort(arr) { return arr.slice().sort((a,b)=>a-b); }
+    function quantile(sortedArr, q) {
+      const n = sortedArr.length;
+      if (n === 0) return NaN;
+      const pos = (n - 1) * q;
+      const base = Math.floor(pos);
+      const rest = pos - base;
+      if (sortedArr[base+1] === undefined) return sortedArr[base];
+      return sortedArr[base] + rest * (sortedArr[base+1] - sortedArr[base]);
+    }
+
+    // -----------------------------
+    // Parameter wiring
+    // -----------------------------
+    const sliders = [
+      ["participation","participationVal","%"],
+      ["ruleClarity","ruleClarityVal","%"],
+      ["training","trainingVal","%"],
+      ["inclusion","inclusionVal","%"],
+      ["reserve","reserveVal","%"],
+      ["capitalRisk","capitalRiskVal","%"],
+      ["mediation","mediationVal","%"],
+      ["burden","burdenVal","%"],
+      ["equityLocks","equityLocksVal","%"],
+      ["marketPressure","marketPressureVal","%"],
+    ];
+
+    const defaults = {
+      participation: 62,
+      ruleClarity: 68,
+      training: 55,
+      inclusion: 52,
+      reserve: 58,
+      capitalRisk: 46,
+      mediation: 60,
+      burden: 44,
+      equityLocks: 70,
+      marketPressure: 57
+    };
+
+    function setSlider(id, v) {
+      const el = document.getElementById(id);
+      el.value = v;
+      updateSliderLabel(id);
+    }
+
+    function updateSliderLabel(id){
+      const map = Object.fromEntries(sliders.map(([sid, vid, unit])=>[sid,{vid,unit}]));
+      const {vid, unit} = map[id];
+      const v = Number(document.getElementById(id).value);
+      document.getElementById(vid).textContent = `${v}${unit}`;
+    }
+
+    function readParams(){
+      const p = {};
+      for (const [sid] of sliders) p[sid] = Number(document.getElementById(sid).value)/100;
+      return p;
+    }
+
+    for (const [sid] of sliders) {
+      document.getElementById(sid).addEventListener("input", ()=>{
+        updateSliderLabel(sid);
+        // Run lightweight auto-update (debounced-ish)
+        scheduleRun();
+      });
+      updateSliderLabel(sid);
+    }
+
+    // -----------------------------
+    // Probabilistic proxy model
+    // -----------------------------
+    /**
+     * We create latent variables that correspond to institution predicates/relations.
+     * Each sample draws noise to represent unmodelled heterogeneity and context.
+     *
+     * Outputs are probabilities (0..1), and we histogram those probabilities.
+     */
+    function simulateOnce(params) {
+      // Noise terms (contextual uncertainty, heterogeneity)
+      const n1 = 0.35*randn();
+      const n2 = 0.35*randn();
+      const n3 = 0.35*randn();
+      const n4 = 0.35*randn();
+
+      // Latent "institutional" qualities (proxying axioms/relations)
+      // Participation effective capacity decreases with burden, increases with inclusion/training
+      const participationEff = clamp(
+        params.participation
+        + 0.22*params.training
+        + 0.18*params.inclusion
+        - 0.28*params.burden
+        + 0.12*params.ruleClarity
+        + 0.08*n1,
+        0, 1
+      );
+
+      // Procedural legitimacy / due process quality
+      const dueProcess = clamp(
+        0.30*params.ruleClarity
+        + 0.25*params.training
+        + 0.15*params.participation
+        + 0.10*params.mediation
+        - 0.10*params.burden
+        + 0.10*n2,
+        0, 1
+      );
+
+      // Mediation throughput capacity (ability to keep conflicts from sanctions)
+      const conflictCapacity = clamp(
+        0.40*params.mediation
+        + 0.20*params.ruleClarity
+        + 0.15*params.training
+        + 0.10*params.inclusion
+        - 0.15*(1 - participationEff)
+        + 0.10*n3,
+        0, 1
+      );
+
+      // Financial resilience: reserves vs. capital risk; training improves planning
+      const financialResilience = clamp(
+        0.45*params.reserve
+        + 0.20*params.training
+        + 0.10*params.ruleClarity
+        - 0.35*params.capitalRisk
+        + 0.12*n4,
+        0, 1
+      );
+
+      // Affordability lock strength reduces conversion drift; market pressure increases it
+      const missionProtection = clamp(
+        0.55*params.equityLocks
+        + 0.10*params.ruleClarity
+        + 0.10*params.training
+        - 0.30*params.marketPressure
+        + 0.08*randn(),
+        0, 1
+      );
+
+      // Diversity infrastructure: inclusion and affordability (locks) help; high burden harms
+      const inclusionAccess = clamp(
+        0.45*params.inclusion
+        + 0.20*params.equityLocks
+        + 0.10*params.ruleClarity
+        + 0.10*params.mediation
+        - 0.20*params.burden
+        + 0.10*randn(),
+        0, 1
+      );
+
+      // Now compute outcome probabilities (via logistic maps).
+      // Fee spikes: more likely when capital risk is high and resilience low; some effect from market pressure.
+      const p_feeSpike = sigmoid(
+        -1.2
+        + 3.0*(params.capitalRisk - financialResilience)
+        + 0.7*params.marketPressure
+        + 0.5*(1 - params.reserve)
+        + 0.3*randn()
+      );
+
+      // Deferred maintenance: similar drivers but more sensitive to low participation (hard to agree/execute repairs)
+      const p_deferred = sigmoid(
+        -1.0
+        + 2.6*(params.capitalRisk - financialResilience)
+        + 1.0*(1 - participationEff)
+        + 0.5*params.burden
+        + 0.3*randn()
+      );
+
+      // Conflict escalation to sanctions: likely when conflict capacity & due process are low and burden high
+      const p_conflictEsc = sigmoid(
+        -1.1
+        + 2.2*(1 - conflictCapacity)
+        + 1.2*(1 - dueProcess)
+        + 0.8*params.burden
+        + 0.7*(1 - participationEff)
+        + 0.35*randn()
+      );
+
+      // High diversity outcome: more likely when access/inclusion are high, and participation is accessible
+      const p_diversityHigh = sigmoid(
+        -0.6
+        + 2.5*inclusionAccess
+        + 0.9*participationEff
+        - 0.8*params.burden
+        + 0.35*randn()
+      );
+
+      // Mission drift / conversion: more likely when market pressure > missionProtection and affordability locks are weak
+      const p_drift = sigmoid(
+        -1.0
+        + 2.8*(params.marketPressure - missionProtection)
+        + 0.8*(1 - params.equityLocks)
+        + 0.4*(1 - dueProcess)
+        + 0.35*randn()
+      );
+
+      // Governance legitimacy: more likely with participationEff + dueProcess; harmed by high conflict escalation and fee spikes
+      const p_legit = sigmoid(
+        -0.2
+        + 2.1*participationEff
+        + 1.6*dueProcess
+        + 0.7*params.training
+        - 1.1*p_conflictEsc
+        - 0.8*p_feeSpike
+        - 0.3*params.burden
+        + 0.25*randn()
+      );
+
+      return {
+        feeSpike: clamp(p_feeSpike, 0, 1),
+        deferred: clamp(p_deferred, 0, 1),
+        conflictEsc: clamp(p_conflictEsc, 0, 1),
+        diversityHigh: clamp(p_diversityHigh, 0, 1),
+        drift: clamp(p_drift, 0, 1),
+        legit: clamp(p_legit, 0, 1)
+      };
+    }
+
+    // -----------------------------
+    // Histogram + drawing
+    // -----------------------------
+    function histogram(values, bins=20) {
+      const counts = new Array(bins).fill(0);
+      for (const v of values) {
+        const x = clamp(v, 0, 0.999999);
+        const b = Math.floor(x * bins);
+        counts[b] += 1;
+      }
+      return counts;
+    }
+
+    function drawHist(canvas, counts, color="rgba(94,234,212,.85)") {
+      const ctx = canvas.getContext("2d");
+      const W = canvas.width, H = canvas.height;
+      ctx.clearRect(0,0,W,H);
+
+      // background grid
+      ctx.fillStyle = "rgba(0,0,0,.10)";
+      ctx.fillRect(0,0,W,H);
+
+      ctx.strokeStyle = "rgba(255,255,255,.08)";
+      ctx.lineWidth = 1;
+      const gridY = 5;
+      for (let i=1;i<gridY;i++){
+        const y = Math.round(i*H/gridY);
+        ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
+      }
+      const gridX = 10;
+      for (let i=1;i<gridX;i++){
+        const x = Math.round(i*W/gridX);
+        ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke();
+      }
+
+      const bins = counts.length;
+      const maxC = Math.max(...counts, 1);
+      const pad = 10;
+      const bw = (W - 2*pad) / bins;
+
+      // bars
+      for (let i=0;i<bins;i++){
+        const c = counts[i];
+        const h = (H - 2*pad) * (c / maxC);
+        const x = pad + i*bw;
+        const y = H - pad - h;
+        ctx.fillStyle = color;
+        ctx.fillRect(x+1, y, bw-2, h);
+      }
+
+      // axis labels
+      ctx.fillStyle = "rgba(231,231,234,.75)";
+      ctx.font = "12px ui-sans-serif, system-ui";
+      ctx.fillText("0", pad, H-4);
+      ctx.fillText("1", W-pad-8, H-4);
+      ctx.fillText("probability", Math.round(W/2)-30, H-4);
+    }
+
+    function formatPct(x) { return `${Math.round(x*100)}%`; }
+    function stats(values) {
+      const s = qsort(values);
+      const mean = values.reduce((a,b)=>a+b,0)/values.length;
+      const p05 = quantile(s, 0.05);
+      const p50 = quantile(s, 0.50);
+      const p95 = quantile(s, 0.95);
+      return { mean, p05, p50, p95 };
+    }
+
+    function riskPillText(name, meanProb) {
+      // Interpret risk vs "goodness" per metric
+      // For risk metrics: lower is better. For diversityHigh/legit: higher is better.
+      const isGoodWhenHigh = (name === "diversityHigh" || name === "legit");
+      const score = isGoodWhenHigh ? meanProb : (1-meanProb);
+
+      // Simple qualitative buckets
+      if (score >= 0.72) return { label: "Favorable", tint: "rgba(94,234,212,.18)", border: "rgba(94,234,212,.35)" };
+      if (score >= 0.50) return { label: "Mixed", tint: "rgba(251,191,36,.16)", border: "rgba(251,191,36,.34)" };
+      return { label: "Concerning", tint: "rgba(251,113,133,.16)", border: "rgba(251,113,133,.34)" };
+    }
+
+    function setPill(id, text, styleObj){
+      const el = document.getElementById(id);
+      el.textContent = text;
+      el.style.background = styleObj.tint;
+      el.style.borderColor = styleObj.border;
+    }
+
+    function setMeta(id, st, isGoodWhenHigh=false) {
+      const el = document.getElementById(id);
+      el.innerHTML = `
+        <div class="k"><b>Mean</b><br>${formatPct(st.mean)}</div>
+        <div class="k"><b>Median</b><br>${formatPct(st.p50)}</div>
+        <div class="k"><b>90% interval</b><br>${formatPct(st.p05)}–${formatPct(st.p95)}</div>
+      `;
+    }
+
+    // -----------------------------
+    // Simulation runner
+    // -----------------------------
+    let SAMPLES = 8000;
+    const samplesLabel = document.getElementById("samplesLabel");
+
+    function runSimulation() {
+      const params = readParams();
+      const out = {
+        feeSpike: [],
+        deferred: [],
+        conflictEsc: [],
+        diversityHigh: [],
+        drift: [],
+        legit: []
+      };
+
+      for (let i=0;i<SAMPLES;i++){
+        const r = simulateOnce(params);
+        for (const k in out) out[k].push(r[k]);
+      }
+
+      const configs = [
+        { key:"feeSpike", canvas:"c_feeSpike", meta:"m_feeSpike", pill:"pill_feeSpike", color:"rgba(251,113,133,.85)" },
+        { key:"deferred", canvas:"c_deferred", meta:"m_deferred", pill:"pill_deferred", color:"rgba(251,113,133,.85)" },
+        { key:"conflictEsc", canvas:"c_conflictEsc", meta:"m_conflictEsc", pill:"pill_conflictEsc", color:"rgba(251,191,36,.85)" },
+        { key:"diversityHigh", canvas:"c_diversity", meta:"m_diversity", pill:"pill_diversity", color:"rgba(94,234,212,.85)" },
+        { key:"drift", canvas:"c_drift", meta:"m_drift", pill:"pill_drift", color:"rgba(251,113,133,.85)" },
+        { key:"legit", canvas:"c_legit", meta:"m_legit", pill:"pill_legit", color:"rgba(94,234,212,.85)" }
+      ];
+
+      for (const cfg of configs){
+        const vals = out[cfg.key];
+        const st = stats(vals);
+        const counts = histogram(vals, 20);
+        drawHist(document.getElementById(cfg.canvas), counts, cfg.color);
+
+        const pill = riskPillText(cfg.key, st.mean);
+        setPill(cfg.pill, `${pill.label} • mean ${formatPct(st.mean)}`, pill);
+
+        const goodHigh = (cfg.key==="diversityHigh" || cfg.key==="legit");
+        setMeta(cfg.meta, st, goodHigh);
+      }
+    }
+
+    // Debounced auto-run
+    let runTimer = null;
+    function scheduleRun() {
+      if (runTimer) clearTimeout(runTimer);
+      runTimer = setTimeout(()=>runSimulation(), 220);
+    }
+
+    // Buttons
+    document.getElementById("runBtn").addEventListener("click", runSimulation);
+
+    document.getElementById("resetBtn").addEventListener("click", ()=>{
+      for (const k in defaults) setSlider(k, defaults[k]);
+      runSimulation();
+    });
+
+    document.getElementById("fewerBtn").addEventListener("click", ()=>{
+      SAMPLES = Math.max(1500, Math.round(SAMPLES * 0.6));
+      samplesLabel.textContent = SAMPLES;
+      runSimulation();
+    });
+    document.getElementById("moreBtn").addEventListener("click", ()=>{
+      SAMPLES = Math.min(30000, Math.round(SAMPLES * 1.5));
+      samplesLabel.textContent = SAMPLES;
+      runSimulation();
+    });
+
+    // Initial run
+    samplesLabel.textContent = SAMPLES;
+    runSimulation();
+  </script>
+</body>
+</html>
