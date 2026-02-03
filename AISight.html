@@ -1,0 +1,1248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>DR Startup Goguen Explorer — Monte Carlo Outcome Simulator</title>
+  <style>
+    :root{
+      --bg:#0b1020; --panel:#121a33; --panel2:#0f1730; --text:#e8ecff;
+      --muted:#aab4e6; --accent:#7aa2ff; --accent2:#61e6c6; --warn:#ffcc66; --bad:#ff6b7a;
+      --good:#6ef08d; --line:#243058;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:var(--sans);background:linear-gradient(180deg,#070b17, var(--bg));color:var(--text)}
+    header{padding:18px 18px 10px;border-bottom:1px solid var(--line);background:rgba(18,26,51,.55);backdrop-filter: blur(8px);position:sticky;top:0;z-index:5}
+    h1{margin:0;font-size:18px;letter-spacing:.2px}
+    .sub{margin-top:6px;color:var(--muted);font-size:13px;line-height:1.35}
+    main{display:grid;grid-template-columns: 420px 1fr;gap:14px;padding:14px;max-width:1300px;margin:0 auto}
+    .card{background:rgba(18,26,51,.72);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+    .card h2{margin:0;padding:12px 14px;border-bottom:1px solid var(--line);font-size:14px;color:var(--text);display:flex;align-items:center;justify-content:space-between}
+    .card h2 small{color:var(--muted);font-weight:500}
+    .card .content{padding:12px 14px}
+    .row{display:flex;gap:10px;align-items:center;justify-content:space-between}
+    .grid2{display:grid;grid-template-columns: 1fr 1fr;gap:10px}
+    .grid3{display:grid;grid-template-columns: 1fr 1fr 1fr;gap:10px}
+    label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+    input[type="range"]{width:100%}
+    .metric{font-family:var(--mono);font-size:12px;color:var(--text)}
+    .pill{padding:4px 8px;border-radius:999px;border:1px solid var(--line);background:rgba(10,14,30,.55);color:var(--muted);font-size:12px}
+    .btns{display:flex;flex-wrap:wrap;gap:8px}
+    button{
+      border:1px solid var(--line);
+      background:linear-gradient(180deg, rgba(122,162,255,.25), rgba(122,162,255,.12));
+      color:var(--text);
+      padding:9px 10px;border-radius:10px;
+      cursor:pointer;font-size:12px;
+    }
+    button.secondary{
+      background:linear-gradient(180deg, rgba(97,230,198,.25), rgba(97,230,198,.12));
+    }
+    button.ghost{
+      background:transparent;
+    }
+    button:active{transform:translateY(1px)}
+    .note{font-size:12px;color:var(--muted);line-height:1.45;margin-top:10px}
+    .divider{height:1px;background:var(--line);margin:12px 0}
+    .charts{display:grid;grid-template-columns: 1fr 360px;gap:14px}
+    canvas{width:100%;height:280px;background:rgba(8,12,24,.35);border:1px solid var(--line);border-radius:12px}
+    .smallCanvas{height:220px}
+    select, textarea, input[type="text"]{
+      width:100%;
+      border-radius:10px;
+      border:1px solid var(--line);
+      background:rgba(8,12,24,.55);
+      color:var(--text);
+      padding:8px 10px;
+      font-size:12px;
+      outline:none;
+    }
+    textarea{min-height:120px;resize:vertical;font-family:var(--mono)}
+    .explain{
+      background:rgba(8,12,24,.35);
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:10px;
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.5;
+    }
+    .explain b{color:var(--text)}
+    .kpi{display:grid;grid-template-columns: 1fr 1fr;gap:10px}
+    .kpi .box{
+      background:rgba(8,12,24,.35);
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:10px;
+    }
+    .kpi .val{font-family:var(--mono);font-size:18px;margin-top:6px}
+    .good{color:var(--good)}
+    .bad{color:var(--bad)}
+    .warn{color:var(--warn)}
+    .mono{font-family:var(--mono)}
+    .plan{
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:10px;
+      background:rgba(8,12,24,.35);
+      margin-top:10px;
+    }
+    .plan h3{margin:0 0 6px 0;font-size:12px;color:var(--text)}
+    .plan ul{margin:6px 0 0 18px;color:var(--muted);font-size:12px;line-height:1.4}
+    .footer{padding:12px 14px;border-top:1px solid var(--line);color:var(--muted);font-size:11px;line-height:1.4}
+    @media (max-width: 980px){
+      main{grid-template-columns: 1fr}
+      .charts{grid-template-columns: 1fr}
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1>DR Startup Goguen Explorer — Outcome Simulator (Monte Carlo)</h1>
+  <div class="sub">
+    Explore fundamental parameters (sliders) that represent the constraints in the formal Goguen/institution model.
+    Run Monte Carlo simulations to see outcome distributions, understand <span class="mono">why</span> they look that way,
+    and generate an AI prompt for an imaginary case study tailored to your situation.
+  </div>
+</header>
+
+<main>
+  <!-- LEFT: PARAMETERS -->
+  <section class="card">
+    <h2>Parameters <small>0–100 (higher = “more of the thing”)</small></h2>
+    <div class="content">
+
+      <div class="grid2">
+        <div>
+          <label>Runway / Cash buffer (operational months proxy)</label>
+          <input id="p_runway" type="range" min="0" max="100" value="10"/>
+          <div class="row"><span class="pill">Runway</span><span id="v_runway" class="metric"></span></div>
+        </div>
+        <div>
+          <label>Governance quality (controls, transparency, incentive alignment)</label>
+          <input id="p_gov" type="range" min="0" max="100" value="25"/>
+          <div class="row"><span class="pill">Governance</span><span id="v_gov" class="metric"></span></div>
+        </div>
+
+        <div>
+          <label>Team morale / cohesion (disillusionment inverse)</label>
+          <input id="p_morale" type="range" min="0" max="100" value="35"/>
+          <div class="row"><span class="pill">Morale</span><span id="v_morale" class="metric"></span></div>
+        </div>
+        <div>
+          <label>Innovation embedded + documented (transferability)</label>
+          <input id="p_transfer" type="range" min="0" max="100" value="20"/>
+          <div class="row"><span class="pill">Transferability</span><span id="v_transfer" class="metric"></span></div>
+        </div>
+
+        <div>
+          <label>Build reproducibility (can you rebuild/run reliably?)</label>
+          <input id="p_repro" type="range" min="0" max="100" value="30"/>
+          <div class="row"><span class="pill">Reproducible build</span><span id="v_repro" class="metric"></span></div>
+        </div>
+        <div>
+          <label>IP / data rights clarity (clean chain of title)</label>
+          <input id="p_ip" type="range" min="0" max="100" value="40"/>
+          <div class="row"><span class="pill">Clean IP</span><span id="v_ip" class="metric"></span></div>
+        </div>
+
+        <div>
+          <label>Clinical trial completion (partial → complete)</label>
+          <input id="p_trial" type="range" min="0" max="100" value="30"/>
+          <div class="row"><span class="pill">Trial completion</span><span id="v_trial" class="metric"></span></div>
+        </div>
+        <div>
+          <label>Accuracy confidence (current performance credibility)</label>
+          <input id="p_acc" type="range" min="0" max="100" value="35"/>
+          <div class="row"><span class="pill">Accuracy confidence</span><span id="v_acc" class="metric"></span></div>
+        </div>
+
+        <div>
+          <label>MHRA readiness (QMS/evidence/regulatory preparedness)</label>
+          <input id="p_mhra" type="range" min="0" max="100" value="15"/>
+          <div class="row"><span class="pill">MHRA readiness</span><span id="v_mhra" class="metric"></span></div>
+        </div>
+        <div>
+          <label>Concept strength (human–machine interface value)</label>
+          <input id="p_concept" type="range" min="0" max="100" value="75"/>
+          <div class="row"><span class="pill">Concept strength</span><span id="v_concept" class="metric"></span></div>
+        </div>
+
+        <div>
+          <label>User workflow pressure (time poverty of graders/users)</label>
+          <input id="p_pressure" type="range" min="0" max="100" value="85"/>
+          <div class="row"><span class="pill">User pressure</span><span id="v_pressure" class="metric"></span></div>
+        </div>
+        <div>
+          <label>Integration friction (IT burden / workflow disruption)</label>
+          <input id="p_integr" type="range" min="0" max="100" value="70"/>
+          <div class="row"><span class="pill">Integration friction</span><span id="v_integr" class="metric"></span></div>
+        </div>
+
+        <div>
+          <label>Time-saving wedge power (reduces onboarding/QA time)</label>
+          <input id="p_timesave" type="range" min="0" max="100" value="45"/>
+          <div class="row"><span class="pill">Time saved</span><span id="v_timesave" class="metric"></span></div>
+        </div>
+        <div>
+          <label>Minimal-integration packaging (CSV/web dashboard etc.)</label>
+          <input id="p_minint" type="range" min="0" max="100" value="55"/>
+          <div class="row"><span class="pill">Minimal integration</span><span id="v_minint" class="metric"></span></div>
+        </div>
+
+        <div>
+          <label>GPU / hosting cost pressure (expense of running inference)</label>
+          <input id="p_gpu" type="range" min="0" max="100" value="70"/>
+          <div class="row"><span class="pill">GPU cost</span><span id="v_gpu" class="metric"></span></div>
+        </div>
+        <div>
+          <label>Free web-service traction reality (“build it” is false)</label>
+          <input id="p_buildfalse" type="range" min="0" max="100" value="80"/>
+          <div class="row"><span class="pill">Build-it-false</span><span id="v_buildfalse" class="metric"></span></div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="row">
+        <div>
+          <label>Monte Carlo runs</label>
+          <input id="p_runs" type="range" min="200" max="20000" value="5000"/>
+          <div class="row"><span class="pill">Runs</span><span id="v_runs" class="metric"></span></div>
+        </div>
+        <div>
+          <label>Noise level (uncertainty)</label>
+          <input id="p_noise" type="range" min="0" max="100" value="30"/>
+          <div class="row"><span class="pill">Noise</span><span id="v_noise" class="metric"></span></div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="btns">
+        <button id="btnSim">Run simulation</button>
+        <button id="btnSuggest" class="secondary">Suggest best options</button>
+        <button id="btnReset" class="ghost">Reset to “current story”</button>
+      </div>
+
+      <div class="note">
+        <b>Interpretation tip:</b> sliders don’t “declare truth”; they control the latent variables that drive the
+        institution’s major implications (evidence barriers, adoption friction, transferability, and wedge viability).
+      </div>
+    </div>
+
+    <div class="footer">
+      This is a decision-support sandbox, not medical, legal, or financial advice. The probability model is a transparent,
+      editable approximation designed to reflect the causal structure of the formal theory (constraints & entailments).
+    </div>
+  </section>
+
+  <!-- RIGHT: OUTPUTS -->
+  <section class="card">
+    <h2>Outcomes <small>Probabilities & distributions</small></h2>
+    <div class="content">
+
+      <div class="kpi">
+        <div class="box">
+          <div class="mono">Best near-term path</div>
+          <div id="bestPath" class="val good">—</div>
+          <div id="bestPathNote" class="note"></div>
+        </div>
+        <div class="box">
+          <div class="mono">Primary blocker</div>
+          <div id="blocker" class="val warn">—</div>
+          <div id="blockerNote" class="note"></div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="charts">
+        <div>
+          <label>Outcome probabilities (mean over Monte Carlo)</label>
+          <canvas id="barChart" width="900" height="360"></canvas>
+
+          <div class="row" style="margin-top:10px">
+            <div style="flex:1">
+              <label>View distribution for outcome</label>
+              <select id="distSelect"></select>
+            </div>
+            <div style="width:150px">
+              <label>Histogram bins</label>
+              <input id="p_bins" type="range" min="6" max="40" value="20"/>
+              <div class="row"><span class="pill">Bins</span><span id="v_bins" class="metric"></span></div>
+            </div>
+          </div>
+
+          <canvas id="histChart" class="smallCanvas" width="900" height="300" style="margin-top:10px"></canvas>
+        </div>
+
+        <div>
+          <label>Why these outcomes?</label>
+          <div id="explainBox" class="explain">
+            Run a simulation to see factor explanations for each outcome.
+          </div>
+
+          <div class="divider"></div>
+
+          <label>AI prompt generator — imaginary case study</label>
+          <textarea id="caseInput" placeholder="Tell the system specifics about one aspect of your problem, e.g.:
+- A particular buyer type you’re targeting (grading company / clinic / vendor)
+- A constraint (integration, budgets, governance)
+- An idea for moving forward (education wedge pilot, asset purchase, etc.)
+- A failure you want to avoid"></textarea>
+
+          <div class="row" style="margin-top:8px;gap:8px">
+            <input id="promptTitle" type="text" placeholder="Case-study angle (e.g., “Education wedge pilot with grader vendor”)"/>
+          </div>
+
+          <div class="btns" style="margin-top:8px">
+            <button id="btnPrompt" class="secondary">Generate AI prompt</button>
+            <button id="btnCopy" class="ghost">Copy prompt</button>
+          </div>
+
+          <label style="margin-top:10px">Generated prompt</label>
+          <textarea id="promptOut" readonly></textarea>
+
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <label>Suggested plans (best options search)</label>
+      <div id="plans"></div>
+
+    </div>
+  </section>
+</main>
+
+<script>
+/** --------------------------
+ * Utility helpers
+ * --------------------------- */
+const clamp01 = x => Math.max(0, Math.min(1, x));
+const to01 = v => clamp01(v / 100);
+const sigmoid = x => 1 / (1 + Math.exp(-x));
+function randn() { // Box–Muller
+  let u = 0, v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+}
+function fmtPct(x){ return (100*x).toFixed(1) + "%"; }
+function fmt01(x){ return x.toFixed(2); }
+
+/** --------------------------
+ * Parameter wiring
+ * --------------------------- */
+const sliders = [
+  ["runway","Runway / Cash buffer"],
+  ["gov","Governance quality"],
+  ["morale","Team morale"],
+  ["transfer","Innovation embedded + documented"],
+  ["repro","Build reproducibility"],
+  ["ip","IP/data rights clarity"],
+  ["trial","Clinical trial completion"],
+  ["acc","Accuracy confidence"],
+  ["mhra","MHRA readiness"],
+  ["concept","Concept strength"],
+  ["pressure","User workflow pressure"],
+  ["integr","Integration friction"],
+  ["timesave","Time-saving wedge power"],
+  ["minint","Minimal-integration packaging"],
+  ["gpu","GPU / hosting cost pressure"],
+  ["buildfalse","Build-it-they-will-come false factor"],
+  ["runs","Monte Carlo runs"],
+  ["noise","Noise level"],
+  ["bins","Histogram bins"]
+];
+
+function getParam(id){
+  const el = document.getElementById("p_"+id);
+  return Number(el.value);
+}
+function setParam(id, val){
+  document.getElementById("p_"+id).value = val;
+  updateReadouts();
+}
+function updateReadouts(){
+  for(const [id] of sliders){
+    const v = getParam(id);
+    const out = document.getElementById("v_"+id);
+    if(out){
+      if(id === "runs") out.textContent = v.toString();
+      else out.textContent = v.toString();
+    }
+  }
+}
+sliders.forEach(([id])=>{
+  const el = document.getElementById("p_"+id);
+  if(el) el.addEventListener("input", ()=> {
+    updateReadouts();
+    // lightweight: don't auto-run on every move; user can press run
+  });
+});
+updateReadouts();
+
+/** --------------------------
+ * Outcome definitions
+ * --------------------------- */
+const OUTCOMES = [
+  { key:"eduPilot",  label:"Education/QA pilot succeeds (purchasable)" },
+  { key:"diagPath",  label:"Diagnostic pathway feasible soon" },
+  { key:"buyout",    label:"Buyout worthwhile (whole company)" },
+  { key:"assetBuy",  label:"Asset purchase into NewCo is best" },
+  { key:"restart",   label:"Restart from scratch is better" },
+  { key:"freeWeb",   label:"Free web service yields traction" }
+];
+
+const distSelect = document.getElementById("distSelect");
+OUTCOMES.forEach(o=>{
+  const opt = document.createElement("option");
+  opt.value = o.key;
+  opt.textContent = o.label;
+  distSelect.appendChild(opt);
+});
+
+/** --------------------------
+ * Core “institution-inspired” probabilistic model
+ *
+ * We compute each outcome probability as a logistic of a weighted score:
+ *  - Evidence/accuracy/reg readiness block diagnostic outcomes
+ *  - Time pressure + integration friction block user testing/adoption
+ *  - Transferability + reproducibility + clean IP govern buyout viability
+ *  - Governance failure increases "asset purchase into newco" attractiveness
+ *
+ * Noise models uncertainty in hidden details (data shift, stakeholder dynamics, etc.).
+ * --------------------------- */
+function computeDeterministicScores(p){
+  // Convert to 0..1
+  const runway   = to01(p.runway);
+  const gov      = to01(p.gov);
+  const morale   = to01(p.morale);
+  const transfer = to01(p.transfer);
+  const repro    = to01(p.repro);
+  const ip       = to01(p.ip);
+  const trial    = to01(p.trial);
+  const acc      = to01(p.acc);
+  const mhra     = to01(p.mhra);
+  const concept  = to01(p.concept);
+  const pressure = to01(p.pressure);
+  const integr   = to01(p.integr);
+  const timesave = to01(p.timesave);
+  const minint   = to01(p.minint);
+  const gpu      = to01(p.gpu);
+  const buildfalse = to01(p.buildfalse);
+
+  // Derived/interpretive values
+  const governanceFailure = 1 - gov; // higher = worse
+  const evidenceStrength = 0.55*trial + 0.45*acc; // credibility
+  const diagnosticReadiness = 0.45*mhra + 0.35*evidenceStrength + 0.20*repro;
+  const adoptionFriction = 0.55*pressure + 0.45*integr;
+  const wedgePower = 0.55*timesave + 0.45*minint;
+  const coreAssets = 0.34*ip + 0.33*repro + 0.33*transfer;
+
+  // Scores (pre-sigmoid), roughly centered near 0
+  // Education wedge success: concept + wedgePower + enough governance/morale - friction
+  const sEdu =
+      2.2*(concept-0.5) +
+      2.4*(wedgePower-0.5) +
+      1.2*(gov-0.5) +
+      1.0*(morale-0.5) +
+      0.8*(runway-0.5) -
+      2.2*(adoptionFriction-0.5);
+
+  // Diagnostic path feasible soon: needs mhra + evidence + accuracy + build + runway, penalized by governance & friction
+  const sDiag =
+      3.2*(diagnosticReadiness-0.55) +
+      1.6*(runway-0.5) +
+      0.8*(morale-0.5) -
+      1.2*(governanceFailure-0.5) -
+      1.2*(integr-0.5) -
+      0.9*(pressure-0.5);
+
+  // Buyout worthwhile: clean assets + transferable innovation + reproducibility + wedge success, penalize governance failure and low runway
+  const sBuyout =
+      3.1*(coreAssets-0.55) +
+      1.6*(sigmoid(sEdu)-0.5) +
+      0.8*(morale-0.5) -
+      2.0*(governanceFailure-0.5) -
+      1.2*( (0.45*(1-runway) + 0.55*gpu) - 0.5 ); // low runway and high GPU cost worsen
+
+  // Asset purchase best: governance failure increases need for clean restart, but requires IP clarity and at least some reproducibility
+  const sAssetBuy =
+      2.8*(governanceFailure-0.5) +
+      1.6*(ip-0.5) +
+      1.0*(repro-0.5) +
+      0.5*(transfer-0.5) -
+      0.8*(runway-0.5); // if runway is high, you might not need drastic restructure
+
+  // Restart better: if IP unclear, build not reproducible, innovation not transferable, morale crushed
+  const sRestart =
+      2.8*((1-ip)-0.5) +
+      2.6*((1-repro)-0.5) +
+      2.2*((1-transfer)-0.5) +
+      1.4*((1-morale)-0.5) +
+      1.2*(governanceFailure-0.5) -
+      0.8*(concept-0.5); // strong concept makes restart slightly less compelling
+
+  // Free web traction: concept helps, but GPU cost + build-it-false + low runway punish
+  const sFreeWeb =
+      2.2*(concept-0.5) -
+      2.4*(gpu-0.5) -
+      2.1*(buildfalse-0.5) -
+      1.3*((1-runway)-0.5) -
+      0.8*(integr-0.5);
+
+  return {
+    sEdu, sDiag, sBuyout, sAssetBuy, sRestart, sFreeWeb,
+    derived: { governanceFailure, evidenceStrength, diagnosticReadiness, adoptionFriction, wedgePower, coreAssets }
+  };
+}
+
+function scoreToProb(score, noiseStd){
+  // Convert score to prob with additive Gaussian noise
+  const noisy = score + noiseStd * randn();
+  return clamp01(sigmoid(noisy));
+}
+
+function runMonteCarlo(){
+  const p = {
+    runway:getParam("runway"),
+    gov:getParam("gov"),
+    morale:getParam("morale"),
+    transfer:getParam("transfer"),
+    repro:getParam("repro"),
+    ip:getParam("ip"),
+    trial:getParam("trial"),
+    acc:getParam("acc"),
+    mhra:getParam("mhra"),
+    concept:getParam("concept"),
+    pressure:getParam("pressure"),
+    integr:getParam("integr"),
+    timesave:getParam("timesave"),
+    minint:getParam("minint"),
+    gpu:getParam("gpu"),
+    buildfalse:getParam("buildfalse"),
+    runs:getParam("runs"),
+    noise:getParam("noise"),
+    bins:getParam("bins"),
+  };
+
+  const runs = Math.max(200, Math.floor(p.runs));
+  const noiseStd = 0.15 + 0.65 * to01(p.noise); // 0.15..0.80
+
+  const scores = computeDeterministicScores(p);
+
+  // Collect distributions
+  const dist = {};
+  OUTCOMES.forEach(o=> dist[o.key] = new Array(runs));
+
+  for(let i=0;i<runs;i++){
+    dist.eduPilot[i] = scoreToProb(scores.sEdu, noiseStd);
+    dist.diagPath[i] = scoreToProb(scores.sDiag, noiseStd);
+
+    // make buyout depend a bit on sampled edu success (not only deterministic)
+    const buyoutScore = scores.sBuyout + 0.8*(dist.eduPilot[i]-0.5) - 0.35*(dist.diagPath[i]-0.5);
+    dist.buyout[i] = scoreToProb(buyoutScore, noiseStd);
+
+    // asset purchase and restart are “competing” strategic calls
+    dist.assetBuy[i] = scoreToProb(scores.sAssetBuy, noiseStd);
+    dist.restart[i]  = scoreToProb(scores.sRestart, noiseStd);
+
+    dist.freeWeb[i]  = scoreToProb(scores.sFreeWeb, noiseStd);
+  }
+
+  // Means
+  const means = {};
+  OUTCOMES.forEach(o=>{
+    const arr = dist[o.key];
+    let s=0; for(const x of arr) s+=x;
+    means[o.key] = s/arr.length;
+  });
+
+  // Choose best path by “actionable success” lens:
+  // Prefer eduPilot for near-term revenue, diagPath for long-term, buyout/assetBuy/restart for decision framing
+  const pathScores = [
+    {name:"Education/QA wedge first", key:"eduPilot", v:means.eduPilot},
+    {name:"Diagnostic pathway soon", key:"diagPath", v:means.diagPath},
+    {name:"Buy company (buyout)", key:"buyout", v:means.buyout},
+    {name:"Buy assets into NewCo", key:"assetBuy", v:means.assetBuy},
+    {name:"Restart clean", key:"restart", v:means.restart},
+    {name:"Free web traction", key:"freeWeb", v:means.freeWeb}
+  ].sort((a,b)=>b.v-a.v);
+
+  // Identify primary blocker (simple heuristics from parameters)
+  const blockers = [];
+  const runway = to01(p.runway), gov = to01(p.gov), mhra=to01(p.mhra), trial=to01(p.trial), acc=to01(p.acc);
+  const pressure=to01(p.pressure), integr=to01(p.integr), transfer=to01(p.transfer), repro=to01(p.repro), ip=to01(p.ip);
+  if(runway < 0.25) blockers.push({name:"Low runway", why:"Without cash/time, you can’t run pilots, embed innovation, or generate evidence."});
+  if(gov < 0.35) blockers.push({name:"Governance failure risk", why:"If incentives stay misaligned, any new money/time may be burned the same way."});
+  if(transfer < 0.35) blockers.push({name:"Innovation not transferable", why:"Single-threaded or undocumented work can’t reliably become a product or be sold."});
+  if(repro < 0.40) blockers.push({name:"Non-reproducible build", why:"If the system can’t be rebuilt, you can’t validate, iterate, or integrate."});
+  if(ip < 0.45) blockers.push({name:"Unclear IP/data rights", why:"If ownership/rights are unclear, sale, deployment, or investment becomes high-risk."});
+  if(mhra < 0.35 && (trial < 0.50 || acc < 0.50)) blockers.push({name:"Regulatory/evidence gap", why:"Partial trials + questionable accuracy block diagnostic positioning and procurement confidence."});
+  if(pressure > 0.70 && integr > 0.60) blockers.push({name:"User time pressure + integration friction", why:"Overloaded users and IT burden suppress user testing and adoption unless you save time immediately."});
+
+  blockers.sort((a,b)=>0); // keep order; first items are most urgent by our checks
+  const primaryBlocker = blockers.length ? blockers[0] : {name:"No single dominant blocker", why:"Multiple moderate constraints; focus on the biggest time-to-proof lever."};
+
+  // Update UI
+  renderBar(means);
+  populateDistSelectIfNeeded();
+  renderHistogram(dist[distSelect.value], means[distSelect.value], getParam("bins"));
+  renderExplanation(p, scores, means, primaryBlocker, pathScores[0]);
+
+  document.getElementById("bestPath").textContent = pathScores[0].name + " (" + fmtPct(pathScores[0].v) + ")";
+  document.getElementById("bestPathNote").textContent =
+    "Highest mean probability under current assumptions. Use “Suggest best options” to see how to improve it.";
+  document.getElementById("blocker").textContent = primaryBlocker.name;
+  document.getElementById("blockerNote").textContent = primaryBlocker.why;
+
+  // Store for prompt generation & suggestions
+  window.__last = {p, scores, means, dist, primaryBlocker, pathScores};
+}
+
+function populateDistSelectIfNeeded(){
+  // already populated; ensure histogram updates on change
+}
+distSelect.addEventListener("change", ()=>{
+  if(!window.__last) return;
+  renderHistogram(window.__last.dist[distSelect.value], window.__last.means[distSelect.value], getParam("bins"));
+});
+document.getElementById("p_bins").addEventListener("input", ()=>{
+  document.getElementById("v_bins").textContent = getParam("bins").toString();
+  if(!window.__last) return;
+  renderHistogram(window.__last.dist[distSelect.value], window.__last.means[distSelect.value], getParam("bins"));
+});
+
+/** --------------------------
+ * Charts (simple canvas)
+ * --------------------------- */
+function drawAxes(ctx, w, h, pad){
+  ctx.strokeStyle = "rgba(36,48,88,.9)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad, pad);
+  ctx.lineTo(pad, h-pad);
+  ctx.lineTo(w-pad, h-pad);
+  ctx.stroke();
+}
+
+function renderBar(means){
+  const canvas = document.getElementById("barChart");
+  const ctx = canvas.getContext("2d");
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0,0,w,h);
+
+  const pad = 40;
+  drawAxes(ctx,w,h,pad);
+
+  const labels = OUTCOMES.map(o=>o.label);
+  const keys = OUTCOMES.map(o=>o.key);
+  const values = keys.map(k=>means[k] ?? 0);
+
+  const barW = (w - pad*2) / values.length;
+  const maxV = 1;
+
+  ctx.font = "12px " + getComputedStyle(document.body).fontFamily;
+  ctx.fillStyle = "rgba(232,236,255,.9)";
+
+  // y ticks
+  ctx.fillStyle = "rgba(170,180,230,.9)";
+  for(let t=0;t<=4;t++){
+    const y = pad + (h-2*pad) * (1 - t/4);
+    ctx.strokeStyle = "rgba(36,48,88,.6)";
+    ctx.beginPath(); ctx.moveTo(pad,y); ctx.lineTo(w-pad,y); ctx.stroke();
+    ctx.fillText((t/4).toFixed(2), 8, y+4);
+  }
+
+  for(let i=0;i<values.length;i++){
+    const v = values[i];
+    const x = pad + i*barW + 10;
+    const bw = barW - 20;
+    const bh = (h-2*pad) * (v/maxV);
+    const y = h - pad - bh;
+
+    // bar
+    const grad = ctx.createLinearGradient(0,y,0,y+bh);
+    grad.addColorStop(0,"rgba(122,162,255,.85)");
+    grad.addColorStop(1,"rgba(97,230,198,.55)");
+    ctx.fillStyle = grad;
+    ctx.fillRect(x,y,bw,bh);
+
+    // value label
+    ctx.fillStyle = "rgba(232,236,255,.95)";
+    ctx.fillText(fmtPct(v), x, y-6);
+
+    // short label
+    ctx.fillStyle = "rgba(170,180,230,.95)";
+    const short = labels[i].split("(")[0].trim().slice(0,18) + (labels[i].length>18?"…":"");
+    ctx.fillText(short, x, h-pad+16);
+  }
+
+  ctx.fillStyle = "rgba(170,180,230,.95)";
+  ctx.fillText("Probability", pad, 18);
+}
+
+function renderHistogram(arr, mean, bins){
+  const canvas = document.getElementById("histChart");
+  const ctx = canvas.getContext("2d");
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0,0,w,h);
+
+  const pad = 40;
+  drawAxes(ctx,w,h,pad);
+
+  const nBins = Math.max(6, Math.min(40, Math.floor(bins)));
+  const hist = new Array(nBins).fill(0);
+  for(const x of arr){
+    const idx = Math.min(nBins-1, Math.max(0, Math.floor(x * nBins)));
+    hist[idx] += 1;
+  }
+  const maxCount = Math.max(...hist);
+  const barW = (w - pad*2) / nBins;
+
+  // Grid and labels
+  ctx.font = "12px " + getComputedStyle(document.body).fontFamily;
+  ctx.fillStyle = "rgba(170,180,230,.9)";
+  ctx.fillText("Distribution of simulated probabilities", pad, 18);
+
+  // Draw bars
+  for(let i=0;i<nBins;i++){
+    const c = hist[i];
+    const x = pad + i*barW + 1;
+    const bw = barW - 2;
+    const bh = (h-2*pad) * (c / maxCount);
+    const y = h - pad - bh;
+
+    ctx.fillStyle = "rgba(122,162,255,.55)";
+    ctx.fillRect(x,y,bw,bh);
+  }
+
+  // Mean line
+  const meanX = pad + mean * (w-2*pad);
+  ctx.strokeStyle = "rgba(255,204,102,.95)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(meanX, pad);
+  ctx.lineTo(meanX, h-pad);
+  ctx.stroke();
+  ctx.fillStyle = "rgba(255,204,102,.95)";
+  ctx.fillText("mean " + fmtPct(mean), meanX+6, pad+14);
+
+  // x-axis ticks
+  ctx.fillStyle = "rgba(170,180,230,.9)";
+  for(let t=0;t<=5;t++){
+    const x = pad + (w-2*pad)*(t/5);
+    ctx.strokeStyle = "rgba(36,48,88,.55)";
+    ctx.beginPath(); ctx.moveTo(x,pad); ctx.lineTo(x,h-pad); ctx.stroke();
+    ctx.fillText((t/5).toFixed(1), x-8, h-pad+18);
+  }
+}
+
+/** --------------------------
+ * Explanations (“why”)
+ * We compute factor contributions from deterministic scores and show the top drivers.
+ * --------------------------- */
+function renderExplanation(p, scores, means, primaryBlocker, best){
+  const { derived } = scores;
+
+  const lines = [];
+  lines.push(`<b>Best near-term path:</b> ${best.name} (${fmtPct(best.v)})`);
+  lines.push(`<b>Primary blocker:</b> ${primaryBlocker.name} — ${escapeHtml(primaryBlocker.why)}`);
+  lines.push(`<hr style="border:none;border-top:1px solid rgba(36,48,88,.75);margin:10px 0">`);
+
+  // Show major derived constraints
+  lines.push(`<b>Derived constraints (from your sliders):</b>`);
+  lines.push(`• Evidence strength (trial+accuracy): <span class="mono">${fmt01(derived.evidenceStrength)}</span>`);
+  lines.push(`• Diagnostic readiness (MHRA+evidence+build): <span class="mono">${fmt01(derived.diagnosticReadiness)}</span>`);
+  lines.push(`• Adoption friction (pressure+integration): <span class="mono">${fmt01(derived.adoptionFriction)}</span>`);
+  lines.push(`• Wedge power (time-save+minimal integration): <span class="mono">${fmt01(derived.wedgePower)}</span>`);
+  lines.push(`• Core assets (IP+repro+transfer): <span class="mono">${fmt01(derived.coreAssets)}</span>`);
+  lines.push(`<hr style="border:none;border-top:1px solid rgba(36,48,88,.75);margin:10px 0">`);
+
+  // Outcome-specific “why”
+  const reasons = [];
+  reasons.push(makeOutcomeWhy("Education/QA pilot", means.eduPilot, [
+    ["Concept strength", to01(p.concept), +1],
+    ["Time-saving wedge", to01(p.timesave), +1],
+    ["Minimal integration packaging", to01(p.minint), +1],
+    ["User pressure", to01(p.pressure), -1],
+    ["Integration friction", to01(p.integr), -1],
+    ["Governance quality", to01(p.gov), +1],
+    ["Morale", to01(p.morale), +1],
+    ["Runway", to01(p.runway), +1],
+  ]));
+
+  reasons.push(makeOutcomeWhy("Diagnostic path soon", means.diagPath, [
+    ["MHRA readiness", to01(p.mhra), +1],
+    ["Trial completion", to01(p.trial), +1],
+    ["Accuracy confidence", to01(p.acc), +1],
+    ["Build reproducibility", to01(p.repro), +1],
+    ["Runway", to01(p.runway), +1],
+    ["User pressure", to01(p.pressure), -1],
+    ["Integration friction", to01(p.integr), -1],
+    ["Governance quality", to01(p.gov), +1],
+  ]));
+
+  reasons.push(makeOutcomeWhy("Buyout worthwhile", means.buyout, [
+    ["Clean IP", to01(p.ip), +1],
+    ["Reproducible build", to01(p.repro), +1],
+    ["Innovation transferability", to01(p.transfer), +1],
+    ["Education pilot success", means.eduPilot, +1],
+    ["Governance quality", to01(p.gov), +1],
+    ["GPU cost pressure", to01(p.gpu), -1],
+    ["Runway", to01(p.runway), +1],
+  ]));
+
+  reasons.push(makeOutcomeWhy("Asset purchase into NewCo", means.assetBuy, [
+    ["Governance failure risk (low governance)", 1-to01(p.gov), +1],
+    ["Clean IP", to01(p.ip), +1],
+    ["Reproducible build", to01(p.repro), +1],
+    ["Innovation transferability", to01(p.transfer), +1],
+    ["Runway (high reduces need)", to01(p.runway), -1],
+  ]));
+
+  reasons.push(makeOutcomeWhy("Restart better", means.restart, [
+    ["Unclear IP", 1-to01(p.ip), +1],
+    ["Non-reproducible build", 1-to01(p.repro), +1],
+    ["Non-transferable innovation", 1-to01(p.transfer), +1],
+    ["Low morale", 1-to01(p.morale), +1],
+    ["Governance failure risk", 1-to01(p.gov), +1],
+    ["Concept strength (reduces restart need)", to01(p.concept), -1],
+  ]));
+
+  reasons.push(makeOutcomeWhy("Free web traction", means.freeWeb, [
+    ["Concept strength", to01(p.concept), +1],
+    ["GPU cost pressure", to01(p.gpu), -1],
+    ["Build-it-they-will-come false", to01(p.buildfalse), -1],
+    ["Runway", to01(p.runway), +1],
+    ["Integration friction", to01(p.integr), -1],
+  ]));
+
+  lines.push(`<b>Outcome drivers (top factors):</b>`);
+  lines.push(reasons.join("<br><br>"));
+
+  document.getElementById("explainBox").innerHTML = lines.join("<br>");
+}
+
+function makeOutcomeWhy(name, prob, factors){
+  // factors: [label, value 0..1, sign +1|-1]
+  // compute contribution magnitude as distance from neutral 0.5 times sign
+  const contrib = factors.map(([label,val,sign])=>{
+    const mag = (val - 0.5) * sign;
+    return {label, mag, val, sign};
+  }).sort((a,b)=>Math.abs(b.mag)-Math.abs(a.mag));
+
+  const top = contrib.slice(0,4);
+  const bullets = top.map(x=>{
+    const direction = x.mag >= 0 ? "pushes up" : "pushes down";
+    const arrow = x.mag >= 0 ? "↑" : "↓";
+    return `• ${arrow} <b>${escapeHtml(x.label)}</b> (${fmt01(x.val)}) ${direction}`;
+  }).join("<br>");
+
+  const tag = prob > 0.66 ? `<span class="good">high</span>` : (prob < 0.33 ? `<span class="bad">low</span>` : `<span class="warn">mixed</span>`);
+  return `<b>${escapeHtml(name)}:</b> ${fmtPct(prob)} (${tag})<br>${bullets}`;
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, m => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  }[m]));
+}
+
+/** --------------------------
+ * Suggest best options (simple optimizer)
+ * We explore discrete “moves” and show the best 3 plans.
+ * Each plan is a bundle of parameter changes that represent plausible actions:
+ *  - Embed & document innovation
+ *  - Shift to education claim + minimal integration + time-saving wedge
+ *  - Asset purchase into NewCo + governance reset
+ *  - Reduce GPU burden by batching/CPU/edge (modeled as lower GPU slider)
+ *
+ * This isn’t “magic”; it’s a search over interventions.
+ * --------------------------- */
+function suggestBestOptions(){
+  const base = snapshotParams();
+  const candidates = [];
+
+  // Helper to evaluate a modified param set quickly (deterministic + small MC)
+  function evaluate(pMod){
+    const scores = computeDeterministicScores(pMod);
+    const noiseStd = 0.15 + 0.65 * to01(pMod.noise);
+    const runs = 1500; // lightweight for suggestions
+    const dist = {eduPilot:[], diagPath:[], buyout:[], assetBuy:[], restart:[], freeWeb:[]};
+    for(let i=0;i<runs;i++){
+      dist.eduPilot.push(scoreToProb(scores.sEdu, noiseStd));
+      dist.diagPath.push(scoreToProb(scores.sDiag, noiseStd));
+      const buyoutScore = scores.sBuyout + 0.8*(dist.eduPilot[i]-0.5) - 0.35*(dist.diagPath[i]-0.5);
+      dist.buyout.push(scoreToProb(buyoutScore, noiseStd));
+      dist.assetBuy.push(scoreToProb(scores.sAssetBuy, noiseStd));
+      dist.restart.push(scoreToProb(scores.sRestart, noiseStd));
+      dist.freeWeb.push(scoreToProb(scores.sFreeWeb, noiseStd));
+    }
+    const mean = (a)=>a.reduce((s,x)=>s+x,0)/a.length;
+
+    const means = {};
+    for(const k of Object.keys(dist)) means[k] = mean(dist[k]);
+
+    // Objective: maximize near-term viable revenue path (eduPilot) + preserve future optionality (buyout/diagPath)
+    // Penalize high restart probability.
+    const objective =
+      0.55*means.eduPilot +
+      0.20*means.buyout +
+      0.15*means.diagPath +
+      0.10*means.assetBuy -
+      0.35*means.restart;
+
+    return {means, objective};
+  }
+
+  // Define plausible intervention bundles (“plans”)
+  const planDefs = [
+    {
+      name:"Education/QA wedge hard-pivot",
+      changes: {
+        timesave: Math.min(95, base.timesave + 30),
+        minint: Math.min(95, base.minint + 25),
+        integr: Math.max(20, base.integr - 25),
+        pressure: base.pressure, // can't change quickly
+        mhra: base.mhra, trial: base.trial, acc: base.acc,
+      },
+      notes:[
+        "Package as training + QA tooling (not diagnostic).",
+        "Design pilots that reduce onboarding and QA time in week 1.",
+        "Avoid workflow disruption: CSV/batch + web dashboard first."
+      ]
+    },
+    {
+      name:"Embed & document the innovation (reduce bus-factor)",
+      changes: {
+        transfer: Math.min(95, base.transfer + 45),
+        repro: Math.min(95, base.repro + 25),
+        morale: Math.min(85, base.morale + 15),
+      },
+      notes:[
+        "Turn the ophthalmologist’s work into a reproducible pipeline + minimal API boundary.",
+        "Document ‘what changes the decision’ and failure modes to build trust.",
+        "This increases asset value whether you sell, buyout, or restart."
+      ]
+    },
+    {
+      name:"Governance reset + asset purchase into NewCo",
+      changes: {
+        gov: Math.min(90, base.gov + 45),
+        ip: Math.min(95, base.ip + 20),
+        morale: Math.min(80, base.morale + 10),
+      },
+      notes:[
+        "Treat the deal as an asset acquisition: clean cap table + clear decision rights.",
+        "Milestone-based compensation and transparent burn.",
+        "Prevents repeating the original failure mode."
+      ]
+    },
+    {
+      name:"Reduce GPU cost risk (batching/CPU/edge) + wedge pivot",
+      changes: {
+        gpu: Math.max(20, base.gpu - 35),
+        timesave: Math.min(90, base.timesave + 20),
+        minint: Math.min(90, base.minint + 15),
+      },
+      notes:[
+        "Avoid always-on GPU servers; use burst/batch inference where possible.",
+        "Lower operating risk makes ‘free demo’ and pilots less dangerous.",
+        "Pairs best with the education wedge motion."
+      ]
+    },
+    {
+      name:"Diagnostic push (only works if evidence improves)",
+      changes: {
+        mhra: Math.min(85, base.mhra + 40),
+        trial: Math.min(90, base.trial + 45),
+        acc: Math.min(90, base.acc + 35),
+        runway: Math.min(80, base.runway + 25),
+        integr: Math.max(30, base.integr - 15),
+      },
+      notes:[
+        "Requires serious evidence generation and quality system work.",
+        "Not a near-term revenue play unless you already have a pathway owner.",
+        "Use only if you can fund/operate trials and validation."
+      ]
+    },
+  ];
+
+  // Create variations (plans alone + combos)
+  const expanded = [];
+  for(const d of planDefs){
+    expanded.push({name:d.name, params:applyChanges(base, d.changes), notes:d.notes});
+  }
+  // A couple of combos
+  expanded.push({
+    name:"(Combo) Governance reset + embed innovation + education wedge",
+    params: applyChanges(base, mergeChanges(planDefs[0].changes, mergeChanges(planDefs[1].changes, planDefs[2].changes))),
+    notes:[
+      "Most realistic ‘restart energy’ without losing assets.",
+      "Makes pilots purchasable while increasing asset value.",
+      "De-risks single-threaded innovation and governance recurrence."
+    ]
+  });
+  expanded.push({
+    name:"(Combo) Education wedge + GPU risk reduction",
+    params: applyChanges(base, mergeChanges(planDefs[0].changes, planDefs[3].changes)),
+    notes:[
+      "Fastest route to low-cost proofs.",
+      "Best if you are cash-constrained and must avoid hosting surprises."
+    ]
+  });
+
+  // Evaluate
+  for(const c of expanded){
+    const ev = evaluate(c.params);
+    candidates.push({...c, ...ev});
+  }
+  candidates.sort((a,b)=>b.objective-a.objective);
+
+  renderPlans(candidates.slice(0,3), base);
+}
+
+function snapshotParams(){
+  return {
+    runway:getParam("runway"),
+    gov:getParam("gov"),
+    morale:getParam("morale"),
+    transfer:getParam("transfer"),
+    repro:getParam("repro"),
+    ip:getParam("ip"),
+    trial:getParam("trial"),
+    acc:getParam("acc"),
+    mhra:getParam("mhra"),
+    concept:getParam("concept"),
+    pressure:getParam("pressure"),
+    integr:getParam("integr"),
+    timesave:getParam("timesave"),
+    minint:getParam("minint"),
+    gpu:getParam("gpu"),
+    buildfalse:getParam("buildfalse"),
+    runs:getParam("runs"),
+    noise:getParam("noise"),
+    bins:getParam("bins"),
+  };
+}
+
+function applyChanges(base, changes){
+  const out = {...base};
+  for(const k of Object.keys(changes)){
+    out[k] = changes[k];
+  }
+  return out;
+}
+function mergeChanges(a,b){
+  return {...a, ...b};
+}
+
+function renderPlans(plans, base){
+  const el = document.getElementById("plans");
+  el.innerHTML = "";
+
+  plans.forEach((p, idx)=>{
+    const diff = diffParams(base, p.params);
+    const box = document.createElement("div");
+    box.className = "plan";
+
+    const edu = fmtPct(p.means.eduPilot);
+    const buy = fmtPct(p.means.buyout);
+    const diag = fmtPct(p.means.diagPath);
+    const res = fmtPct(p.means.restart);
+
+    box.innerHTML = `
+      <h3>#${idx+1} ${escapeHtml(p.name)}</h3>
+      <div class="note">
+        Objective score: <span class="mono">${p.objective.toFixed(3)}</span><br>
+        <b>Projected:</b> Education pilot ${edu} · Buyout ${buy} · Diagnostic soon ${diag} · Restart ${res}
+      </div>
+      <div class="divider"></div>
+      <div class="note"><b>Parameter moves:</b><br>${diff}</div>
+      <ul>${p.notes.map(n=>`<li>${escapeHtml(n)}</li>`).join("")}</ul>
+      <div class="btns" style="margin-top:10px">
+        <button class="secondary" data-apply="${idx}">Apply this plan</button>
+      </div>
+    `;
+    el.appendChild(box);
+  });
+
+  // Apply plan buttons
+  el.querySelectorAll("button[data-apply]").forEach((btn, i)=>{
+    btn.addEventListener("click", ()=>{
+      const chosen = plans[i];
+      for(const k of Object.keys(chosen.params)){
+        if(document.getElementById("p_"+k)) setParam(k, chosen.params[k]);
+      }
+      runMonteCarlo();
+      window.scrollTo({top:0, behavior:"smooth"});
+    });
+  });
+}
+
+function diffParams(base, mod){
+  const keys = Object.keys(base).filter(k=>document.getElementById("p_"+k));
+  const changes = keys
+    .map(k=>({k, d: mod[k]-base[k]}))
+    .filter(x=>Math.abs(x.d) >= 5)
+    .sort((a,b)=>Math.abs(b.d)-Math.abs(a.d))
+    .slice(0,8);
+
+  if(!changes.length) return "(no major slider changes)";
+  return changes.map(x=>{
+    const sign = x.d>0 ? "+" : "";
+    return `• <span class="mono">${x.k}</span>: ${base[x.k]} → ${mod[x.k]} (<span class="mono">${sign}${x.d}</span>)`;
+  }).join("<br>");
+}
+
+/** --------------------------
+ * Prompt generator (imaginary case study)
+ * --------------------------- */
+function generatePrompt(){
+  const last = window.__last || { p: snapshotParams(), means:null, primaryBlocker:null, pathScores:null };
+  const p = last.p;
+
+  const angle = document.getElementById("promptTitle").value.trim() || "A realistic path forward under severe constraints";
+  const userText = document.getElementById("caseInput").value.trim();
+
+  const means = last.means || {};
+  const best = (last.pathScores && last.pathScores[0]) ? last.pathScores[0] : null;
+
+  const summary = [
+    `Runway=${p.runway}/100`,
+    `Governance=${p.gov}/100`,
+    `Morale=${p.morale}/100`,
+    `Transferability=${p.transfer}/100`,
+    `ReproducibleBuild=${p.repro}/100`,
+    `IPClarity=${p.ip}/100`,
+    `TrialCompletion=${p.trial}/100`,
+    `AccuracyConfidence=${p.acc}/100`,
+    `MHRAReadiness=${p.mhra}/100`,
+    `ConceptStrength=${p.concept}/100`,
+    `UserPressure=${p.pressure}/100`,
+    `IntegrationFriction=${p.integr}/100`,
+    `TimeSavingWedge=${p.timesave}/100`,
+    `MinimalIntegration=${p.minint}/100`,
+    `GPUCost=${p.gpu}/100`,
+    `BuildItFalse=${p.buildfalse}/100`
+  ].join(", ");
+
+  const outcomeLine = last.means ? (
+    `Modelled outcome means: ` +
+    `EducationPilot=${fmtPct(means.eduPilot||0)}, ` +
+    `DiagnosticSoon=${fmtPct(means.diagPath||0)}, ` +
+    `Buyout=${fmtPct(means.buyout||0)}, ` +
+    `AssetPurchase=${fmtPct(means.assetBuy||0)}, ` +
+    `Restart=${fmtPct(means.restart||0)}, ` +
+    `FreeWeb=${fmtPct(means.freeWeb||0)}.`
+  ) : `No simulation has been run yet; infer likely outcomes qualitatively.`;
+
+  const blockerLine = last.primaryBlocker
+    ? `Primary blocker identified: ${last.primaryBlocker.name} — ${last.primaryBlocker.why}`
+    : `Primary blocker: infer from parameters (low runway, governance risk, evidence gap, user pressure, etc.).`;
+
+  const bestLine = best ? `Best near-term path suggested: ${best.name} (~${fmtPct(best.v)}).` : "";
+
+  const prompt =
+`You are an expert in clinical diagnostics innovation, AI product strategy, and health-tech adoption.
+
+Write an IMAGINARY but realistic case study titled:
+"${angle}"
+
+Context:
+- A startup built an AI diabetic retinopathy tool. The core concept (human–machine interface / teaching via model representations) is strong, but the technology base is older.
+- Funding was wasted on leadership salaries; technical progress stalled; morale is damaged.
+- Clinical trials are only partially completed, MHRA readiness is low, and current accuracy is questionable (concept works, evidence/validation incomplete).
+- User testing is difficult because graders/users are under intense workflow pressure and avoid new complexity; integration friction is a key barrier.
+- The near-term opportunity may be an EDUCATIONAL / QA wedge rather than a diagnostic claim.
+
+Parameters (0–100):
+${summary}
+
+${outcomeLine}
+${blockerLine}
+${bestLine}
+
+User-supplied specifics:
+${userText || "(none provided)"}
+
+Requirements for the case study:
+1) Describe the situation, stakeholders, and constraints in concrete terms (runway, governance, adoption barriers).
+2) Pick a best-fit strategy (e.g., education/QA wedge, asset purchase into NewCo, embed/document innovation, evidence roadmap) and justify it.
+3) Show a 90-day plan with: smallest purchasable pilot, success metrics (onboarding time, grader consistency, QA rework), and how to reduce user testing burden.
+4) Explain WHY this strategy works despite questionable accuracy and partial trials (intended use boundaries, workflow integration, risk controls).
+5) Include a “what went wrong before” section and a governance reset to prevent recurrence.
+6) End with measurable outcomes and a decision gate: continue / pivot / sell / restart.
+
+Tone: pragmatic, detailed, non-hype, focused on adoption and evidence.`;
+
+  document.getElementById("promptOut").value = prompt;
+}
+
+/** --------------------------
+ * Reset / Buttons
+ * --------------------------- */
+document.getElementById("btnSim").addEventListener("click", runMonteCarlo);
+document.getElementById("btnSuggest").addEventListener("click", suggestBestOptions);
+
+document.getElementById("btnReset").addEventListener("click", ()=>{
+  // Reset to a plausible "current story" baseline
+  setParam("runway", 10);
+  setParam("gov", 25);
+  setParam("morale", 35);
+  setParam("transfer", 20);
+  setParam("repro", 30);
+  setParam("ip", 40);
+  setParam("trial", 30);
+  setParam("acc", 35);
+  setParam("mhra", 15);
+  setParam("concept", 75);
+  setParam("pressure", 85);
+  setParam("integr", 70);
+  setParam("timesave", 45);
+  setParam("minint", 55);
+  setParam("gpu", 70);
+  setParam("buildfalse", 80);
+  setParam("runs", 5000);
+  setParam("noise", 30);
+  setParam("bins", 20);
+
+  document.getElementById("plans").innerHTML = "";
+  document.getElementById("explainBox").innerHTML = "Run a simulation to see factor explanations for each outcome.";
+  document.getElementById("bestPath").textContent = "—";
+  document.getElementById("blocker").textContent = "—";
+  document.getElementById("bestPathNote").textContent = "";
+  document.getElementById("blockerNote").textContent = "";
+  const ctx1 = document.getElementById("barChart").getContext("2d");
+  ctx1.clearRect(0,0,document.getElementById("barChart").width, document.getElementById("barChart").height);
+  const ctx2 = document.getElementById("histChart").getContext("2d");
+  ctx2.clearRect(0,0,document.getElementById("histChart").width, document.getElementById("histChart").height);
+  window.__last = null;
+});
+
+document.getElementById("btnPrompt").addEventListener("click", generatePrompt);
+document.getElementById("btnCopy").addEventListener("click", async ()=>{
+  const txt = document.getElementById("promptOut").value;
+  if(!txt) return;
+  try{
+    await navigator.clipboard.writeText(txt);
+    alert("Copied prompt to clipboard.");
+  }catch(e){
+    alert("Copy failed — your browser may block clipboard access. You can select and copy manually.");
+  }
+});
+
+// Initialize bins readout
+document.getElementById("v_bins").textContent = getParam("bins").toString();
+
+// Do an initial run for convenience
+runMonteCarlo();
+</script>
+</body>
+</html>
